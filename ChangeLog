@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 07 Aug 2002 16:22:02 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ssl.c: fixes to make it compile (Who screwed it? Me?)
+
 Wed, 07 Aug 2002 15:41:59 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: Drop not needed NT timeval struct
 	* ssl.c: Check_Type => OSSL_Check_Kind fixes

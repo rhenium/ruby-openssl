@@ -178,7 +178,6 @@ static VALUE
 ssl_ctx_setup(VALUE self)
 {
     ssl_ctx_st *p = NULL;
-    SSL_METHOD *meth;
     X509 *cert = NULL, *ca = NULL;
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
@@ -193,9 +192,9 @@ ssl_ctx_setup(VALUE self)
     SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
 
     /* private key may be bundled in certificate file. */
-    val = ssl_get_cert(self);
+    val = ssl_ctx_get_cert(self);
     cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED */
-    val = ssl_get_key(self);
+    val = ssl_ctx_get_key(self);
     key = NIL_P(val) ? NULL : GetPKeyPtr(val); /* NO NEED TO DUP */
 
     if (cert && key) {
@@ -212,11 +211,11 @@ ssl_ctx_setup(VALUE self)
 	}
     }
 
-    val = ssl_get_ca(self);
+    val = ssl_ctx_get_ca(self);
     ca = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED. */
-    val = ssl_get_ca_file(self);
+    val = ssl_ctx_get_ca_file(self);
     ca_file = NIL_P(val) ? NULL : StringValuePtr(val);
-    val = ssl_get_ca_path(self);
+    val = ssl_ctx_get_ca_path(self);
     ca_path = NIL_P(val) ? NULL : StringValuePtr(val);
 
     if (ca){
@@ -230,21 +229,21 @@ ssl_ctx_setup(VALUE self)
 	rb_warning("can't set verify locations");
     }
 
-    val = ssl_get_verify_mode(self);
+    val = ssl_ctx_get_verify_mode(self);
     verify_mode = NIL_P(val) ? SSL_VERIFY_NONE : NUM2INT(val);
     SSL_CTX_set_verify(p->ctx, verify_mode, ssl_verify_callback);
 
-    val = ssl_get_timeout(self);
+    val = ssl_ctx_get_timeout(self);
     if(!NIL_P(val)) SSL_CTX_set_timeout(p->ctx, NUM2LONG(val));
 
-    val = ssl_get_verify_dep(self);
+    val = ssl_ctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(p->ctx, NUM2LONG(val));
 
     return Qtrue;
 }
 
 static VALUE
-ossl_ssl_cipher_to_ary(SSL_CIPHER *cipher)
+ssl_cipher_to_ary(SSL_CIPHER *cipher)
 {
     VALUE ary;
     int bits, alg_bits;
@@ -279,7 +278,7 @@ ssl_ctx_get_ciphers(VALUE self)
 	return rb_ary_new();
 
     num = sk_num((STACK*)ciphers);
-    ary = rb_ary_new(num);
+    ary = rb_ary_new2(num);
     for(i = 0; i < num; i++){
 	cipher = (SSL_CIPHER*)sk_value((STACK*)ciphers, i);
 	rb_ary_push(ary, ssl_cipher_to_ary(cipher));
@@ -324,8 +323,8 @@ static VALUE
 ssl_ctx_set_cert2(VALUE self, VALUE v)
 {
     if(!NIL_P(v)) OSSL_Check_Kind(v, cX509Cert);
-    ssl_set_cert(self, v);
-    ssl_set_cert_file(self, Qnil);
+    ssl_ctx_set_cert(self, v);
+    ssl_ctx_set_cert_file(self, Qnil);
     return v;
 }
 
@@ -334,8 +333,8 @@ ssl_ctx_set_cert_file2(VALUE self, VALUE v)
 {
     VALUE cert;
     cert = NIL_P(v) ? Qnil :ossl_x509_new_from_file(v);
-    ssl_set_cert(self, cert);
-    ssl_set_cert_file(self, v);
+    ssl_ctx_set_cert(self, cert);
+    ssl_ctx_set_cert_file(self, v);
     return v;
 }
 
@@ -343,8 +342,8 @@ static VALUE
 ssl_ctx_set_key2(VALUE self, VALUE v)
 {
     if(!NIL_P(v)) OSSL_Check_Kind(v, cPKey);
-    ssl_set_key(self, v);
-    ssl_set_key_file(self, Qnil);
+    ssl_ctx_set_key(self, v);
+    ssl_ctx_set_key_file(self, Qnil);
     return v;
 }
 
@@ -353,8 +352,8 @@ ssl_ctx_set_key_file2(VALUE self, VALUE v)
 {
     VALUE key;
     key = NIL_P(v) ? Qnil : ossl_pkey_new_from_file(v);
-    ssl_set_key(self, key);
-    ssl_set_key_file(self, v);
+    ssl_ctx_set_key(self, key);
+    ssl_ctx_set_key_file(self, v);
     return v;
 }
 
@@ -395,7 +394,7 @@ static VALUE
 ssl_setup(VALUE self)
 {
     ssl_st *p;
-    VALUE io, rctx;
+    VALUE io;
     ssl_ctx_st *ctx;
     OpenFile *fptr;
 
@@ -427,7 +426,7 @@ static VALUE
 ssl_initialize(VALUE self, VALUE ctx)
 {
     OSSL_Check_Kind(ctx, cSSLContext);
-    ssl_ctx_set_context(self, ctx);
+    ssl_set_context(self, ctx);
     return self;
 }
 
