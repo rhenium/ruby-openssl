@@ -31,14 +31,37 @@ have_header("sys/time.h")
 have_func("strptime", "time.h")
 
 ##
-# Adds -Wall -DOSSL_DEBUG for compilation
-# Use as --with-debug or --enable-debug
+# Adds -Wall -DOSSL_DEBUG for compilation and some more targets when GCC is used
+# To turn it on, use: --with-debug or --enable-debug
 #
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
   $CPPFLAGS += " " + "-Wall" unless $CPPFLAGS.split.include? "-Wall"
-end
 
+  if CONFIG["CC"] =~ /gcc/
+    srcs = []
+    for f in Dir[File.join(".", "*.c")]
+      srcs.push File.basename(f)
+    end
+    srcs = srcs.join(" ")
+    
+    File.open("depend", "w") {|f|
+      f.print <<EOD
+SRCS = #{srcs}
+
+test-link:
+	$(CC) $(DLDFLAGS) -o testlink $(OBJS) $(LIBS) $(LOCAL_LIBS)
+	@$(RM) testlink
+	@echo "Done."
+
+dep:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(SRCS) -MM > dep
+
+include dep
+EOD
+    }
+  end
+end
 
 if have_header("openssl/crypto.h") and 
     have_library(CRYPTOLIB, nil) and

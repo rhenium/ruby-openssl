@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Fri, 06 Sep 2002 12:29:37 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* extconf.rb: Add some more targets when --*-debug and GCC
+
 Thu, 05 Sep 2002 13:07:18 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.c: added #become method for Ruby 1.7.3 dup, clone interface
 	* cipher.c: ditto.

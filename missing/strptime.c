@@ -36,12 +36,10 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifdef NT
-#define strncasecmp _strnicmp
-#else
-#ifndef HAVE_STRNCASECMP
+#if defined(NT)
+#  define strncasecmp _strnicmp
+#elif !defined(HAVE_STRNCASECMP)
 #  include "./strncasecmp.c"
-#endif
 #endif
 
 /*
