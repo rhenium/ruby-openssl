@@ -88,8 +88,8 @@ ossl_x509name_hash_i(VALUE key, VALUE value, X509_NAME *name)
 {
 	int id, type;
 	
-	Check_SafeStr(key);
-	Check_SafeStr(value);
+	Check_Type(key, T_STRING);
+	Check_Type(value, T_STRING);
 	
 	if (!(id = OBJ_ln2nid(RSTRING(key)->ptr)))
 		if (!(id = OBJ_sn2nid(RSTRING(key)->ptr))) {

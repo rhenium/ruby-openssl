@@ -100,14 +100,14 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 
 	/* key [0] */
 	item = RARRAY(ary)->ptr[0];
-	Check_SafeStr(item);
+	Check_Type(item, T_STRING);
 	if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr)))
 		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr)))
 			OSSL_Raise(eX509AttributeError, "");
 
 	/* data [1] */
 	item = RARRAY(ary)->ptr[1];
-	Check_SafeStr(item);
+	Check_Type(item, T_STRING);
 
 	if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, RSTRING(item)->ptr)))
 		OSSL_Raise(eX509AttributeError, "");

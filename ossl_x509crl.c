@@ -95,7 +95,6 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 			crl = X509_CRL_new();
 			break;
 		case T_STRING:
-			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
 				OSSL_Raise(eX509CRLError, "");
 			}

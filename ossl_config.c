@@ -85,10 +85,10 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 	GetConfig(self, confp);
 	
 	if (!NIL_P(section)) {
-		Check_SafeStr(section);
+		Check_Type(section, T_STRING);
 		sect = RSTRING(section)->ptr;
 	}
-	Check_SafeStr(item);
+	Check_Type(item, T_STRING);
 
 	if (!(str = CONF_get_string(confp->config, sect, RSTRING(item)->ptr))) {
 		OSSL_Raise(eConfigError, "");
@@ -109,7 +109,7 @@ ossl_config_get_section(VALUE self, VALUE section)
 
 	GetConfig(self, confp);
 	
-	Check_SafeStr(section);
+	Check_Type(section, T_STRING);
 	
 	if (!(sk = CONF_get_section(confp->config, RSTRING(section)->ptr))) {
 		OSSL_Raise(eConfigError, "");

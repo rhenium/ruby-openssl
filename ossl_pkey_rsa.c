@@ -125,10 +125,10 @@ ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 	
 	rb_scan_args(argc, argv, "11", &buffer, &pass);
 	
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	if (!NIL_P(pass)) {
-		Check_SafeStr(pass);
+		Check_Type(pass, T_STRING);
 		passwd = RSTRING(pass)->ptr;
 	}
 	/* else passwd = NULL; */
@@ -232,7 +232,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 		ciph = ossl_cipher_get_EVP_CIPHER(cipher);
 		
 		if (!NIL_P(password)) {
-			Check_SafeStr(password);
+			Check_Type(password, T_STRING);
 			pass = RSTRING(password)->ptr;
 		}
 	}
@@ -269,7 +269,7 @@ ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 	
 	GetRSA(self, rsap);
 
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -296,7 +296,7 @@ ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 
 	GetRSA(self, rsap);
 
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -327,7 +327,7 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 		rb_raise(eRSAError, "PRIVATE key needed for this operation!");
 	}
 	
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -358,7 +358,7 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 		rb_raise(eRSAError, "Private RSA key needed!");
 	}
 	
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	size = RSA_size(rsap->rsa);
 
@@ -507,7 +507,7 @@ ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 
 	GetRSA(self, rsap);
 	OSSL_Check_type(digest, cDigest);
-	Check_SafeStr(text);
+	Check_Type(text, T_STRING);
 
 	if (!(sign = OPENSSL_malloc(RSA_size(rsap->rsa)+16))) {
 		OSSL_Raise(eRSAError, "");

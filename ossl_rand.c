@@ -29,7 +29,7 @@ VALUE eRandomError;
 static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
-	Check_SafeStr(str);
+	Check_Type(str, T_STRING);
 	RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
 
 	return str;

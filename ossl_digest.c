@@ -89,7 +89,7 @@ ossl_digest_update(VALUE self, VALUE data)
 
 	GetDigest(self, digestp);
 
-	Check_SafeStr(data);
+	Check_Type(data, T_STRING);
 
 	EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
 
@@ -209,7 +209,7 @@ ossl_digest_hexdigest(VALUE self)
 		EVP_DigestInit(digestp->md, EVP_##dgst());					\
 												\
 		if (rb_scan_args(argc, argv, "01", &data) == 1) {				\
-			Check_SafeStr(data);							\
+			Check_Type(data, T_STRING);						\
 			EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);	\
 		}										\
 		return self;									\

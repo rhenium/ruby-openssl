@@ -116,7 +116,6 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 			req = X509_REQ_new();
 			break;
 		case T_STRING:
-			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
 				OSSL_Raise(eX509RequestError, "");
 			}

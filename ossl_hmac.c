@@ -70,7 +70,7 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "20", &key, &digest);
 
-	Check_SafeStr(key);
+	Check_Type(key, T_STRING);
 	md = ossl_digest_get_EVP_MD(digest);
 
 	if (!(hmacp->hmac = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
@@ -88,7 +88,7 @@ ossl_hmac_update(VALUE self, VALUE data)
 
 	GetHMAC(self, hmacp);
 
-	Check_SafeStr(data);
+	Check_Type(data, T_STRING);
 
 	HMAC_Update(hmacp->hmac, RSTRING(data)->ptr, RSTRING(data)->len);
 

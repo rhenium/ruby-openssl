@@ -84,7 +84,7 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 	{										\
 		BIGNUM *bn = NULL;							\
 											\
-		Check_SafeStr(str);							\
+		Check_Type(str, T_STRING);						\
 											\
 		GetBN(self, bn);							\
 											\
@@ -102,7 +102,7 @@ BIGNUM_FROM(mpi);
 	{										\
 		BIGNUM *bn = NULL;							\
 											\
-		Check_SafeStr(str);							\
+		Check_Type(str, T_STRING);						\
 											\
 		GetBN(self, bn);							\
 											\
@@ -510,7 +510,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 
 	if (!NIL_P(vadd)) {
 		if (NIL_P(vrem))
-			rb_raise(rb_eArgError, "if add is specified, rem must be also given");
+			rb_raise(rb_eArgError, "if ADD is specified, REM must be also given");
 
 		OSSL_Check_Type(vadd, cBN);
 		OSSL_Check_Type(vrem, cBN);

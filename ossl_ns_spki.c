@@ -73,7 +73,6 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 			spki = NETSCAPE_SPKI_new();
 			break;
 		case T_STRING:
-			Check_SafeStr(buffer);
 			spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1);
 			break;
 		default:
@@ -182,7 +181,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 	ossl_spki *spkip = NULL;
 
 	GetSPKI(self, spkip);
-	Check_SafeStr(str);
+	Check_Type(str, T_STRING);
 
 	if (!ASN1_STRING_set(spkip->spki->spkac->challenge, RSTRING(str)->ptr, RSTRING(str)->len)) {
 		OSSL_Raise(eSPKIError, "");

@@ -122,7 +122,7 @@ ossl_dh_s_new_from_pem(VALUE klass, VALUE buffer)
 	BIO *in = NULL;
 	VALUE obj;
 	
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len)))
 		OSSL_Raise(eDHError, "");

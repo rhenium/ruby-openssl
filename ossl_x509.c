@@ -142,7 +142,6 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 			
 		case T_STRING:
-			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
 				OSSL_Raise(eX509CertificateError, "");
 			}

@@ -124,10 +124,10 @@ ossl_dsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 	
 	rb_scan_args(argc, argv, "11", &buffer, &pass);
 	
-	Check_SafeStr(buffer);
+	Check_Type(buffer, T_STRING);
 	
 	if (!NIL_P(pass)) {
-		Check_SafeStr(pass);
+		Check_Type(pass, T_STRING);
 		passwd = RSTRING(pass)->ptr;
 	}
 	/* else passwd = NULL; */
@@ -241,7 +241,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 		ciph = ossl_cipher_get_EVP_CIPHER(cipher);
 		
 		if (!NIL_P(password)) {
-			Check_SafeStr(password);
+			Check_Type(password, T_STRING);
 			pass = RSTRING(password)->ptr;
 		}
 	}
@@ -363,7 +363,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	VALUE str;
 
 	GetDSA(self, dsap);
-	Check_SafeStr(data);
+	Check_Type(data, T_STRING);
 
 	if (!DSA_PRIVATE(dsap->dsa)) {
 		rb_raise(eDSAError, "Private DSA key needed!");
@@ -391,8 +391,8 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 
 	GetDSA(self, dsap);
 
-	Check_SafeStr(digest);
-	Check_SafeStr(sig);
+	Check_Type(digest, T_STRING);
+	Check_Type(sig, T_STRING);
 
 	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,\
 			RSTRING(sig)->ptr, RSTRING(sig)->len, dsap->dsa); /*type = 0*/

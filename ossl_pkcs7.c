@@ -131,7 +131,7 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	
 	OSSL_Check_Type(key, cPKey);
 	OSSL_Check_Type(cert, X509Certificate);
-	Check_SafeStr(data);
+	Check_Type(data, T_STRING);
 
 	if (rb_funcall(key, rb_intern("private?"), 0, NULL) != Qtrue) {
 		rb_raise(ePKCS7Error, "private key needed!");
@@ -198,7 +198,6 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 			}
 			break;
 		case T_STRING:
-			Check_SafeStr(arg1);
 			if (!(in = BIO_new_mem_buf(RSTRING(arg1)->ptr, RSTRING(arg1)->len))) {
 				OSSL_Raise(ePKCS7Error, "");
 			}
@@ -374,7 +373,7 @@ ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &data, &detach);
 	
-	Check_SafeStr(data);
+	Check_Type(data, T_STRING);
 
 	PKCS7_content_new(p7p->pkcs7, NID_pkcs7_data);
 
@@ -421,7 +420,7 @@ ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
 	store = ossl_x509store_get_X509_STORE(x509store);
 	
 	if (!NIL_P(detached)) {
-		Check_SafeStr(detached);
+		Check_Type(detached, T_STRING);
 		if (!(data = BIO_new_mem_buf(RSTRING(detached)->ptr, RSTRING(detached)->len))) {
 			OSSL_Raise(ePKCS7Error, "");
 		}

@@ -4,6 +4,10 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.32  2002/02/23 07:28:00  majkl
+	* More benevolent checks (Check_SafeStr(x) -> Check_Type(x, T_STRING)
+	  (where we don't care)
+
 Revision 1.31  2002/02/20 08:43:54  majkl
 	* Fixed some memory leaks
 
