@@ -1,3 +1,6 @@
+Fri, 11 Jul 2003 03:44:28 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* examples/gen.sh: follows the changs of gen_*.rb.
+
 Thu, 11 Jul 2003 02:33:59 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* ossl_x509req.c: Add Request#signature_algorithm.
 	* ossl_x509crl.c: eX509CertError -> eX509CRLError.
@@ -15,10 +18,10 @@ Thu, 11 Jul 2003 02:23:04 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/ca/gen_cert.rb: Changed keyUsage bits of each cert type.
 
 Thu, 10 Jul 2003 12:32:56 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
-	* ossl.c: Prototype for sk2ary
-	* ocsp.c: Typo in ossl_ocspbres_add_status (sk_X509_pop_free -> sk_X509_EXTENSION_pop_free)
-	* pkcs7.c: Added missed handling of flags in ossl_pkcs7_s_encrypt
-	* x509cert.c: try to use obj2bio and bio2obj funcs
+	* ossl_ossl.c: Prototype for sk2ary
+	* ossl_ocsp.c: Typo in ossl_ocspbres_add_status (sk_X509_pop_free -> sk_X509_EXTENSION_pop_free)
+	* ossl_pkcs7.c: Added missed handling of flags in ossl_pkcs7_s_encrypt
+	* ossl_x509cert.c: try to use obj2bio and bio2obj funcs
 
 Thu, 10 Jul 2003 04:56:38 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: PKCS7#encrypt(): use EVP_rc2_40_cbc() by default.

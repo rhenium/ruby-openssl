@@ -3,7 +3,8 @@
 rm -f *.pem
 
 echo "===> Issueing CA certificate"
-ruby gen_ca_cert.rb
+dn="/C=JP/O=Does.Notwork.Org/OU=demoCA/CN=CA"
+ruby gen_ca_cert.rb "${dn}"
 
 echo "===> Create Certificate Requests"
 dn="/C=JP/O=Does.Notwork.Org/OU=demoCA/CN=subCA"
@@ -21,7 +22,7 @@ dn="/C=JP/O=Does.NotworkDoes.org/OU=demoCA/CN=baz"
 
 echo "===> Issueing EE certificates"
 ruby gen_cert.rb --type subca  1 1csr.pem
-ruby gen_cert.rb --type oscp   2 2csr.pem
+ruby gen_cert.rb --type ocsp   2 2csr.pem
 ruby gen_cert.rb --type server 3 3csr.pem
 ruby gen_cert.rb --type user   4 4csr.pem
 ruby gen_cert.rb --type user   5 5csr.pem
