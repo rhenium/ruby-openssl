@@ -285,6 +285,67 @@ ossl_dh_to_public_key(VALUE self)
     return obj;
 }
 
+static VALUE
+ossl_dh_check_params(VALUE self)
+{
+    DH *dh;
+    EVP_PKEY *pkey;
+    int codes;
+    
+    GetPKeyDH(self, pkey);
+    dh = pkey->pkey.dh;
+
+    if (!DH_check(dh, &codes)) {
+	return Qfalse;
+    }
+
+    return codes == 0 ? Qtrue : Qfalse;
+}
+
+static VALUE
+ossl_dh_generate_key(VALUE self)
+{
+    DH *dh;
+    EVP_PKEY *pkey;
+
+    GetPKeyDH(self, pkey);
+    dh = pkey->pkey.dh;
+
+    if (!DH_generate_key(dh))
+	ossl_raise(eDHError, "Failed to generate key");
+    return self;
+}
+
+static VALUE
+ossl_dh_compute_key(VALUE self, VALUE pub)
+{
+    DH *dh;
+    EVP_PKEY *pkey;
+    BIGNUM *pub_key;
+    VALUE str;
+    int len;
+    char *buf;
+
+    GetPKeyDH(self, pkey);
+    dh = pkey->pkey.dh;
+    pub_key = GetBNPtr(pub);
+
+    len = DH_size(dh);
+    if (!(buf = OPENSSL_malloc(len))) {
+	ossl_raise(eDHError, "Cannot allocate mem for shared secret");
+    }
+
+    if ((len = DH_compute_key(buf, pub_key, dh)) < 0) {
+	OPENSSL_free(buf);
+	ossl_raise(eDHError, "");
+    }
+
+    str = rb_str_new(buf, len);
+    OPENSSL_free(buf);
+
+    return str;
+}
+
 /*
  * INIT
  */
@@ -305,6 +366,10 @@ Init_ossl_dh()
     rb_define_alias(cDH, "to_pem", "export");
     rb_define_alias(cDH, "to_s", "export");
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
+
+    rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
+    rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
+    rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
 
     rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }

@@ -243,7 +243,7 @@ ossl_x509ext_to_a(VALUE obj)
     BUF_MEM *buf;
     int nid, critical;
     const char* sn;
-    VALUE ary, tag, value;
+    VALUE ary, value;
 
     GetX509Ext(obj, ext);
     ary = rb_ary_new2(3);
