@@ -14,7 +14,6 @@
 extern VALUE cHMAC;
 extern VALUE eHMACError;
 
-void Init_ossl_hmac();
+void Init_ossl_hmac(void);
 
 #endif /* _OSSL_HMAC_H_ */
-

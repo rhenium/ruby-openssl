@@ -51,6 +51,11 @@ extern "C" {
 int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
 #endif /* NO_HMAC */
 
+#if !defined(HAVE_X509_STORE_SET_EX_DATA)
+int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
+void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

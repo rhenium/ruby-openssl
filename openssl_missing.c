@@ -8,6 +8,8 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#include "ossl.h"
+
 #if !defined(OPENSSL_NO_HMAC)
 
 #include <string.h>

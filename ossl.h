@@ -184,6 +184,8 @@ void ossl_debug(const char *, ...);
 #include "ossl_version.h"
 #include "ossl_x509.h"
 
+void Init_openssl(void);
+
 #if defined(__cplusplus)
 }
 #endif
