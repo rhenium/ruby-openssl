@@ -105,7 +105,7 @@ DupPrivPKeyPtr(VALUE obj)
 	
 	SafeGetPKey(obj, pkey);
 
-	if (rb_funcall(obj, id_private_q, 0, NULL) = Qtrue) { /* returns Qtrue */
+	if (rb_funcall(obj, id_private_q, 0, NULL) == Qtrue) { /* returns Qtrue */
 		CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 		return pkey;
 	}
@@ -172,6 +172,10 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 	char *buf;
 	int buf_len;
 	VALUE str;
+
+	if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
+		rb_raise(rb_eArgError, "Private key is needed.");
+	}
 
 	GetPKey(self, pkey);
 

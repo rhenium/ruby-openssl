@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 11 Jun 2002 02:58:24 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.c: don't segfault when signing with public key - check added
+
 Tue, 11 Jun 2002 02:42:25 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Check for unistd.h
 	* ssl.c: include <unistd.h> is avaible (needed for read(), write())
