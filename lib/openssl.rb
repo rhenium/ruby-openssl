@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'openssl.so'
-require 'buffering'
+require 'openssl/buffering'
 require 'thread'
 
 module OpenSSL
