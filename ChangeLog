@@ -1,3 +1,7 @@
+Sun, 29 Jun 2003 17:31:15 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ocsp.[ch]: OpenSSL::OCSP.
+	* expmples/ossl_ocsp.h: new sample.
+
 Sun, 29 Jun 2003 12:56:03 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: the 3rd argument of rb_protect should be cleared.
 	* ossl.c: ditto.

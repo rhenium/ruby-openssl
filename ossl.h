@@ -38,6 +38,7 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
+#include <openssl/ocsp.h>
 #if defined(NT) || defined(_WIN32)
 #  undef OpenFile
 #endif
@@ -183,6 +184,7 @@ void ossl_debug(const char *, ...);
 #include "ossl_ssl.h"
 #include "ossl_version.h"
 #include "ossl_x509.h"
+#include "ossl_ocsp.h"
 
 void Init_openssl(void);
 

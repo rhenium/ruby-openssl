@@ -524,6 +524,7 @@ Init_openssl()
     Init_ossl_rand();
     Init_ossl_ssl();
     Init_ossl_x509();
+    Init_ossl_ocsp();
 }
 
 #if defined(OSSL_DEBUG)
