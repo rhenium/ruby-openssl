@@ -9,14 +9,14 @@ include OpenSSL
 
 def usage
   myname = File::basename($0)
-  $stderr.puts "Usage: #{myname} [--type (client|server|ca|ocsp)] csr_file"
+  $stderr.puts "Usage: #{myname} [--type (client|server|ca|ocsp)] [--out certfile] csr_file"
   exit
 end
 
-getopts nil, 'type:client'
+getopts nil, 'type:client', 'out:', 'force', 'noakid'
 
 cert_type = $OPT_type
-p cert_type
+out_file = $OPT_out || 'cert.pem'
 csr_file = ARGV.shift or usage
 ARGV.empty? or usage
 
@@ -31,7 +31,9 @@ if csr.public_key.n.num_bits > CAConfig::CERT_KEY_LENGTH_MAX
   raise "Key length too long"
 end
 if csr.subject.to_a[0, CAConfig::NAME.size] != CAConfig::NAME
-  iraise "DN does not match"
+  unless $OPT_force
+    raise "DN does not match"
+  end
 end
 
 # Only checks signature here.  You must verify CSR according to your CP/CPS.
@@ -70,6 +72,9 @@ key_usage = []
 ext_key_usage = []
 case cert_type
 when "ca"
+  basic_constraint = "CA:TRUE"
+  key_usage << "cRLSign" << "keyCertSign"
+when "terminalsubca"
   basic_constraint = "CA:TRUE,pathlen:0"
   key_usage << "cRLSign" << "keyCertSign"
 when "server"
@@ -99,7 +104,13 @@ ex << ef.create_extension("nsComment","Ruby/OpenSSL Generated Certificate")
 ex << ef.create_extension("subjectKeyIdentifier", "hash")
 #ex << ef.create_extension("nsCertType", "client,email")
 ex << ef.create_extension("keyUsage", key_usage.join(",")) unless key_usage.empty?
-ex << ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
+if $OPT_noakid
+  # For cross certification, with OpenSSL, akid seems to block to find a
+  # cross-cert path.  RFC2510 defines this field as a 'MUST' field so use this
+  # option carefully.
+else
+  ex << ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
+end
 ex << ef.create_extension("extendedKeyUsage", ext_key_usage.join(",")) unless ext_key_usage.empty?
 
 ex << ef.create_extension("crlDistributionPoints", CAConfig::CDP_LOCATION) if CAConfig::CDP_LOCATION
@@ -115,6 +126,6 @@ File.open(cert_file, "w", 0644) do |f|
 end
 
 puts "Writing cert.pem..."
-FileUtils.copy(cert_file, "cert.pem")
+FileUtils.copy(cert_file, out_file)
 
 puts "DONE. (Generated certificate for '#{cert.subject}')"

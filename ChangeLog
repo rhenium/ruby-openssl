@@ -1,3 +1,12 @@
+Sun, 09 Jul 2003 01:20:56 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/ca/gen_cert.rb: Add some options.  --noakid is an option
+	  worthy to mention.  For cross certification, with OpenSSL, akid seems
+	  to block to find a cross-cert path.  --noakid is for removing
+	  authorityKeyIdentifier extension.  RFC2510 defines this field as a
+	  'MUST' field so use this option carefully.
+	* examples/ca/init_sub_ca.rb: Added.
+	* examples/ca/init_ca.rb: Add an option to specify CN.
+
 Sun, 09 Jul 2003 01:05:55 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* ossl_x509cert.c, ossl_x509crl.c: Add
 	  (Certificate|CRL)#signature_algorithm.

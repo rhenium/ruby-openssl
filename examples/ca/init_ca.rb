@@ -7,12 +7,29 @@ include OpenSSL
 
 $stdout.sync = true
 
+cn = ARGV.shift || 'CA'
+
+unless FileTest.exist?('private')
+  Dir.mkdir('private', 0700)
+end
+unless FileTest.exist?('newcerts')
+  Dir.mkdir('newcerts')
+end
+unless FileTest.exist?('crl')
+  Dir.mkdir('crl')
+end
+unless FileTest.exist?('serial')
+  File.open('serial', 'w') do |f|
+    f << '1'
+  end
+end
+
 print "Generating CA keypair: "
 keypair = PKey::RSA.new(CAConfig::CA_RSA_KEY_LENGTH) { putc "." }
 putc "\n"
 
 cert = X509::Certificate.new
-name = CAConfig::NAME.dup << ['CN','CA']
+name = CAConfig::NAME.dup << ['CN', cn]
 cert.subject = cert.issuer = X509::Name.new(name)
 cert.not_before = Time.now
 cert.not_after = Time.now + CAConfig::CA_CERT_DAYS * 24 * 60 * 60
@@ -34,7 +51,7 @@ cert.add_extension(ext0)
 cert.sign(keypair, Digest::SHA1.new)
 
 keypair_file = CAConfig::KEYPAIR_FILE
-puts "Writing #{keypair}."
+puts "Writing keypair."
 File.open(keypair_file, "w", 0400) do |f|
   f << keypair.export(Cipher::DES.new(:EDE3, :CBC), &CAConfig::PASSWD_CB)
 end
