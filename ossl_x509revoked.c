@@ -48,7 +48,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
 	new = X509_REVOKED_dup(rev);
     }
     if (!new) {
-	ossl_raise(eX509RevError, "");
+	ossl_raise(eX509RevError, NULL);
     }
     WrapX509Rev(cX509Rev, obj, new);
 
@@ -62,7 +62,7 @@ ossl_x509revoked_get_X509_REVOKED(VALUE obj)
 
     SafeGetX509Rev(obj, rev);
     if (!(new = X509_REVOKED_dup(rev))) {
-	ossl_raise(eX509RevError, "");
+	ossl_raise(eX509RevError, NULL);
     }
 
     return new;
@@ -78,7 +78,7 @@ ossl_x509revoked_alloc(VALUE klass)
     VALUE obj;
 
     if (!(rev = X509_REVOKED_new())) {
-	ossl_raise(eX509RevError, "");
+	ossl_raise(eX509RevError, NULL);
     }
     WrapX509Rev(klass, obj, rev);
 
@@ -133,7 +133,7 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
     GetX509Rev(self, rev);
     sec = time_to_time_t(time);
     if (!X509_time_adj(rev->revocationDate, 0, &sec)) {
-	ossl_raise(eX509RevError, "");
+	ossl_raise(eX509RevError, NULL);
     }
 
     return time;
@@ -186,7 +186,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 	item = RARRAY(ary)->ptr[i];
 	ext = DupX509ExtPtr(item);
 	if(!X509_REVOKED_add_ext(rev, ext, -1)) {
-	    ossl_raise(eX509RevError, "");
+	    ossl_raise(eX509RevError, NULL);
 	}
     }
 
@@ -200,7 +200,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
     
     GetX509Rev(self, rev);
     if(!X509_REVOKED_add_ext(rev, DupX509ExtPtr(ext), -1)) {
-	ossl_raise(eX509RevError, "");
+	ossl_raise(eX509RevError, NULL);
     }
 
     return ext;

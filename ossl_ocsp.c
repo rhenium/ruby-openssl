@@ -168,7 +168,6 @@ ossl_ocspreq_add_certid(VALUE self, VALUE certid)
 {
     OCSP_REQUEST *req;
     OCSP_CERTID *id;
-    X509 *issuer;
 
     GetOCSPReq(self, req);
     GetOCSPCertId(certid, id);

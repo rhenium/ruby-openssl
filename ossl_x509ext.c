@@ -58,7 +58,7 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 	new = X509_EXTENSION_dup(ext);
     }
     if (!new) {
-	ossl_raise(eX509ExtError, "");
+	ossl_raise(eX509ExtError, NULL);
     }
     WrapX509Ext(cX509Ext, obj, new);
 	
@@ -82,7 +82,7 @@ DupX509ExtPtr(VALUE obj)
 
     SafeGetX509Ext(obj, ext);
     if (!(new = X509_EXTENSION_dup(ext))) {
-	ossl_raise(eX509ExtError, "");
+	ossl_raise(eX509ExtError, NULL);
     }
 
     return new;
@@ -214,7 +214,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
     StringValue(item);
     if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
 	if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
-	    ossl_raise(eX509ExtError, "");
+	    ossl_raise(eX509ExtError, NULL);
 	}
     }
     /* data [1] */
@@ -233,7 +233,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
     }
     if (!(ext = X509V3_EXT_conf_nid(NULL, ctx, nid, value))) {
 	OPENSSL_free(value);
-	ossl_raise(eX509ExtError, "");
+	ossl_raise(eX509ExtError, NULL);
     }
     OPENSSL_free(value);
     WrapX509Ext(cX509Ext, obj, ext);
@@ -275,7 +275,6 @@ ossl_x509ext_get_value(VALUE obj)
     X509_EXTENSION *ext;
     BIO *out;
     VALUE ret;
-    char *p;
     int status = 0;
 
     GetX509Ext(obj, ext);

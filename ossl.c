@@ -98,12 +98,12 @@ asn1integer_to_num(ASN1_INTEGER *ai)
 	ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
     if (!(bn = ASN1_INTEGER_to_BN(ai, NULL))) {
-	ossl_raise(eOSSLError, "");
+	ossl_raise(eOSSLError, NULL);
     }
 #if DO_IT_VIA_RUBY
     if (!(txt = BN_bn2dec(bn))) {
 	BN_free(bn);
-	ossl_raise(eOSSLError, "");
+	ossl_raise(eOSSLError, NULL);
     }
     num = rb_cstr_to_inum(txt, 10, Qtrue);
     OPENSSL_free(txt);
@@ -125,12 +125,12 @@ ASN1_INTEGER *num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
     } else {
 	obj = rb_String(obj);
 	if (!BN_dec2bn(&bn, StringValuePtr(obj))) {
-	    ossl_raise(eOSSLError, "");
+	    ossl_raise(eOSSLError, NULL);
 	}
     }
     if (!(ai = BN_to_ASN1_INTEGER(bn, ai))) {
 	BN_free(bn);
-	ossl_raise(eOSSLError, "");
+	ossl_raise(eOSSLError, NULL);
     }
     BN_free(bn);
     return ai;
@@ -141,7 +141,7 @@ ASN1_INTEGER *num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
     BIGNUM *bn = GetBNPtr(obj);
     
     if (!(ai = BN_to_ASN1_INTEGER(bn, ai))) {
-	ossl_raise(eOSSLError, "");
+	ossl_raise(eOSSLError, NULL);
     }
     return ai;
 }

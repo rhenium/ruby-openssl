@@ -46,9 +46,10 @@ extern "C" {
 #define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
 	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
 
-/* to hmac.[ch] */
 #if !defined(OPENSSL_NO_HMAC)
+#if !defined(HAVE_HMAC_CTX_COPY)
 int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
+#endif /* HAVE_HMAC_CTX_COPY */
 #endif /* NO_HMAC */
 
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)

@@ -49,7 +49,7 @@ ossl_x509name_new(X509_NAME *name)
 	new = X509_NAME_dup(name);
     }
     if (!new) {
-	ossl_raise(eX509NameError, "");
+	ossl_raise(eX509NameError, NULL);
     }
     WrapX509Name(cX509Name, obj, new);
     
@@ -76,7 +76,7 @@ ossl_x509name_alloc(VALUE klass)
     VALUE obj;
 	
     if (!(name = X509_NAME_new())) {
-	ossl_raise(eX509NameError, "");
+	ossl_raise(eX509NameError, NULL);
     }
     WrapX509Name(klass, obj, name);
 
@@ -109,7 +109,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
 	if (!X509_NAME_add_entry_by_txt(name, RSTRING(key)->ptr, type,
 			RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
-	    ossl_raise(eX509NameError, "");
+	    ossl_raise(eX509NameError, NULL);
 	}
     }
 
@@ -150,10 +150,10 @@ ossl_x509name_to_a(VALUE self)
     ary = rb_ary_new2(entries);
     for (i=0; i<entries; i++) {
 	if (!(entry = X509_NAME_get_entry(name, i))) {
-	    ossl_raise(eX509NameError, "");
+	    ossl_raise(eX509NameError, NULL);
 	}
 	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name), entry->object)) {
-	    ossl_raise(eX509NameError, "");
+	    ossl_raise(eX509NameError, NULL);
 	}
 	short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
 	
@@ -175,7 +175,7 @@ ossl_x509name_digest(VALUE self, VALUE digest)
     md = GetDigestPtr(digest);
     /* ALLOC! */
     if (!X509_NAME_digest(name, md, buf, &buf_len)) {
-	ossl_raise(eX509NameError, "");
+	ossl_raise(eX509NameError, NULL);
     }
     str = rb_str_new(buf, buf_len);
     OPENSSL_free(buf);

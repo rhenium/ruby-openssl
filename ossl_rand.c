@@ -42,7 +42,7 @@ ossl_rand_load_file(VALUE self, VALUE filename)
     SafeStringValue(filename);
 	
     if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -52,7 +52,7 @@ ossl_rand_write_file(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
     if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -64,11 +64,11 @@ ossl_rand_bytes(VALUE self, VALUE len)
     VALUE str;
 	
     if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     if (!RAND_bytes(buffer, FIX2INT(len))) {
 	OPENSSL_free(buffer);
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     str = rb_str_new(buffer, FIX2INT(len));
     OPENSSL_free(buffer);
@@ -83,11 +83,11 @@ ossl_rand_pseudo_bytes(VALUE self, VALUE len)
     VALUE str;
 	
     if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     if (!RAND_pseudo_bytes(buffer, FIX2INT(len))) {
 	OPENSSL_free(buffer);
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     str = rb_str_new(buffer, FIX2INT(len));
     OPENSSL_free(buffer);
@@ -101,7 +101,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
     SafeStringValue(filename);
 	
     if(!RAND_egd(RSTRING(filename)->ptr)) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -112,7 +112,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
     SafeStringValue(filename);
 
     if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len))) {
-	ossl_raise(eRandomError, "");
+	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }

@@ -90,7 +90,7 @@ ossl_digest_copy(VALUE self, VALUE other)
     SafeGetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
-	ossl_raise(eDigestError, "");
+	ossl_raise(eDigestError, NULL);
     }
     return self;
 }
@@ -124,7 +124,7 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
     EVP_MD_CTX final;
 
     if (!EVP_MD_CTX_copy(&final, ctx)) {
-	ossl_raise(eDigestError, "");
+	ossl_raise(eDigestError, NULL);
     }
     if (!(*buf = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
 	ossl_raise(eDigestError, "Cannot allocate mem for digest");

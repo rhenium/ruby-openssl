@@ -48,7 +48,7 @@ ossl_x509req_new(X509_REQ *req)
 	new = X509_REQ_dup(req);
     }
     if (!new) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     WrapX509Req(cX509Req, obj, new);
 
@@ -62,7 +62,7 @@ ossl_x509req_get_X509_REQ(VALUE obj)
 
     SafeGetX509Req(obj, req);
     if (!(new = X509_REQ_dup(req))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return new;
@@ -78,7 +78,7 @@ ossl_x509req_alloc(VALUE klass)
     VALUE obj;
 
     if (!(req = X509_REQ_new())) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     WrapX509Req(klass, obj, req);
 
@@ -100,7 +100,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     
     in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
     if (!in) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     /*
      * TODO:
@@ -115,7 +115,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!req) {
 	BIO_free(in);
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     BIO_free(in);
 
@@ -132,7 +132,7 @@ ossl_x509req_copy(VALUE self, VALUE other)
     GetX509Req(self, a);
     SafeGetX509Req(other, b);
     if (!(req = X509_REQ_dup(b))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     X509_REQ_free(a);
     DATA_PTR(self) = req;
@@ -150,11 +150,11 @@ ossl_x509req_to_pem(VALUE self)
 	
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     if (!PEM_write_bio_X509_REQ(out, req)) {
 	BIO_free(out);
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
@@ -173,11 +173,11 @@ ossl_x509req_to_text(VALUE self)
 
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     if (!X509_REQ_print(out, req)) {
 	BIO_free(out);
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
@@ -199,7 +199,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
     GetX509Req(self, req);
     ...
     if (!(x509 = X509_REQ_to_X509(req, d, pkey))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_x509_new(x509);
@@ -229,7 +229,7 @@ ossl_x509req_set_version(VALUE self, VALUE version)
 	ossl_raise(eX509ReqError, "version must be >= 0!");
     }
     if (!X509_REQ_set_version(req, ver)) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return version;
@@ -243,7 +243,7 @@ ossl_x509req_get_subject(VALUE self)
 
     GetX509Req(self, req);
     if (!(name = X509_REQ_get_subject_name(req))) { /* NO DUP - don't free */
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_x509name_new(name);
@@ -257,7 +257,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
     GetX509Req(self, req);
     /* DUPs name */
     if (!X509_REQ_set_subject_name(req, GetX509NamePtr(subject))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return subject;
@@ -271,7 +271,7 @@ ossl_x509req_get_public_key(VALUE self)
 
     GetX509Req(self, req);
     if (!(pkey = X509_REQ_get_pubkey(req))) { /* adds reference */
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_pkey_new(pkey); /* NO DUP - OK */
@@ -286,7 +286,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     GetX509Req(self, req);
     pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     if (!X509_REQ_set_pubkey(req, pkey)) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return key;
@@ -303,7 +303,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     md = GetDigestPtr(digest);
     if (!X509_REQ_sign(req, pkey, md)) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return self;
@@ -322,7 +322,7 @@ ossl_x509req_verify(VALUE self, VALUE key)
     GetX509Req(self, req);
     pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     if ((i = X509_REQ_verify(req, pkey)) < 0) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
     if (i > 0) {
 	return Qtrue;
@@ -374,7 +374,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	item = RARRAY(ary)->ptr[i];
 	attr = ossl_x509attr_get_X509_ATTRIBUTE(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
-	    ossl_raise(eX509ReqError, "");
+	    ossl_raise(eX509ReqError, NULL);
 	}
     }
     return ary;
@@ -387,7 +387,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 
     GetX509Req(self, req);
     if (!X509_REQ_add1_attr(req, ossl_x509attr_get_X509_ATTRIBUTE(attr))) {
-	ossl_raise(eX509ReqError, "");
+	ossl_raise(eX509ReqError, NULL);
     }
 
     return attr;

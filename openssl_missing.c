@@ -8,14 +8,12 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#include "ossl.h"
 
 #if !defined(OPENSSL_NO_HMAC)
-
-#include <string.h>
+#include <string.h> /* memcpy() */
 #include <openssl/hmac.h>
 
-/* to hmac.[ch] */
+#if !defined(HAVE_HMAC_CTX_COPY)
 int
 HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 {
@@ -36,11 +34,11 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
     }
     return 1;
 }
+#endif /* HAVE_HMAC_CTX_COPY */
 
 #endif /* NO_HMAC */
 
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
-
 #include <openssl/x509_vfy.h>
 
 int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data)
@@ -52,4 +50,4 @@ void *X509_STORE_get_ex_data(X509_STORE *str, int idx)
 {
     return CRYPTO_get_ex_data(&str->ex_data,idx);
 }
-#endif
+#endif /* HAVE_X509_STORE_SET_EX_DATA */

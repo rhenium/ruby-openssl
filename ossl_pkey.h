@@ -83,7 +83,7 @@ static VALUE ossl_##keytype##_get_##name(VALUE self)			\
 static VALUE ossl_##keytype##_set_##name(VALUE self, VALUE bignum)	\
 {									\
 	EVP_PKEY *pkey;							\
-	BIGNUM *bn, *newbn;						\
+	BIGNUM *bn;							\
 									\
 	GetPKey(self, pkey);						\
 	if (NIL_P(bignum)) {						\
@@ -96,9 +96,9 @@ static VALUE ossl_##keytype##_set_##name(VALUE self, VALUE bignum)	\
 	if (pkey->pkey.keytype->name == NULL)				\
 		pkey->pkey.keytype->name = BN_new();			\
 	if (pkey->pkey.keytype->name == NULL)				\
-		ossl_raise(eBNError, "");				\
+		ossl_raise(eBNError, NULL);				\
 	if (BN_copy(pkey->pkey.keytype->name, bn) == NULL)		\
-		ossl_raise(eBNError, "");				\
+		ossl_raise(eBNError, NULL);				\
 	return bignum;							\
 }
 

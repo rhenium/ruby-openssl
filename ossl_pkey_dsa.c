@@ -65,7 +65,7 @@ ossl_dsa_new(EVP_PKEY *pkey)
 	WrapPKey(cDSA, obj, pkey);
     }
     if (obj == Qfalse) {
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
 
     return obj;
@@ -124,7 +124,7 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 
     if (obj == Qfalse) {
 	DSA_free(dsa);
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
 
     return obj;
@@ -143,7 +143,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &pass);
     if (FIXNUM_P(buffer)) {
 	if (!(dsa = dsa_generate(FIX2INT(buffer)))) {
-	    ossl_raise(eDSAError, "");
+	    ossl_raise(eDSAError, NULL);
 	}
     } else {
 	StringValue(buffer);
@@ -152,7 +152,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
 	if (!in){
-	    ossl_raise(eDSAError, "");
+	    ossl_raise(eDSAError, NULL);
 	}
 
 	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
@@ -174,7 +174,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
 	DSA_free(dsa);
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
 
     return self;
@@ -223,18 +223,18 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 	}
     }
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     if (DSA_PRIVATE(pkey->pkey.dsa)) {
 	if (!PEM_write_bio_DSAPrivateKey(out, pkey->pkey.dsa, ciph,
 					 NULL, 0, ossl_pem_passwd_cb, passwd)){
 	    BIO_free(out);
-	    ossl_raise(eDSAError, "");
+	    ossl_raise(eDSAError, NULL);
 	}
     } else {
 	if (!PEM_write_bio_DSAPublicKey(out, pkey->pkey.dsa)) {
 	    BIO_free(out);
-	    ossl_raise(eDSAError, "");
+	    ossl_raise(eDSAError, NULL);
 	}
     }
     BIO_get_mem_ptr(out, &buf);
@@ -283,11 +283,11 @@ ossl_dsa_to_text(VALUE self)
 
     GetPKeyDSA(self, pkey);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     if (!DSA_print(out, pkey->pkey.dsa, 0)) { //offset = 0
 	BIO_free(out);
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
@@ -312,7 +312,7 @@ ossl_dsa_to_public_key(VALUE self)
     obj = dsa_instance(CLASS_OF(self), dsa);
     if (obj == Qfalse) {
 	DSA_free(dsa);
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     return obj;
 }
@@ -331,12 +331,12 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	ossl_raise(eDSAError, "Private DSA key needed!");
     }
     if (!(buf = OPENSSL_malloc(DSA_size(pkey->pkey.dsa) + 16))) {
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, buf,
 		  &buf_len, pkey->pkey.dsa)) { /* type is ignored (0) */
 	OPENSSL_free(buf);
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     str = rb_str_new(buf, buf_len);
     OPENSSL_free(buf);
@@ -357,7 +357,7 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,
 		     RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.dsa);
     if (ret < 0) {
-	ossl_raise(eDSAError, "");
+	ossl_raise(eDSAError, NULL);
     }
     else if (ret == 1) {
 	return Qtrue;

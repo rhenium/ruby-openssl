@@ -44,7 +44,7 @@ ossl_spki_alloc(VALUE klass)
     VALUE obj;
 	
     if (!(spki = NETSCAPE_SPKI_new())) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }	
     WrapSPKI(klass, obj, spki);
 	
@@ -62,7 +62,7 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
     if (!(spki = NETSCAPE_SPKI_b64_decode(StringValuePtr(buffer), -1))) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     NETSCAPE_SPKI_free(DATA_PTR(self));
     DATA_PTR(self) = spki;
@@ -79,7 +79,7 @@ ossl_spki_to_pem(VALUE self)
 	
     GetSPKI(self, spki);
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     str = rb_str_new2(data);
     OPENSSL_free(data);
@@ -97,11 +97,11 @@ ossl_spki_print(VALUE self)
 	
     GetSPKI(self, spki);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     if (!NETSCAPE_SPKI_print(out, spki)) {
 	BIO_free(out);
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
@@ -118,7 +118,7 @@ ossl_spki_get_public_key(VALUE self)
 
     GetSPKI(self, spki);
     if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) { /* adds an reference */
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
 
     return ossl_pkey_new(pkey); /* NO DUP - OK */
@@ -131,7 +131,7 @@ ossl_spki_set_public_key(VALUE self, VALUE key)
 
     GetSPKI(self, spki);
     if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
 
     return key;
@@ -145,7 +145,7 @@ ossl_spki_get_challenge(VALUE self)
     GetSPKI(self, spki);
     if (spki->spkac->challenge->length <= 0) {
 	OSSL_Debug("Challenge.length <= 0?");
-	return rb_str_new2("");
+	return rb_str_new2(NULL);
     }
 
     return rb_str_new(spki->spkac->challenge->data,
@@ -161,7 +161,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
     StringValue(str);
     if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING(str)->ptr,
 			 RSTRING(str)->len)) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     
     return str;
@@ -178,7 +178,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     md = GetDigestPtr(digest);
     if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
 
     return self;
@@ -199,7 +199,7 @@ ossl_spki_verify(VALUE self, VALUE key)
     case 1:
 	return Qtrue;
     default:
-	ossl_raise(eSPKIError, "");
+	ossl_raise(eSPKIError, NULL);
     }
     return Qnil; /* dummy */
 }

@@ -82,7 +82,7 @@ ossl_hmac_copy(VALUE self, VALUE other)
     SafeGetHMAC(other, ctx2);
 
     if (!HMAC_CTX_copy(ctx1, ctx2)) {
-	ossl_raise(eHMACError, "");
+	ossl_raise(eHMACError, NULL);
     }
     return self;
 }
@@ -105,7 +105,7 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
     HMAC_CTX final;
 
     if (!HMAC_CTX_copy(&final, ctx)) {
-	ossl_raise(eHMACError, "");
+	ossl_raise(eHMACError, NULL);
     }
     if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
 	OSSL_Debug("Allocating %d mem", HMAC_size(&final));

@@ -1,3 +1,9 @@
+Wed, 09 Jul 2003 12:41:14 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* extconf.rb: Start checking for OpenSSL' missing functions...
+
+Wed, 09 Jul 2003 12:38:38 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* *.c: When no message is passed, call ossl_raise with NULL
+
 Sun, 09 Jul 2003 01:50:45 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/cert_store_view.rb: Support trust anchor.
 

@@ -60,7 +60,7 @@ ossl_pkey_new_from_file(VALUE filename)
     pkey = PEM_read_PrivateKey(fp, NULL, ossl_pem_passwd_cb, NULL);
     fclose(fp);
     if (!pkey) {
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
 
     return ossl_pkey_new(pkey);
@@ -113,7 +113,7 @@ ossl_pkey_alloc(VALUE klass)
     VALUE obj;
 
     if (!(pkey = EVP_PKEY_new())) {
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
     WrapPKey(klass, obj, pkey);
 
@@ -140,11 +140,11 @@ ossl_pkey_to_der(VALUE self)
     
     GetPKey(self, pkey);
     if (!(key = X509_PUBKEY_new())) {
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
     if (!X509_PUBKEY_set(&key, pkey)) {
 	X509_PUBKEY_free(key);
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
 
     oc = ASN1_item_pack(key, ASN1_ITEM_rptr(X509_PUBKEY), NULL);
@@ -173,11 +173,11 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     StringValue(data);
     EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
     if (!(buf = OPENSSL_malloc(EVP_PKEY_size(pkey) + 16))) {
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
     if (!EVP_SignFinal(&ctx, buf, &buf_len, pkey)) {
 	OPENSSL_free(buf);
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }	
     str = rb_str_new(buf, buf_len);
     OPENSSL_free(buf);
@@ -202,7 +202,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     case 1:
 	return Qtrue;
     default:
-	ossl_raise(ePKeyError, "");
+	ossl_raise(ePKeyError, NULL);
     }
     return Qnil; /* dummy */
 }

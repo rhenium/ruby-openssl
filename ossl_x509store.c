@@ -96,7 +96,7 @@ ossl_x509store_alloc(VALUE klass)
     VALUE obj;
 
     if((store = X509_STORE_new()) == NULL){
-        ossl_raise(eX509StoreError, "");
+        ossl_raise(eX509StoreError, NULL);
     }
     WrapX509Store(klass, obj, store);
 
@@ -182,9 +182,9 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-    if(lookup == NULL) ossl_raise(eX509StoreError, "");
+    if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
-        ossl_raise(eX509StoreError, "");
+        ossl_raise(eX509StoreError, NULL);
     }
 
     return self;
@@ -203,9 +203,9 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
-    if(lookup == NULL) ossl_raise(eX509StoreError, "");
+    if(lookup == NULL) ossl_raise(eX509StoreError, NULL);
     if(X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1){
-        ossl_raise(eX509StoreError, "");
+        ossl_raise(eX509StoreError, NULL);
     }
 
     return self;
@@ -275,8 +275,6 @@ ossl_x509stctx_new(X509_STORE_CTX *ctx)
 VALUE
 ossl_x509stctx_clear_ptr(VALUE obj)
 {
-    X509_STORE_CTX *ctx;
-
     OSSL_Check_Kind(obj, cX509StoreContext);
     RDATA(obj)->data = NULL;
 
@@ -293,7 +291,7 @@ ossl_x509stctx_alloc(VALUE klass)
     VALUE obj;
 
     if((ctx = X509_STORE_CTX_new()) == NULL){
-        ossl_raise(eX509StoreError, "");
+        ossl_raise(eX509StoreError, NULL);
     }
     WrapX509StCtx(klass, obj, ctx);
 
@@ -314,7 +312,7 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     SafeGetX509Store(store, x509st);
     if(!NIL_P(cert)) x509 = GetX509CertPtr(cert);
     if(X509_STORE_CTX_init(ctx, x509st, x509, NULL) != 1){
-        ossl_raise(eX509StoreError, "");
+        ossl_raise(eX509StoreError, NULL);
     }
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);

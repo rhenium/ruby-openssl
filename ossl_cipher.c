@@ -83,7 +83,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     }
     EVP_CIPHER_CTX_init(ctx);
     if (EVP_CipherInit(ctx, cipher, NULL, NULL, -1) != 1)
-		ossl_raise(eCipherError, "");
+		ossl_raise(eCipherError, NULL);
 
     return self;
 }
@@ -110,7 +110,7 @@ ossl_cipher_reset(VALUE self)
 
 	GetCipher(self, ctx);
 	if (EVP_CipherInit(ctx, NULL, NULL, NULL, -1) != 1)
-		ossl_raise(eCipherError, "");
+		ossl_raise(eCipherError, NULL);
 		
 	return self;
 }
@@ -135,7 +135,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	/*
 	  RAND_add(data,i,0); where from take data?
 	  if (RAND_pseudo_bytes(iv, 8) < 0) {
-	  ossl_raise(eCipherError, "");
+	  ossl_raise(eCipherError, NULL);
 	  }
 	*/
     }
@@ -151,7 +151,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
     }
 
     if (EVP_CipherInit(ctx, NULL, NULL, NULL, 1) != 1) {
-        ossl_raise(eCipherError, "");
+        ossl_raise(eCipherError, NULL);
     }
 
     if (!NIL_P(pass)) {
@@ -160,7 +160,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
         EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
 		   RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
         if (EVP_CipherInit(ctx, NULL, key, iv, -1) != 1) {
-            ossl_raise(eCipherError, "");
+            ossl_raise(eCipherError, NULL);
         }
     }
 
@@ -196,7 +196,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
     }
 
     if (EVP_CipherInit(ctx, NULL, NULL, NULL, 0) != 1) {
-        ossl_raise(eCipherError, "");
+        ossl_raise(eCipherError, NULL);
     }
 
     if (!NIL_P(pass)) {
@@ -205,7 +205,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
         EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
 		   RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
         if (EVP_CipherInit(ctx, NULL, key, iv, -1) != 1) {
-            ossl_raise(eCipherError, "");
+            ossl_raise(eCipherError, NULL);
         }
     }
 
@@ -227,11 +227,11 @@ ossl_cipher_update(VALUE self, VALUE data)
     in_len = RSTRING(data)->len;
 	
     if (!(out = OPENSSL_malloc(in_len+EVP_CIPHER_CTX_block_size(ctx)))){
-	ossl_raise(eCipherError, "");
+	ossl_raise(eCipherError, NULL);
     }
     if (!EVP_CipherUpdate(ctx, out, &out_len, in, in_len)) {
 	OPENSSL_free(out);
-	ossl_raise(eCipherError, "");
+	ossl_raise(eCipherError, NULL);
     }
     str = rb_str_new(out, out_len);
     OPENSSL_free(out);
@@ -250,11 +250,11 @@ ossl_cipher_final(VALUE self)
     GetCipher(self, ctx);
 	
     if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ctx)))) {
-	ossl_raise(eCipherError, "");
+	ossl_raise(eCipherError, NULL);
     }
     if (!EVP_CipherFinal(ctx, out, &out_len)) {
 	OPENSSL_free(out);
-	ossl_raise(eCipherError, "");
+	ossl_raise(eCipherError, NULL);
     }
 
     str = rb_str_new(out, out_len);
@@ -285,7 +285,7 @@ ossl_cipher_set_key(VALUE self, VALUE key)
         ossl_raise(eCipherError, "key length too short");
 
     if (EVP_CipherInit(ctx, NULL, RSTRING(key)->ptr, NULL, -1) != 1)
-        ossl_raise(eCipherError, "");
+        ossl_raise(eCipherError, NULL);
 
     return Qnil;
 }
@@ -302,7 +302,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
         ossl_raise(eCipherError, "iv length too short");
 
     if (EVP_CipherInit(ctx, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
-		ossl_raise(eCipherError, "");
+		ossl_raise(eCipherError, NULL);
 
     return Qnil;
 }
@@ -315,7 +315,7 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
     GetCipher(self, ctx);
 
     if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
-		ossl_raise(eCipherError, "");
+		ossl_raise(eCipherError, NULL);
 
     return Qnil;
 }

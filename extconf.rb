@@ -96,6 +96,7 @@ result &= have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules")
 result &= have_library(SSLLIB, "SSL_library_init")
 result &= have_openssl_097(includes)
 
+have_func("HMAC_CTX_copy")
 have_func("X509_STORE_set_ex_data")
 
 if result

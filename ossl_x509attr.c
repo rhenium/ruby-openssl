@@ -48,7 +48,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 	new = X509_ATTRIBUTE_dup(attr);
     }
     if (!new) {
-	ossl_raise(eX509AttrError, "");
+	ossl_raise(eX509AttrError, NULL);
     }
     WrapX509Attr(cX509Attr, obj, new);
 
@@ -62,7 +62,7 @@ ossl_x509attr_get_X509_ATTRIBUTE(VALUE obj)
 
     SafeGetX509Attr(obj, attr);
     if (!(new = X509_ATTRIBUTE_dup(attr))) {
-	ossl_raise(eX509AttrError, "");
+	ossl_raise(eX509AttrError, NULL);
     }
 
     return new;
@@ -87,14 +87,14 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
     StringValue(item);
     if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
 	if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
-	    ossl_raise(eX509AttrError, "");
+	    ossl_raise(eX509AttrError, NULL);
 	}
     }
     /* data [1] */
     item = RARRAY(ary)->ptr[1];
     StringValuePtr(item);
     if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, RSTRING(item)->ptr))) {
-	ossl_raise(eX509AttrError, "");
+	ossl_raise(eX509AttrError, NULL);
     }
     WrapX509Attr(klass, obj, attr);
     
@@ -120,10 +120,10 @@ ossl_x509attr_to_a(VALUE self)
     nid = OBJ_obj2nid(X509_ATTRIBUTE_get0_object(attrp->attribute));
     rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
     if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eX509ExtensionError, "");
+	ossl_raise(eX509ExtensionError, NULL);
     if (!X509V3_???_print(out, extp->extension, 0, 0)) {
 	BIO_free(out);
-	ossl_raise(eX509ExtensionError, "");
+	ossl_raise(eX509ExtensionError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     value = rb_str_new(buf->data, buf->length);

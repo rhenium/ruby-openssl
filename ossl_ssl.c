@@ -139,7 +139,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
-    VALUE args, cb, result, rctx;
+    VALUE cb;
     SSL *ssl;
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
@@ -299,7 +299,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     }
 
     if (TYPE(v) == T_ARRAY) {
-        str = rb_str_new2("");
+        str = rb_str_new2(NULL);
         for (i = 0; i < RARRAY(v)->len; i++) {
             elem = rb_ary_entry(v, i);
             if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);

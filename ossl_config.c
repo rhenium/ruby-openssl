@@ -51,7 +51,7 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
     }
     else {
 	if (!(filename = CONF_get1_default_config_file())) {
-	    ossl_raise(eConfigError, "");
+	    ossl_raise(eConfigError, NULL);
 	}
     }
 /*
@@ -64,7 +64,7 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 #endif
  */
     if (!(conf = NCONF_new(NULL))) {
-	ossl_raise(eConfigError, "");
+	ossl_raise(eConfigError, NULL);
     }
     OSSL_Debug("Loading file: %s", filename);
 
@@ -96,7 +96,7 @@ ossl_config_get_value(int argc, VALUE *argv, VALUE self)
 	sect = StringValuePtr(section);
     }
     if (!(str = NCONF_get_string(conf, sect, StringValuePtr(item)))) {
-	ossl_raise(eConfigError, "");
+	ossl_raise(eConfigError, NULL);
     }
     return rb_str_new2(str);
 }
@@ -118,7 +118,7 @@ ossl_config_get_section(VALUE self, VALUE section)
     GetConfig(self, conf);
 	
     if (!(sk = NCONF_get_section(conf, StringValuePtr(section)))) {
-	ossl_raise(eConfigError, "");
+	ossl_raise(eConfigError, NULL);
     }
     hash = rb_hash_new();
     
