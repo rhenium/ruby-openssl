@@ -226,7 +226,7 @@ ossl_cipher_update(VALUE self, VALUE data)
     in = RSTRING(data)->ptr;
     in_len = RSTRING(data)->len;
 	
-    if (!(out = OPENSSL_malloc(in_len+EVP_CIPHER_CTX_block_size(ctx)))){
+    if (!(out = OPENSSL_malloc(in_len+EVP_CIPHER_CTX_block_size(ctx)))) {
 	ossl_raise(eCipherError, NULL);
     }
     if (!EVP_CipherUpdate(ctx, out, &out_len, in, in_len)) {

@@ -241,7 +241,7 @@ ossl_x509_ary2sk(VALUE ary)
     sk = sk_X509_new_null();
     if (!sk) ossl_raise(eOSSLError, NULL); 
 
-    for (i = 0; i < RARRAY(ary)->len; i++){
+    for (i = 0; i < RARRAY(ary)->len; i++) {
         val = rb_ary_entry(ary, i);
         if (!rb_obj_is_kind_of(val, cX509Cert)) {
             sk_X509_pop_free(sk, X509_free);
@@ -320,13 +320,13 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	 */
 	rflag = flag ? Qtrue : Qfalse;
 	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
-	if(status) return -1; /* exception was raised. */
+	if (status) return -1; /* exception was raised. */
 	len = RSTRING(pass)->len;
-	if (len < 4){ /* 4 is OpenSSL hardcoded limit */
+	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
 	    rb_warning("password must be longer than 4 bytes");
 	    continue;
 	}
-	if (len > max_len){
+	if (len > max_len) {
 	    rb_warning("password must be shorter then %d bytes", max_len-1);
 	    continue;
 	}
@@ -364,14 +364,14 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
 	rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new,
 			  (VALUE)ctx, &state);
 	ret = Qfalse;
-	if(!state){
+	if (!state) {
 	    args.proc = proc;
 	    args.preverify_ok = ok ? Qtrue : Qfalse;
 	    args.store_ctx = rctx;
 	    ret = rb_ensure(ossl_call_verify_cb_proc, (VALUE)&args,
 			    ossl_x509stctx_clear_ptr, rctx);
 	}
-	if(ret == Qtrue){
+	if (ret == Qtrue) {
 	    X509_STORE_CTX_set_error(ctx, X509_V_OK);
 	    ok = 1;
 	}
@@ -515,8 +515,8 @@ Init_openssl()
      * Constants
      */
     rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
-    rb_define_const(mOSSL, "OPENSSL_VERSION",rb_str_new2(OPENSSL_VERSION_TEXT));
-    rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER",INT2NUM(OPENSSL_VERSION_NUMBER));
+    rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+    rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
      * Generic error,

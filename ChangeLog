@@ -1,3 +1,6 @@
+Tue, 22 Jul 2003 08:33:41 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Indenting
+
 Tue, 22 Jul 2003 06:08:05 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* lib/**/*.rb: adjust indent.
 	* lib/openssl/ssl.rb: new methods addr, peeraddr, closed?.

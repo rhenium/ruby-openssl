@@ -11,7 +11,7 @@
  */
 #include "ossl.h"
 
-#ifdef USE_OCSP
+#if defined(OSSL_OCSP_ENABLED)
 
 #define WrapOCSPReq(klass, obj, req) do { \
     if(!req) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
@@ -757,7 +757,7 @@ Init_ossl_ocsp()
     DefOCSPVConst(RESPID_KEY);
 }
 
-#else /* OPENSSL_VERSION_NUMBER < 0x0090700L */
+#else /* ! OSSL_OCSP_ENABLED */
 void
 Init_ossl_ocsp()
 {

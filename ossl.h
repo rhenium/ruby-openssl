@@ -34,8 +34,8 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#if HAVE_OPENSSL_OCSP_H
-#  define USE_OCSP
+#if defined(HAVE_OPENSSL_OCSP_H)
+#  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>
 #endif
 #if defined(NT) || defined(_WIN32)
