@@ -1,3 +1,10 @@
+Fri, 04 Jul 2003 23:51:52 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/cert_store.rb: Renamed to cert_store_view.rb.
+	* examples/cert_store_view.rb: Added.
+	* examples/certstore.rb: Certification store implementation.
+	* examples/crlstore.rb: CRL store implementation.
+	* examples/gen_cert.rb: Typo fixed.
+
 Fri, 04 Jul 2003 23:43:14 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/ca/: Added gen_cert.rb and gen_crl.rb.
 

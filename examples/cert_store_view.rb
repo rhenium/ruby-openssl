@@ -336,7 +336,7 @@ private
   end
 end
 
-class CertStoreWindow < FXMainWindow
+class CertStoreView < FXMainWindow
   class CertTree
     include CertDumpSupport
 
@@ -725,7 +725,7 @@ trust_certs_dir = ARGV.shift or raise "#{$0} trust_cert_dir"
 certfile = ARGV.shift
 app = FXApp.new("CertStore", "FoxTest")
 cert_store = CertStore.new(trust_certs_dir)
-w = CertStoreWindow.new(app, cert_store)
+w = CertStoreView.new(app, cert_store)
 app.create
 if certfile
   w.verify(certfile)
