@@ -53,14 +53,16 @@ module OpenSSL
 
         STDERR.puts "------verify callback start------"
         STDERR.puts "ok,code,depth = #{ok},#{code}:#{msg},#{depth}"
-        STDERR.puts "x509 = \n#{x509.to_pem}"
-        STDERR.puts "-------verify callback end-------"
+        STDERR.puts "x509.subject = #{x509.subject}"
+        STDERR.puts "x509.issuer  = #{x509.issuer}"
         if want_verify && !ok
           STDERR.print "Couldn't verify peer. Do you want to progerss? [y]: "
           unless /^n/i =~ STDIN.gets() # get answer
             ok = true
           end
         end
+        STDERR.puts "-------verify callback end-------"
+        STDERR.puts
         ok
       }
     end

@@ -1,3 +1,7 @@
+Mon, 30 Jun 2003 01:24:27 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* examples/ssl/wget.rb: follows current SSLSocket.
+	* examples/ssl/example.rb: callback should print isser and subject instead of PEM.
+
 Sun, 29 Jun 2003 23:07:25 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: SSL_CTX_set_default_verify_paths is no longer called.
 

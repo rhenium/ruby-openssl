@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
 
+require 'openssl'
 require 'socket'
 require 'getopts'
-require 'openssl'
-begin require 'verify_cb'; rescue LoadError; end
+require 'example'
 
 include OpenSSL
-include SSL
 
 STDOUT.sync = true
 STDERR.sync = true
@@ -56,14 +55,16 @@ if scheme == "https"
     end
   end
 
-  # start SSL session.
-  sock = SSLSocket.new(sock)
-  ##sock.ca_cert = X509::Certificate.new(File.open($OPT_c).read) if $OPT_c && FileTest.file?($OPT_c)
-  sock.ca_file = $OPT_c if $OPT_c && FileTest.file?($OPT_c)
-  sock.ca_path = $OPT_c if $OPT_c && FileTest.directory?($OPT_c)
-  # verify server.
-  sock.verify_mode = VERIFY_PEER if $OPT_v
-  sock.verify_callback = VerifyCallbackProc if defined? VerifyCallbackProc
+  ctx = SSL::SSLContext.new(:TLSv1)
+
+  ctx.verify_callback = OpenSSL::Example::get_verify_cb(true)
+  ctx.verify_mode = SSL::VERIFY_PEER if $OPT_v
+  if $OPT_c
+    ctx.ca_file = $OPT_c if FileTest.file?($OPT_c)
+    ctx.ca_path = $OPT_c if FileTest.directory?($OPT_c)
+  end
+
+  sock = SSL::SSLSocket.new(sock, ctx)
 
   sock.connect             # start ssl session.
   STDERR.puts "SSLSocket connected."
