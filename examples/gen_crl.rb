@@ -5,11 +5,18 @@ include OpenSSL
 include X509
 include PKey
 
+def usage
+  $stderr.puts "Usage: #{File::basename($0)} Cert_to_revoke1.pem*"
+  exit 1
+end
+
+ARGV.empty? && usage()
+
 ca_file = "./0cert.pem"
 puts "Reading CA cert (from #{ca_file})"
 ca = Certificate.new(File.read(ca_file))
 
-ca_key_file = "./0key.pem"
+ca_key_file = "./0key-plain.pem"
 puts "Reading CA key (from #{ca_key_file})"
 ca_key = RSA.new(File.read(ca_key_file))
 
@@ -18,7 +25,6 @@ crl.issuer = ca.issuer
 crl.last_update = Time.now
 crl.next_update = Time.now + 14 * 24 * 60 * 60
 
-usage = "#{$0} Cert_to_revoke1.pem*"
 ARGV.each do |file|
   cert = OpenSSL::X509::Certificate.new(File.read(file))
   re = OpenSSL::X509::Revoked.new

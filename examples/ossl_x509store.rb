@@ -2,44 +2,59 @@
 
 require 'openssl'
 include OpenSSL
-include X509
 
-verify_cb = Proc.new {|ok, ctx|
-  puts "\t\t====begin Verify===="
-  puts "\t\tOK = #{ok}"
-  puts "\t\tchecking #{ctx.current_cert.subject.to_s}"
-  puts "\t\tstatus = #{ctx.error} - that is \"#{ctx.error_string}\""
-  puts "\t\tchain = #{ctx.chain.inspect}"
-  puts "\t\t==== end Verify===="
+verify_cb = lambda{|ok, ctx|
+  curr_cert = ctx.current_cert
+  puts
+  puts "  ====begin Verify===="
+  puts "  checking #{curr_cert.subject.to_s}, #{curr_cert.serial}"
+  puts "  OK = #{ok}: error = #{ctx.error} - \"#{ctx.error_string}\""
+  puts "  chain = #{ctx.chain.collect{|cert| cert.subject }.inspect}"
+  puts "  ==== end Verify===="
   #raise "SOME ERROR!" # Cert will be rejected
   #false # Cert will be rejected
   #true  # Cert is OK
-  ok     # just throw 'ok' through
+  ok    # just throw 'ok' through
 }
 
-def verify_with_store(store, certs)
+def verify_with_store(store, certs, callback)
   certs.each{|cert|
-    puts "serial = #{cert.serial}"
-    print "verifying... "
-    puts store.verify(cert) ? "Yes" : "No"
+    print "serial = #{cert.serial}: "
+
+    # verify with block
+    result = store.verify(cert, &callback)
+    print result ? "Yes " : "No "
+
+    # verify with callback
+    ctx = X509::StoreContext.new(store)
+    ctx.cert = cert
+    print ctx.verify ? "Yes " : "No "
+
+    # verify by StoreContext
+    print store.verify(cert) ? "Yes " : "No "
+    if store.error != X509::V_OK
+      print store.error_string.inspect
+    end
+
+    puts
   }
 end
 
 puts "========== Load CA Cert =========="
-ca = Certificate.new(File.read("./0cert.pem"))
+ca = X509::Certificate.new(File.read("./0cert.pem"))
 puts "CA = #{ca.subject}, serial = #{ca.serial}"
 
 puts "========== Load EE Certs =========="
 certfiles = ARGV
-certs = certfiles.collect{|file| Certificate.new(File.read(file)) }
+certs = certfiles.collect{|file| X509::Certificate.new(File.read(file)) }
 certs.each{|cert|
   puts "Cert = #{cert.subject}, serial = #{cert.serial}"
+  cert.extensions.each{|ext| p ext.to_a }
   print "Is Cert signed by CA?..."
   puts cert.verify(ca.public_key) ? "Yes" : "No"
 }
 
-puts "========== Load CRL =========="
-crl = CRL.new(File.read("./#{ca.serial}crl.pem"))
+crl = X509::CRL.new(File.read("./#{ca.serial}crl.pem"))
 puts "CA = \"#{ca.issuer}\", CRL = \"#{crl.issuer}\""
 print "Is CRL signed by CA?... "
 puts crl.verify(ca.public_key) ? "Yes" : "No"
@@ -49,14 +64,14 @@ crl.revoked.each {|revoked|
 }
 
 puts "========== Create Cert Store and Verify Certs =========="
-store = Store.new
+store = X509::Store.new
+store.purpose = X509::PURPOSE_SSL_CLINET
 store.verify_callback = verify_cb if $VERBOSE
 store.add_cert(ca)
-verify_with_store(store, certs)
+verify_with_store(store, certs, verify_cb)
 
 puts "========== Add CRL to the Store and Verify Certs =========="
 # CRL does NOT have affect on validity in current OpenSSL <= 0.9.6c !!!
 store.add_crl(crl)
-store.flags = X509::V_FLAG::CRL_CHECK|X509::V_FLAG::CRL_CHECK_ALL
-verify_with_store(store, certs)
-
+store.flags = X509::V_FLAG_CRL_CHECK|X509::V_FLAG_CRL_CHECK_ALL
+verify_with_store(store, certs, verify_cb)

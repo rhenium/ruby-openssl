@@ -40,6 +40,12 @@ File.open(cert_file, "w") do |f|
   f.write cert.to_pem
 end
 
+key_plain_file = "./#{cert.serial}key-plain.pem"
+puts "Writing #{key_plain_file}."
+File.open(key_plain_file, "w") do |f|
+  f << key.to_pem
+end
+
 key_file = "./#{cert.serial}key.pem"
 puts "Writing #{key_file}."
 File.open(key_file, "w") do |f|

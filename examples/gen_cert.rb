@@ -7,13 +7,21 @@ include PKey
 
 $stdout.sync = true
 
-num = (ARGV.shift or '1')
+def usage
+  $stderr.puts "Usage: #{File::basename($0)} serialNumber commonName"
+  exit
+end
+
+num = ARGV.shift or usage()
+cn = ARGV.shift  or usage()
+ARGV.empty?      or usage()
+
 
 ca_file = (ARGV.shift or "./0cert.pem")
 puts "Reading CA cert (from #{ca_file})"
 ca = Certificate.new(File.read(ca_file))
 
-ca_key_file = (ARGV.shift or "./0key.pem")
+ca_key_file = (ARGV.shift or "./0key-plain.pem")
 puts "Reading CA key (from #{ca_key_file})"
 ca_key = RSA.new(File.read(ca_key_file)) {
   print "Enter password: "
@@ -27,7 +35,7 @@ end
 putc "\n"
 
 cert = Certificate.new
-name = [['C', 'CZ'],['O', 'Ruby'],['CN', num]]
+name = [['C', 'CZ'],['O', 'Ruby'],['CN', cn]]
 cert.subject = Name.new(name)
 cert.issuer = ca.subject
 cert.not_before = Time.now
@@ -46,11 +54,16 @@ ext4 = ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always
 cert.extensions = [ext1, ext2, ext3, ext4]
 cert.sign(ca_key, Digest::SHA1.new)
 
-
 cert_file = "./#{cert.serial}cert.pem"
 puts "Writing #{cert_file}."
 File.open(cert_file, "w") do |f|
   f << cert.to_pem
+end
+
+key_plain_file = "./#{cert.serial}key-plain.pem"
+puts "Writing #{key_plain_file}."
+File.open(key_plain_file, "w") do |f|
+  f << key.to_pem
 end
 
 key_file = "./#{cert.serial}key.pem"
