@@ -28,7 +28,7 @@ extern "C" {
 #  error ! OSSL2 needs Ruby >= 1.7.2 and OpenSSL >= 0.9.7 its run.
 #endif
 
-#if defined(NT)
+#if defined(NT) || defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
 #endif
 #include <errno.h>
@@ -38,7 +38,7 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#if defined(NT)
+#if defined(NT) || defined(_WIN32)
 #  undef OpenFile
 #endif
 
