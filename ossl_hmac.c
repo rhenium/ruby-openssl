@@ -86,6 +86,7 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
 		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
 	}
 	HMAC_Final(&final, *buf, buf_len);
+	HMAC_CTX_cleanup(&final);
 }
 
 static VALUE
