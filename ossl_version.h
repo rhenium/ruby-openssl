@@ -13,7 +13,7 @@
 
 /*
  * Release
-#define OSSL_VERSION "0.2.0-pre2"
+#define OSSL_VERSION "0.2.0-pre3"
  * is based on
  */
 #define OSSL_VERSION "OSSL2 - CVS SNAPSHOT ($Date$)"
