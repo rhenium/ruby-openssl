@@ -22,7 +22,7 @@ include OpenSSL
 include X509
 
 ##
-OpenSSL::debug = true
+# OpenSSL::debug = true
 #
 
 puts "Creating blank CRL"

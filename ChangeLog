@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Mon,  1 Jul 2002 14:04:35 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* tc_x509revoked.rb: NEW (TestCase)
+
 Mon,  1 Jul 2002 13:34:38 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509crl.c: #next_update=, #set_revoked, #add_revoked fixes
 	* tc_x509crl.rb: NEW (TestCase)
