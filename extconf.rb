@@ -38,7 +38,6 @@ message "=== OpenSSL for Ruby configurator ===\n"
 message "=== Checking for system dependent stuff... ===\n"
 have_header("unistd.h")
 have_header("sys/time.h")
-have_func("strptime", "time.h")
 message "=== Checking for system dependent stuff done. ===\n"
 
 

@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001-2003  Michal Rokos <michal@rokos.homeip.net>
+ * Copyright (C) 2001-2003  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*

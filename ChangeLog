@@ -1,3 +1,6 @@
+Mon, 02 Jun 2003 09:40:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.c: remove strptime (caused problems on Cygwin/Linux boxes). Done by NaHi <nahi@keynauts.com> (Thanks!)
+
 Wed, 28 May 2003 13:41:35 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* Added FTPTLS to lib/net - done by Blaz Grilc
 

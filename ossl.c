@@ -8,13 +8,6 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-/*
- * Surpress dumb warning about implicit declaration of strptime on Linux
- */
-#if defined(__linux__) || defined(linux)
-#  define _GNU_SOURCE
-#endif
-
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
 
@@ -25,16 +18,6 @@ struct timeval {
     long tv_sec;	/* seconds */
     long tv_usec;	/* and microseconds */
 };
-#endif
-
-/*
- * On Windows platform there is no strptime function
- * implementation in strptime.c
- */
-#if !defined(HAVE_STRPTIME)
-#  include "./missing/strptime.c"
-#else
-#  include <time.h>
 #endif
 
 /*
@@ -53,14 +36,23 @@ asn1time_to_time(ASN1_TIME *time)
 	
     switch(time->type) {
     case V_ASN1_UTCTIME:
-	if (!strptime(time->data, "%y%m%d%H%M%SZ", &tm)) {
+	if (sscanf(time->data, "%2d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
+    		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 	    ossl_raise(rb_eTypeError, "bad UTCTIME format");
+	} 
+	if (tm.tm_year < 69) {
+	    tm.tm_year += 2000;
+	} else {
+	    tm.tm_year += 1900;
 	}
+	tm.tm_mon -= 1;
 	break;
     case V_ASN1_GENERALIZEDTIME:
-	if (!strptime(time->data, "%Y%m%d%H%M%SZ", &tm)) {
+	if (sscanf(time->data, "%4d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
+    		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 	    ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
-	}
+	} 
+	tm.tm_mon -= 1;
 	break;
     default:
 	ossl_raise(rb_eTypeError, "unknown time format");
