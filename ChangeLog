@@ -1,3 +1,7 @@
+Tue, 22 Jul 2003 11:05:00 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl_pkey_rsa.c: Remove not-used code
+	* ossl_x509name.c: ditto.
+
 Tue, 22 Jul 2003 17:32:54 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: get rid of unused function:
 	  ossl_pkcs7_data_verify(), ossl_pkcs7_data_decode()

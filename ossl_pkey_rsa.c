@@ -423,67 +423,6 @@ ossl_rsa_to_public_key(VALUE self)
     return obj;
 }
 
-#if 0
-/*
- * TODO, FIXME
- * Find some good way how to specify type
- * Is NID_md5_sha1 OK for all? (Don't think so.)
- */
-static VALUE
-ossl_rsa_sign(VALUE self, VALUE data)
-{
-    EVP_PKEY *pkey;
-    char *m, *buf;
-    int m_len, buf_len;
-    int type = 0;
-    VALUE str;
-
-    if (0 && rb_obj_is_kind_of(self, cDigest)) {
-    } else {
-        StringValue(data);
-        m = RSTRING(data)->ptr;
-        m_len = RSTRING(data)->len;
-    }
-
-    GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "Private RSA key needed!");
-    }
-    if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
-	ossl_raise(eRSAError, NULL);
-    }
-    if (!RSA_sign(type, m, m_len, buf, &buf_len, pkey->pkey.rsa)) {
-	OPENSSL_free(buf);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
-    
-    return str;
-}
-
-static VALUE
-ossl_rsa_verify(VALUE self, VALUE sig, VALUE data)
-{
-    EVP_PKEY *pkey;
-    int ret;
-
-    GetPKeyDSA(self, pkey);
-    StringValue(digest);
-    StringValue(sig);
-    ret = RSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,
-		     RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.rsa);
-    if (ret < 0) {
-	ossl_raise(eRSAError, NULL);
-    }
-    else if (ret == 1) {
-	return Qtrue;
-    }
-
-    return Qfalse;
-}
-#endif
-
 /*
  * TODO: Test me
 extern BN_CTX *ossl_bn_ctx;
@@ -559,13 +498,6 @@ Init_ossl_rsa()
     rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
 
 /*
- * TODO, FIXME
- * Find way how to support digest types
- *
-    rb_define_method(cRSA, "syssign", ossl_rsa_sign, 2);
-    rb_define_method(cRSA, "sysverify", ossl_rsa_verify, 3);
- */
-/*
  * TODO: Test it
     rb_define_method(cRSA, "blinding_on!", ossl_rsa_blinding_on, 0);
     rb_define_method(cRSA, "blinding_off!", ossl_rsa_blinding_off, 0);
@@ -580,3 +512,4 @@ Init_ossl_rsa()
     rb_warning("OpenSSL is compiled without RSA support");
 }
 #endif /* NO_RSA */
+

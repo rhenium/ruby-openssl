@@ -163,27 +163,6 @@ ossl_x509name_to_a(VALUE self)
     return ary;
 }
 
-#if 0
-static VALUE
-ossl_x509name_digest(VALUE self, VALUE digest)
-{
-    X509_NAME *name;
-    const EVP_MD *md;
-    VALUE str;
-	
-    GetX509Name(self, name);
-    md = GetDigestPtr(digest);
-    /* ALLOC! */
-    if (!X509_NAME_digest(name, md, buf, &buf_len)) {
-	ossl_raise(eX509NameError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
-    
-    return str;
-}
-#endif
-
 static int
 ossl_x509name_cmp0(VALUE self, VALUE other)
 {
