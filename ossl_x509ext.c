@@ -242,7 +242,7 @@ ossl_x509ext_to_a(VALUE obj)
     BIO *out;
     BUF_MEM *buf;
     int nid, critical;
-    char* sn;
+    const char* sn;
     VALUE ary, tag, value;
 
     GetX509Ext(obj, ext);
