@@ -9,7 +9,7 @@ verify_cb = Proc.new {|ok, ctx|
   puts "\t\tOK = #{ok}"
   puts "\t\tchecking #{ctx.current_cert.subject.to_s}"
   puts "\t\tstatus = #{ctx.error} - that is \"#{ctx.error_string}\""
-  #puts "\t\tchain = #{ctx.chain.inspect}"
+  puts "\t\tchain = #{ctx.chain.inspect}"
   puts "\t\t==== end Verify===="
   #raise "SOME ERROR!" # Cert will be rejected
   #false # Cert will be rejected
