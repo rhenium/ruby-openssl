@@ -407,6 +407,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     if(rb_scan_args(argc, argv, "11", &io, &ctx) == 1)
         ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
+    Check_Type(io, T_FILE);
     OSSL_Check_Kind(ctx, cSSLContext);
     ossl_ssl_set_io(self, io);
     ossl_ssl_set_ctx(self, ctx);

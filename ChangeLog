@@ -1,4 +1,7 @@
-Tue, 15 Oct 2002 18:10:17 +0900
+Fri, 25 Oct 2002 03:37:42 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: ossl_ssl_verify_callback was refined.
+
+Tue, 15 Oct 2002 18:10:17 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: all ssl_xxx symbols were replaced as ossl_ssl_xxx.
 
 Tue, 15 Oct 2002 17:27:26 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
