@@ -1,3 +1,6 @@
+Sun, 29 Jun 2003 03:24:13 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* examples/ossl_pkcs7.rb: new sample
+
 Sun, 29 Jun 2003 02:57:57 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509ext.c: typo fixed.
 
