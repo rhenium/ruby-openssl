@@ -13,7 +13,7 @@
 #define MakeCipher(obj, klass, ciphp) obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp)
 #define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
 #define SafeGetCipher(obj, ciphp) do { \
-	OSSL_Check_Instance(obj, cCipher); \
+	OSSL_Check_Kind(obj, cCipher); \
 	GetCipher(obj, ciphp); \
 } while (0)
 

@@ -3,6 +3,17 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed,  5 Jun 2002 10:46:17 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ns_spki.h: NEW (bits from ossl.h)
+	* ns_spki.c: cleanup & port to Ruby 1.8 interface
+
+Wed,  5 Jun 2002 10:14:54 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* hmac.h: NEW (bits from ossl.h)
+	* ossl.c: helper function 'string2hex'
+	* hmac.c: use 'string2hex'
+	* digest.c: ditto.
+	* hmac:c: cleanup
+
 Tue,  4 Jun 2002 23:26:07 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.c: cleanup (remove oddly initialized vars)
 	* config.c: ditto.

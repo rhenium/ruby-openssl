@@ -78,7 +78,7 @@ ossl_dh_get_DH(VALUE obj)
 	ossl_dh *dhp = NULL;
 	DH *dh = NULL;
 	
-	OSSL_Check_Instance(obj, cDH);
+	OSSL_Check_Kind(obj, cDH);
 	GetDH(obj, dhp);
 
 	dh = DHparams_dup(dhp->dh);

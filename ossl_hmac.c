@@ -12,8 +12,18 @@
 
 #include "ossl.h"
 
-#define WrapHMAC(obj, ctx) obj = Data_Wrap_Struct(cHMAC, 0, CRYPTO_free, ctx)
-#define GetHMAC(obj, ctx) Data_Get_Struct(obj, HMAC_CTX, ctx)
+#define WrapHMAC(obj, ctx) do { \
+	if (!ctx) { \
+		rb_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+	} \
+	obj = Data_Wrap_Struct(cHMAC, 0, CRYPTO_free, ctx); \
+} while (0)
+#define GetHMAC(obj, ctx) do { \
+	Data_Get_Struct(obj, HMAC_CTX, ctx); \
+	if (!ctx) { \
+		rb_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+	} \
+} while (0)
 
 /*
  * Classes
@@ -29,9 +39,9 @@ VALUE eHMACError;
  * Private
  */
 static VALUE
-ossl_hmac_s_new(int argc, VALUE *argv, VALUE klass)
+ossl_hmac_s_allocate(VALUE klass)
 {
-	HMAC_CTX *ctx = NULL;
+	HMAC_CTX *ctx;
 	VALUE obj;
 
 	if (!(ctx = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
@@ -39,22 +49,17 @@ ossl_hmac_s_new(int argc, VALUE *argv, VALUE klass)
 	}
 	WrapHMAC(obj, ctx);
 	
-	rb_obj_call_init(obj, argc, argv);
-
 	return obj;
 }
 
 static VALUE
-ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
+ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
-	HMAC_CTX *ctx = NULL;
-	VALUE key, digest;
+	HMAC_CTX *ctx;
 
 	GetHMAC(self, ctx);
 
-	rb_scan_args(argc, argv, "20", &key, &digest);
-
-	key = rb_String(key);
+	StringValue(key);
 
 	HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, ossl_digest_get_EVP_MD(digest));
 
@@ -64,95 +69,91 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
 {
-	HMAC_CTX *ctx = NULL;
+	HMAC_CTX *ctx;
 
 	GetHMAC(self, ctx);
 
-	data = rb_String(data);
+	StringValue(data);
 
 	HMAC_Update(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 
 	return self;
 }
 
-static VALUE
-ossl_hmac_hmac(VALUE self)
+static void
+hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
 {
-	HMAC_CTX *ctx = NULL, final;
-	char *buf = NULL;
-	int buf_len = 0;
-	VALUE str;
-	
-	GetHMAC(self, ctx);
-	
+	HMAC_CTX final;
+
 	if (!HMAC_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eHMACError, "");
 	}
-	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {
+	if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
 		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
 	}
-	HMAC_Final(&final, buf, &buf_len);
-
-	str = rb_str_new(buf, buf_len);
-	OPENSSL_free(buf);
-	
-	return str;
+	HMAC_Final(&final, *buf, buf_len);
 }
 
 static VALUE
-ossl_hmac_hexhmac(VALUE self)
+ossl_hmac_digest(VALUE self)
 {
-	HMAC_CTX *ctx = NULL, final;
-	static const char hex[]="0123456789abcdef";
-	char *buf = NULL, *hexbuf = NULL;
-	int i,buf_len = 0;
-	VALUE str;
+	HMAC_CTX *ctx;
+	char *buf;
+	int buf_len;
+	VALUE digest;
 	
 	GetHMAC(self, ctx);
 	
-	if (!HMAC_CTX_copy(&final, ctx)) {
-		OSSL_Raise(eHMACError, "Cannot copy HMAC CTX");
-	}
-	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {
-		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
-	}
-	HMAC_Final(&final, buf, &buf_len);
+	hmac_final(ctx, &buf, &buf_len);
 	
-	if (!(hexbuf = OPENSSL_malloc(2*buf_len+1))) {
+	digest = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
+	
+	return digest;
+}
+
+static VALUE
+ossl_hmac_hexdigest(VALUE self)
+{
+	HMAC_CTX *ctx;
+	char *buf, *hexbuf;
+	int buf_len;
+	VALUE hexdigest;
+	
+	GetHMAC(self, ctx);
+	
+	hmac_final(ctx, &buf, &buf_len);
+	
+	if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 		OPENSSL_free(buf);
 		OSSL_Raise(eHMACError, "Memory alloc error");
 	}
-	for (i = 0; i < buf_len; i++) {
-		hexbuf[i + i] = hex[((unsigned char)buf[i]) >> 4];
-		hexbuf[i + i + 1] = hex[buf[i] & 0x0f];
-	}
-	hexbuf[i + i] = '\0';
-	
-	str = rb_str_new(hexbuf, 2*buf_len);
-
+	hexdigest = rb_str_new(hexbuf, 2 * buf_len);
 	OPENSSL_free(buf);
 	OPENSSL_free(hexbuf);
 
-	return str;
+	return hexdigest;
 }
 
 /*
  * INIT
  */
 void
-Init_ossl_hmac(VALUE module)
+Init_ossl_hmac()
 {
-	eHMACError = rb_define_class_under(module, "HMACError", eOSSLError);
+	eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);
 	
-	cHMAC = rb_define_class_under(module, "HMAC", rb_cObject);
-	rb_define_singleton_method(cHMAC, "new", ossl_hmac_s_new, -1);
-	rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, -1);
+	cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
+	
+	rb_define_singleton_method(cHMAC, "allocate", ossl_hmac_s_allocate, 0);
+	rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
+	
 	rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
 	rb_define_alias(cHMAC, "<<", "update");
-	rb_define_method(cHMAC, "hmac", ossl_hmac_hmac, 0);
-	rb_define_method(cHMAC, "hexhmac", ossl_hmac_hexhmac, 0);
-	rb_define_alias(cHMAC, "inspect", "hexhmac");
-	rb_define_alias(cHMAC, "to_s", "hexhmac");
+	rb_define_method(cHMAC, "digest", ossl_hmac_digest, 0);
+	rb_define_method(cHMAC, "hexdigest", ossl_hmac_hexdigest, 0);
+	rb_define_alias(cHMAC, "inspect", "hexdigest");
+	rb_define_alias(cHMAC, "to_s", "hexdigest");
 }
 
 #else /* NO_HMAC */

@@ -23,7 +23,7 @@
 	} \
 } while (0)
 #define SafeGetDigest(obj, ctx) do { \
-	OSSL_Check_Instance(obj, cDigest); \
+	OSSL_Check_Kind(obj, cDigest); \
 	GetDigest(obj, ctx); \
 } while (0)
 
@@ -96,26 +96,34 @@ ossl_digest_update(VALUE self, VALUE data)
 	return self;
 }
 
+static void
+digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
+{
+	EVP_MD_CTX final;
+
+	if (!EVP_MD_CTX_copy(&final, ctx)) {
+		OSSL_Raise(eDigestError, "");
+	}
+	if (!(*buf = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
+		OSSL_Raise(eDigestError, "Cannot allocate mem for digest");
+	}
+	EVP_DigestFinal(&final, *buf, buf_len);
+}
+
 static VALUE
 ossl_digest_digest(VALUE self)
 {
-	EVP_MD_CTX *ctx, final;
-	char *digest_txt;
-	int digest_len;
+	EVP_MD_CTX *ctx;
+	char *buf;
+	int buf_len;
 	VALUE digest;
 	
 	GetDigest(self, ctx);
 	
-	if (!EVP_MD_CTX_copy(&final, ctx)) {
-		OSSL_Raise(eDigestError, "");
-	}
-	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		OSSL_Raise(eDigestError, "Cannot allocate mem for digest");
-	}
-	EVP_DigestFinal(&final, digest_txt, &digest_len);
-
-	digest = rb_str_new(digest_txt, digest_len);
-	OPENSSL_free(digest_txt);
+	digest_final(ctx, &buf, &buf_len);
+	
+	digest = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 	
 	return digest;
 }
@@ -123,34 +131,22 @@ ossl_digest_digest(VALUE self)
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
-	EVP_MD_CTX *ctx, final;
-	static const char hex[]="0123456789abcdef";
-	char *digest_txt = NULL, *hexdigest_txt = NULL;
-	int i, digest_len;
+	EVP_MD_CTX *ctx;
+	char *buf, *hexbuf;
+	int buf_len;
 	VALUE hexdigest;
 	
 	GetDigest(self, ctx);
 	
-	if (!EVP_MD_CTX_copy(&final, ctx)) {
-		OSSL_Raise(eDigestError, "");
-	}
-	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		OSSL_Raise(eDigestError, "Cannot allocate memory for digest");
-	}
-	EVP_DigestFinal(&final, digest_txt, &digest_len);
-
-	if (!(hexdigest_txt = OPENSSL_malloc(2 * digest_len + 1))) {
-		OPENSSL_free(digest_txt);
+	digest_final(ctx, &buf, &buf_len);
+	
+	if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eDigestError, "Memory alloc error");
 	}
-	for (i = 0; i < digest_len; i++) {
-		hexdigest_txt[2 * i] = hex[((unsigned char)digest_txt[i]) >> 4];
-		hexdigest_txt[2 * i + 1] = hex[digest_txt[i] & 0x0f];
-	}
-	hexdigest_txt[2 * i] = '\0';
-	hexdigest = rb_str_new(hexdigest_txt, 2 * digest_len);
-	OPENSSL_free(digest_txt);
-	OPENSSL_free(hexdigest_txt);
+	hexdigest = rb_str_new(hexbuf, 2 * buf_len);
+	OPENSSL_free(buf);
+	OPENSSL_free(hexbuf);
 
 	return hexdigest;
 }
@@ -240,7 +236,6 @@ Init_ossl_digest()
 	rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 2);
 	
 	rb_define_method(cDigest, "initialize", ossl_digest_initialize, 1);
-	rb_enable_super(cDigest, "initialize");
 
 	rb_define_method(cDigest, "clone",  ossl_digest_clone, 0);
 

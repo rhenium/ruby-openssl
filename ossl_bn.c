@@ -24,7 +24,7 @@
 	} \
 } while (0)
 #define SafeGetBN(obj, bn) do { \
-	OSSL_Check_Instance(obj, cBN); \
+	OSSL_Check_Kind(obj, cBN); \
 	GetBN(obj, bn); \
 } while (0)
 

@@ -90,6 +90,39 @@ time_to_time_t(VALUE time)
 }
 
 /*
+ * String to HEXString conversion
+ */
+int
+string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
+{
+	static const char hex[]="0123456789abcdef";
+	int i, len = 2 * buf_len;
+
+	if (buf_len < 0 || len < buf_len) { /* PARANOIA? */
+		return -1;
+	}
+	if (!hexbuf) {
+		if (hexbuf_len) {
+			*hexbuf_len = len;
+		}
+		return len;
+	}
+	if (!(*hexbuf = OPENSSL_malloc(len + 1))) {
+		return -1;
+	}
+	for (i = 0; i < buf_len; i++) {
+		(*hexbuf)[2 * i] = hex[((unsigned char)buf[i]) >> 4];
+		(*hexbuf)[2 * i + 1] = hex[buf[i] & 0x0f];
+	}
+	(*hexbuf)[2 * i] = '\0';
+	
+	if (hexbuf_len) {
+		*hexbuf_len = len;
+	}
+	return len;
+}
+
+/*
  * Modules
  */
 VALUE mOSSL;
@@ -125,7 +158,6 @@ Init_openssl()
 	 * Universe of Modules
 	 */
 	mOSSL = rb_define_module("OpenSSL");
-	mNetscape = rb_define_module_under(mOSSL, "Netscape");
 	mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
 	mPKey = rb_define_module_under(mOSSL, "PKey");
 	mRandom = rb_define_module_under(mOSSL, "Random");
@@ -150,11 +182,11 @@ Init_openssl()
 	Init_ossl_cipher();
 	Init_ossl_config();
 	Init_ossl_digest();
-	Init_ossl_hmac(mOSSL);
+	Init_ossl_hmac();
+	Init_ossl_ns_spki();
 	Init_ossl_pkcs7(mPKCS7);
 	Init_ossl_pkey(mPKey);
 	Init_ossl_rand(mRandom);
-	Init_ossl_spki(mNetscape);
 	Init_ossl_ssl(mSSL);
 	Init_ossl_x509();
 }

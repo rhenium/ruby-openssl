@@ -55,7 +55,6 @@ extern "C" {
  * Common Module
  */
 extern VALUE mOSSL;
-extern VALUE   mNetscape;
 extern VALUE   mPKCS7;
 extern VALUE   mPKey;
 extern VALUE   mRandom;
@@ -69,8 +68,6 @@ VALUE eOSSLError;
 /*
  * Classes
  */
-extern VALUE cSPKI;
-extern VALUE eSPKIError;
 extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
@@ -88,9 +85,6 @@ extern VALUE eDHError;
 extern VALUE cPKCS7;
 extern VALUE cPKCS7SignerInfo;
 extern VALUE ePKCS7Error;
-/* HMAC */
-extern VALUE cHMAC;
-extern VALUE eHMACError;
 
 /*
  * CheckTypes
@@ -106,6 +100,11 @@ void ossl_check_instance(VALUE, VALUE);
  */
 VALUE asn1time_to_time(ASN1_UTCTIME *);
 time_t time_to_time_t(VALUE);
+
+/*
+ * String to HEXString conversion
+ */
+int string2hex(char *, int, char **, int *);
 
 /*
  * ERRor messages
@@ -195,20 +194,19 @@ void Init_ossl_pkcs7(VALUE);
 /*
  * HMAC
  */
-void Init_ossl_hmac(VALUE);
 
 #include "openssl_missing.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
 #include "ossl_config.h"
 #include "ossl_digest.h"
+#include "ossl_hmac.h"
+#include "ossl_ns_spki.h"
 /*
  * TODO
-#include "ossl_hmac.h"
 #include "ossl_pkcs7.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
-#include "ossl_spki.h"
 #include "ossl_ssl.h"
  */
 #include "ossl_version.h"
