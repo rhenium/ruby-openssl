@@ -4,19 +4,23 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.11  2001/12/13 18:08:58  majkl
+	* added bn methods (thanks to UNKNOWN <oss-ruby@technorama.net>
+	* simplify ossl_digest sources
+
 Revision 1.10  2001/11/29 13:17:24  majkl
-* Make work under MS Windows (strptime added) + doc in README
+	* Make work under MS Windows (strptime added) + doc in README
 
 Revision 1.9  2001/11/26 11:48:36  majkl
 	* Just forgot to add stuff to changelog...
-
-Revision 1.8  2001/11/21 09:37:03  gotoyuzo
-	* buffering.rb went under ``openssl'' directory.
 
 2001/11/21 majkl
 	* BN added (only proof of concept)
 	* indent changed
 	* rand.h to ossl.h added
+
+Revision 1.8  2001/11/21 09:37:03  gotoyuzo
+	* buffering.rb went under ``openssl'' directory.
 
 Revision 1.7  2001/11/20 19:39:37  majkl
 	* HMAC added

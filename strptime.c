@@ -29,10 +29,11 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef HAVE_STRPTIME
 
 #include <stdio.h>
 #include <stdlib.h>
-/*#include <unistd.h>*/
+/* #include <unistd.h> */
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
@@ -43,7 +44,6 @@
 #endif
 */
 
-#ifndef HAVE_STRPTIME
 
 #define asizeof(a)      (sizeof (a) / sizeof ((a)[0]))
 
@@ -359,4 +359,6 @@ strptime(char *buf, char *fmt, struct tm *tm)
 
         return buf;
 }
+
 #endif  /* HAVE_STRPTIME */
+

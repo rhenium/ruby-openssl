@@ -15,8 +15,6 @@
 }
 #define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
 
-#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(##x))
-
 /*
  * Constants
  */
@@ -539,6 +537,11 @@ Init_ossl_cipher(VALUE module)
 	rb_define_alias(cCipher, "<<", "update");
 	rb_define_method(cCipher, "cipher", ossl_cipher_cipher, 0);
 
+/*
+ * Constants
+ */
+#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(##x))
+
 	DefCipherConst(ECB);
 	DefCipherConst(EDE);
 	DefCipherConst(EDE3);
@@ -547,26 +550,37 @@ Init_ossl_cipher(VALUE module)
 	DefCipherConst(CBC);
 	DefCipherConst(BIT40);
 	DefCipherConst(BIT64);
-	
-	cDES = rb_define_class_under(module, "DES", cCipher);
-	rb_define_method(cDES, "initialize", ossl_des_initialize, -1);
 
-	cRC4 = rb_define_class_under(module, "RC4", cCipher);
-	rb_define_method(cRC4, "initialize", ossl_rc4_initialize, -1);
+/*
+ * automation for classes creation and initialize method binding
+ */
+#define DefCipher(name, func) 								\
+	c##name## = rb_define_class_under(module, #name, cCipher);			\
+	rb_define_method(c##name##, "initialize", ossl_##func##_initialize, -1)
 
-	cIdea = rb_define_class_under(module, "Idea", cCipher);
-	rb_define_method(cIdea, "initialize", ossl_idea_initialize, -1);
-
-	cRC2 = rb_define_class_under(module, "RC2", cCipher);
-	rb_define_method(cRC2, "initialize", ossl_rc2_initialize, -1);
-
-	cBlowFish = rb_define_class_under(module, "BlowFish", cCipher);
-	rb_define_method(cBlowFish, "initialize", ossl_bf_initialize, -1);
-
-	cCast5 = rb_define_class_under(module, "Cast5", cCipher);
-	rb_define_method(cCast5, "initialize", ossl_cast5_initialize, -1);
-
-	cRC5 = rb_define_class_under(module, "RC5", cCipher);
-	rb_define_method(cRC5, "initialize", ossl_rc5_initialize, -1);
+/*
+ * create classes and bind initialize method
+ */
+#ifndef NO_DES
+	DefCipher(DES, des);
+#endif
+#ifndef NO_RC4
+	DefCipher(RC4, rc4);
+#endif
+#ifndef NO_RC2
+	DefCipher(RC2, rc2);
+#endif
+#ifndef NO_RC5
+	DefCipher(RC5, rc5);
+#endif
+#ifndef NO_BF
+	DefCipher(BlowFish, bf);
+#endif
+#ifndef NO_CAST
+	DefCipher(Cast5, cast5);
+#endif
+#ifndef NO_IDEA
+	DefCipher(Idea, idea);
+#endif
 }
 

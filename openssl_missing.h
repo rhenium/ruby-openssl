@@ -46,7 +46,9 @@ extern "C" {
 	(char *(*)())d2i_PKCS7_RECIP_INFO,(char *)ri)
 
 /* to hmac.[ch] */
+#ifndef NO_HMAC
 int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
+#endif
 
 #ifdef  __cplusplus
 }

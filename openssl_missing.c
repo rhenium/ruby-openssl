@@ -12,11 +12,12 @@
 #include "openssl_missing.h"
 
 /* to hmac.[ch] */
+#ifndef NO_HMAC
 int
 HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 {
 	if (in == NULL) {
-        	/*HMACerr(HMAC_CTX_COPY,HMAC_R_INPUT_NOT_INITIALIZED);*/
+        	/* HMACerr(HMAC_CTX_COPY,HMAC_R_INPUT_NOT_INITIALIZED); */
         	return 0;
     	}
 
@@ -24,4 +25,5 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 
 	return 1;
 }
+#endif
 

@@ -1,13 +1,14 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@@sh.cvut.cz>
+ * Copyright (C) 2001 <oss-ruby@technorama.net>
  * All rights reserved.
  */
 /*
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+/* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
 #define MakeBN(obj, bnp) {\
@@ -174,6 +175,258 @@ ossl_bn_to_i(VALUE self)
 	return num;
 }
 
+#define BIGNUM_BOOL1(func)								\
+	static VALUE 									\
+	ossl_bn_##func##(VALUE self)							\
+	{										\
+		ossl_bn *bnp = NULL;							\
+											\
+		GetBN(self, bnp);							\
+											\
+		if (BN_##func##(bnp->bignum) == 1)					\
+			return Qtrue;							\
+											\
+		return Qfalse;								\
+	}
+BIGNUM_BOOL1(is_zero);
+BIGNUM_BOOL1(is_one);
+BIGNUM_BOOL1(is_odd);
+
+#define BIGNUM_1c(func)									\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self)							\
+	{										\
+		ossl_bn *bnp = NULL;							\
+		BIGNUM *result = NULL;							\
+		BN_CTX ctx;								\
+		VALUE obj;								\
+											\
+		GetBN(self, bnp);							\
+											\
+		if (!(result = BN_new()))						\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		BN_CTX_init(&ctx);							\
+		if (BN_##func##(result, bnp->bignum, &ctx) != 1)			\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		obj = ossl_bn_new(result);						\
+		BN_free(result);							\
+											\
+		return obj;								\
+	}
+BIGNUM_1c(sqr);
+
+#define BIGNUM_2(func)									\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self, VALUE other)						\
+	{										\
+		ossl_bn *bn1p = NULL;							\
+		ossl_bn *bn2p = NULL;							\
+		BIGNUM *result = NULL;							\
+		VALUE obj;								\
+											\
+		GetBN(self, bn1p);							\
+											\
+		OSSL_Check_Type(other, cBN);						\
+		GetBN(other, bn2p);							\
+											\
+		if (!(result = BN_new()))						\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		if (BN_##func##(result, bn1p->bignum, bn2p->bignum) != 1)			\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		obj = ossl_bn_new(result);						\
+		BN_free(result);							\
+											\
+		return obj;								\
+	}
+BIGNUM_2(add);
+BIGNUM_2(sub);
+
+#define BIGNUM_2c(func)									\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self, VALUE other)					\
+	{										\
+		ossl_bn *bn1p = NULL, *bn2p = NULL;					\
+		BIGNUM *result = NULL;							\
+		BN_CTX ctx;								\
+		VALUE obj;								\
+											\
+		GetBN(self, bn1p);							\
+											\
+		OSSL_Check_Type(other, cBN);						\
+		GetBN(other, bn2p);							\
+											\
+		if (!(result = BN_new()))						\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		BN_CTX_init(&ctx);							\
+		if (BN_##func##(result, bn1p->bignum, bn2p->bignum, &ctx) != 1)		\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		obj = ossl_bn_new(result);						\
+		BN_free(result);							\
+											\
+		return obj;								\
+	}
+BIGNUM_2c(mul);
+BIGNUM_2c(mod);
+BIGNUM_2c(exp);
+BIGNUM_2c(gcd);
+
+static VALUE
+ossl_bn_div(VALUE self, VALUE other)
+{
+	ossl_bn *bn1p = NULL, *bn2p = NULL;
+	BIGNUM *r1 = NULL, *r2 = NULL;
+	BN_CTX ctx;
+	VALUE obj1, obj2;
+
+	GetBN(self, bn1p);
+
+	OSSL_Check_Type(other, cBN);
+	GetBN(other, bn2p);
+	
+	if ((r1 = BN_new()) == NULL || (r2 = BN_new()) == NULL)
+		rb_raise(eBNError, "%s", ossl_error());
+	
+	BN_CTX_init(&ctx);
+	if (BN_div(r1, r2, bn1p->bignum, bn2p->bignum, &ctx) != 1)
+		rb_raise(eBNError, "%s", ossl_error());
+
+	obj1 = ossl_bn_new(r1);
+	BN_free(r1);
+	obj2 = ossl_bn_new(r2);
+	BN_free(r2);
+	
+	return rb_ary_new3(2, obj1, obj2);
+}
+
+static VALUE
+ossl_bn_mod_inverse(VALUE self, VALUE other)
+{
+	ossl_bn *bn1p = NULL, *bn2p = NULL;
+	BIGNUM *result = NULL;
+	BN_CTX ctx;
+	VALUE obj;
+
+	GetBN(self, bn1p);
+
+	OSSL_Check_Type(other, cBN);
+	GetBN(other, bn2p);
+	
+	if (!(result = BN_new()))
+		rb_raise(eBNError, "%s", ossl_error());
+	
+	BN_CTX_init(&ctx);
+	if (BN_mod_inverse(result, bn1p->bignum, bn2p->bignum, &ctx) == NULL)
+		rb_raise(eBNError, "%s", ossl_error());
+
+	obj = ossl_bn_new(result);
+	BN_free(result);
+	
+	return obj;
+}
+
+#define BIGNUM_3c(func)									\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self, VALUE other1, VALUE other2)			\
+	{										\
+		ossl_bn *bn1p = NULL, *bn2p = NULL, *bn3p = NULL;			\
+		BIGNUM *result = NULL;							\
+		BN_CTX ctx;								\
+		VALUE obj;								\
+											\
+		GetBN(self, bn1p);							\
+											\
+		OSSL_Check_Type(other1, cBN);						\
+		OSSL_Check_Type(other2, cBN);						\
+		GetBN(other1, bn2p);							\
+		GetBN(other2, bn3p);							\
+											\
+		if (!(result = BN_new()))						\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		BN_CTX_init(&ctx);							\
+		if (BN_##func##(result, bn1p->bignum, bn2p->bignum, bn3p->bignum, &ctx) != 1)	\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		obj = ossl_bn_new(result);						\
+		BN_free(result);							\
+											\
+		return obj;								\
+	}
+BIGNUM_3c(mod_mul);
+BIGNUM_3c(mod_exp);
+
+#define BIGNUM_BIT_SETCLEAR(func)							\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self, VALUE bit)						\
+	{										\
+		ossl_bn *bnp = NULL;							\
+											\
+		GetBN(self, bnp);							\
+											\
+		if (BN_##func##(bnp->bignum, NUM2INT(bit)) != 1)				\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		return self;								\
+	}
+BIGNUM_BIT_SETCLEAR(set_bit);
+BIGNUM_BIT_SETCLEAR(clear_bit);
+
+static VALUE
+ossl_bn_is_bit_set(VALUE self, VALUE bit)
+{
+	ossl_bn *bnp = NULL;
+
+	GetBN(self, bnp);
+
+	if (BN_is_bit_set(bnp->bignum, NUM2INT(bit)) == 1)
+		return Qtrue;
+	
+	return Qfalse;
+}
+
+static VALUE
+ossl_bn_mask_bits(VALUE self, VALUE bit)
+{
+	ossl_bn *bnp = NULL;
+
+	GetBN(self, bnp);
+
+	if (BN_mask_bits(bnp->bignum, NUM2INT(bit)) != 1)
+		rb_raise(eBNError, "%s", ossl_error());
+
+	return self;
+}
+
+#define BIGNUM_SHIFT(func)								\
+	static VALUE									\
+	ossl_bn_##func##(VALUE self, VALUE bits)					\
+	{										\
+		ossl_bn *bnp = NULL;							\
+		BIGNUM *result = NULL;							\
+		VALUE obj;								\
+											\
+		GetBN(self, bnp);							\
+											\
+		if (!(result = BN_new()))						\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		if (BN_##func##(result, bnp->bignum, NUM2INT(bits)) != 1)		\
+			rb_raise(eBNError, "%s", ossl_error());				\
+											\
+		obj = ossl_bn_new(result);						\
+		BN_free(result);							\
+											\
+		return obj;								\
+	}
+BIGNUM_SHIFT(lshift);
+BIGNUM_SHIFT(rshift);
+
 /*
  * INIT
  */
@@ -186,5 +439,34 @@ Init_bn(VALUE mOSSL)
 	rb_define_singleton_method(cBN, "new", ossl_bn_s_new, -1);
 	rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
 	rb_define_method(cBN, "to_i", ossl_bn_to_i, 0);
+
+	rb_define_method(cBN, "zero?", ossl_bn_is_zero, 0);
+	rb_define_method(cBN, "one?", ossl_bn_is_one, 0);
+	rb_define_method(cBN, "odd?", ossl_bn_is_odd, 0);
+
+	rb_define_method(cBN, "sqr", ossl_bn_sqr, 0);
+	
+	rb_define_method(cBN, "+", ossl_bn_add, 1);
+	rb_define_method(cBN, "-", ossl_bn_sub, 1);
+
+	rb_define_method(cBN, "*", ossl_bn_mul, 1);
+	rb_define_method(cBN, "%", ossl_bn_mod, 1);
+	rb_define_method(cBN, "**", ossl_bn_exp, 1);
+	rb_define_method(cBN, "gcd", ossl_bn_gcd, 1);
+	
+	rb_define_method(cBN, "/", ossl_bn_div, 1);
+	rb_define_method(cBN, "mod_inverse", ossl_bn_mod_inverse, 1);
+	
+	rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 1);
+	rb_define_method(cBN, "mod_exp", ossl_bn_mod_exp, 1);
+
+	rb_define_method(cBN, "set_bit!", ossl_bn_set_bit, 1);
+	rb_define_method(cBN, "clear_bit!", ossl_bn_clear_bit, 1);
+	
+	rb_define_method(cBN, "bit_set?", ossl_bn_is_bit_set, 1);
+	rb_define_method(cBN, "mask_bits!", ossl_bn_mask_bits, 1);
+	
+	rb_define_method(cBN, "<<", ossl_bn_lshift, 1);
+	rb_define_method(cBN, ">>", ossl_bn_rshift, 1);
 }
 

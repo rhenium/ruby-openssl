@@ -73,29 +73,25 @@ extern VALUE cX509Store;
 extern VALUE eX509StoreError;
 extern VALUE cSPKI;
 extern VALUE eSPKIError;
-extern VALUE cCipher;
-extern VALUE eCipherError;
 extern VALUE cRandom;
 extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
+/* Cipher */
+extern VALUE cCipher;
+extern VALUE eCipherError;
+extern VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5;
 /* Digest */
 extern VALUE cDigest;
 extern VALUE eDigestError;
-extern VALUE cMD2;
-extern VALUE cMD5;
-extern VALUE cMDC2;
-extern VALUE cRIPEMD160;
-extern VALUE cSHA;
-extern VALUE cSHA1;
-extern VALUE cDSS;
-extern VALUE cDSS1;
+extern VALUE cMD2, cMD4, cMD5, cMDC2, cRIPEMD160, cSHA, cSHA1, cDSS, cDSS1;
 /* PKey */
 extern VALUE cPKey;
 extern VALUE ePKeyError;
 extern VALUE cRSA;
 extern VALUE eRSAError;
 extern VALUE cDSA;
+extern VALUE cDSAError;
 /* PKCS7 */
 extern VALUE cPKCS7;
 extern VALUE cPKCS7SignerInfo;

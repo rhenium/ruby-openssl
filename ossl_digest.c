@@ -20,14 +20,7 @@
  */
 VALUE cDigest;
 VALUE eDigestError;
-VALUE cMD2;
-VALUE cMD5;
-VALUE cMDC2;
-VALUE cRIPEMD160;
-VALUE cSHA;
-VALUE cSHA1;
-VALUE cDSS;
-VALUE cDSS1;
+VALUE cMD2, cMD4, cMD5, cMDC2, cRIPEMD160, cSHA, cSHA1, cDSS, cDSS1;
 
 /*
  * Struct
@@ -197,180 +190,52 @@ ossl_digest_hexdigest(VALUE self)
  */
 
 /*
- * MD2
+ * automation of digest initialization method
  */
-static VALUE
-ossl_md2_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
+#define DefDigestInit(dgst)									\
+	static VALUE										\
+	ossl_##dgst##_initialize(int argc, VALUE *argv, VALUE self)				\
+	{											\
+		ossl_digest *digestp = NULL;							\
+		VALUE data;									\
+												\
+		GetDigest(self, digestp);							\
+		if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {			\
+			rb_raise(eDigestError, "Cannot allocate memory for new digest");	\
+		}										\
+		EVP_DigestInit(digestp->md, EVP_##dgst##());					\
+												\
+		if (rb_scan_args(argc, argv, "01", &data) == 1) {				\
+			Check_Type(data, T_STRING);						\
+			EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);	\
+		}										\
+		return self;									\
 	}
-	EVP_DigestInit(digestp->md, EVP_md2());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
 
 /*
- * MD5
+ * Define digest initialize methods
  */
-static VALUE
-ossl_md5_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_md5());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * MDC2
- */
-static VALUE
-ossl_mdc2_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_mdc2());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * RIPEmd160
- */
-static VALUE
-ossl_ripemd160_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_ripemd160());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * SHA
- */
-static VALUE
-ossl_sha_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_sha());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * SHA1
- */
-static VALUE
-ossl_sha1_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-	
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_sha1());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * DSS = SHA for DSA
- */
-static VALUE
-ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_dss());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
-
-/*
- * DSS1 = SHA1 for DSA
- */
-static VALUE
-ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
-{
-	ossl_digest *digestp = NULL;
-	VALUE data;
-
-	GetDigest(self, digestp);
-	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for new digest");
-	}
-	EVP_DigestInit(digestp->md, EVP_dss1());
-
-	if (rb_scan_args(argc, argv, "01", &data) == 1) {
-		Check_Type(data, T_STRING);
-		EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
-	}
-	return self;
-}
+#ifndef NO_MD2
+	DefDigestInit(md2)
+#endif
+#ifndef NO_MD4
+	DefDigestInit(md4)
+#endif
+#ifndef NO_MD5
+	DefDigestInit(md5)
+#endif
+#ifndef NO_SHA
+	DefDigestInit(sha)
+	DefDigestInit(sha1)
+	DefDigestInit(dss)
+	DefDigestInit(dss1)
+#endif
+#ifndef NO_RIPEMD
+	DefDigestInit(ripemd160)
+#endif
+#ifndef NO_MDC2
+	DefDigestInit(mdc2)
+#endif
 
 /*
  * INIT
@@ -395,36 +260,36 @@ Init_ossl_digest(VALUE module)
 	rb_define_alias(cDigest, "to_str", "hexdigest");
 	/*rb_define_method(cDigest, "==", ossl_digest_equal, 1);*/
 
-	/* MD2 */
-	cMD2 = rb_define_class_under(module, "MD2", cDigest);
-	rb_define_method(cMD2, "initialize", ossl_md2_initialize, -1);
-	
-	/* MD5 */
-	cMD5 = rb_define_class_under(module, "MD5", cDigest);
-	rb_define_method(cMD5, "initialize", ossl_md5_initialize, -1);
+/*
+ * automation for classes creation and initialize method binding
+ */
+#define DefDigest(name, func) 							\
+	c##name## = rb_define_class_under(module, #name, cDigest);			\
+	rb_define_method(c##name##, "initialize", ossl_##func##_initialize, -1)
 
-	/* MDC2 */
-	cMDC2 = rb_define_class_under(module, "MDC2", cDigest);
-	rb_define_method(cMDC2, "initialize", ossl_mdc2_initialize, -1);
-
-	/* RIPEmd160 */
-	cRIPEMD160 = rb_define_class_under(module, "Ripemd160", cDigest);
-	rb_define_method(cRIPEMD160, "initialize", ossl_ripemd160_initialize, -1);
-	
-	/* SHA */
-	cSHA = rb_define_class_under(module, "SHA", cDigest);
-	rb_define_method(cSHA, "initialize", ossl_sha_initialize, -1);
-	
-	/* SHA1 */
-	cSHA1 = rb_define_class_under(module, "SHA1", cDigest);
-	rb_define_method(cSHA1, "initialize", ossl_sha1_initialize, -1);
-
-	/* SHA for DSA */
-	cDSS = rb_define_class_under(module, "DSS", cDigest);
-	rb_define_method(cDSS, "initialize", ossl_dss_initialize, -1);
-
-	/* SHA1 for DSA */
-	cDSS1 = rb_define_class_under(module, "DSS1", cDigest);
-	rb_define_method(cDSS1, "initialize", ossl_dss1_initialize, -1);
+/*
+ * create classes and bind initialize method
+ */
+#ifndef NO_MD2
+	DefDigest(MD2, md2);
+#endif
+#ifndef NO_MD4
+	DefDigest(MD4, md4);
+#endif
+#ifndef NO_MD5
+	DefDigest(MD5, md5);
+#endif
+#ifndef NO_SHA
+	DefDigest(SHA, sha);
+	DefDigest(SHA1, sha1);
+	DefDigest(DSS, dss);
+	DefDigest(DSS1, dss1);
+#endif
+#ifndef NO_RIPEMD
+	DefDigest(RIPEMD160, ripemd160);
+#endif
+#ifndef NO_MDC2
+	DefDigest(MDC2, mdc2);
+#endif
 }
 
