@@ -134,7 +134,7 @@ static VALUE ossl_session_db_set(void *key, VALUE data)
 		if (item->key == key) {
 			item->data = data;
 			rb_thread_critical = 0;
-			return VALUE;
+			return data;
 		}
 		last = item;
 		item = last->next;
@@ -151,7 +151,7 @@ static VALUE ossl_session_db_set(void *key, VALUE data)
 	else db_root = item;
 	rb_thread_critical = 0;
 
-	return VALUE;
+	return data;
 }
 
 /*
