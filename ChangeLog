@@ -1,7 +1,7 @@
 Sun, 06 Jul 2003 13:20:04 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509store.c:
-	  - ossl_x509store_add_cert(): should duplicate added cert.
-	  - ossl_x509store_add_crl(): should duplicate added crl.
+	  - ossl_x509store_add_cert(): should not duplicate added cert.
+	  - ossl_x509store_add_crl(): should not duplicate added crl.
 
 Fri, 05 Jul 2003 12:45:24 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/gen_csr.rb: DN parsing bug fix.
