@@ -21,7 +21,7 @@
 module OpenSSL
   module Digest
 
-    %w(DSS DSS1 MD2 MD4 MD5 MDC2 RIPEMD160 SHA SHA1).each{|diges|
+    %w(DSS DSS1 MD2 MD4 MD5 MDC2 RIPEMD160 SHA SHA1).each{|digest|
       eval(<<-EOD)
         class #{digest} < Digest
           def initialize(str=nil)
