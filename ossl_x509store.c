@@ -32,7 +32,7 @@
     if (!ctx) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_STORE_CTX_free, ctx); \
+    obj = Data_Wrap_Struct(klass, 0, ossl_x509stctx_free, ctx); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
     Data_Get_Struct(obj, X509_STORE_CTX, ctx); \
@@ -242,11 +242,13 @@ static VALUE ossl_x509stctx_get_err_string(VALUE);
 static VALUE ossl_x509stctx_get_chain(VALUE);
 
 static VALUE 
-ossl_x509store_verify(VALUE self, VALUE cert)
+ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
 {
+    VALUE cert, chain;
     VALUE ctx, proc, result;
 
-    ctx = rb_funcall(cX509StoreContext, rb_intern("new"), 2, self, cert);
+    rb_scan_args(argc, argv, "11", &cert, &chain);
+    ctx = rb_funcall(cX509StoreContext, rb_intern("new"), 3, self, cert, chain);
     proc = rb_block_given_p() ?  rb_block_proc() :
 	   rb_iv_get(self, "@verify_callback");
     rb_iv_set(ctx, "@verify_callback", proc);
@@ -262,6 +264,14 @@ ossl_x509store_verify(VALUE self, VALUE cert)
 /*
  * Public Functions
  */
+static void
+ossl_x509stctx_free(X509_STORE_CTX *ctx)
+{
+    if(ctx->untrusted)
+	sk_X509_pop_free(ctx->untrusted, X509_free);
+    if(ctx->cert) ctx->cert;
+}
+
 VALUE
 ossl_x509stctx_new(X509_STORE_CTX *ctx)
 {
@@ -302,36 +312,25 @@ DEFINE_ALLOC_WRAPPER(ossl_x509stctx_alloc)
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE store, cert;
+    VALUE store, cert, chain;
     X509_STORE_CTX *ctx;
     X509_STORE *x509st;
     X509 *x509 = NULL;
+    STACK_OF(X509) *x509s = NULL;
 
     GetX509StCtx(self, ctx);
-    rb_scan_args(argc, argv, "11", &store, &cert);
+    rb_scan_args(argc, argv, "12", &store, &cert, &chain);
     SafeGetX509Store(store, x509st);
-    if(!NIL_P(cert)) x509 = GetX509CertPtr(cert);
-    if(X509_STORE_CTX_init(ctx, x509st, x509, NULL) != 1){
+    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert);
+    if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
+    if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
+        sk_X509_pop_free(x509s, X509_free);
         ossl_raise(eX509StoreError, NULL);
     }
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
 
     return self;
-}
-
-static VALUE
-ossl_x509stctx_set_cert(VALUE self, VALUE cert)
-{
-    X509_STORE_CTX *ctx;
-    X509 *x509;
-
-    GetX509StCtx(self, ctx);
-    x509 = GetX509CertPtr(cert);
-    X509_STORE_CTX_set_cert(ctx, x509);
-    rb_iv_set(self, "@cert", cert);
-
-    return cert;
 }
 
 static VALUE
@@ -459,9 +458,6 @@ Init_ossl_x509store()
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 
-    ossl_verify_cb_idx =
-      X509_STORE_CTX_get_ex_new_index(0,"ossl_x509store_ex_vcb",NULL,NULL,NULL);
-
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
     rb_attr(cX509Store, rb_intern("error"), 1, 0, Qfalse);
@@ -477,13 +473,12 @@ Init_ossl_x509store()
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
     rb_define_method(cX509Store, "add_cert",     ossl_x509store_add_cert, 1);
     rb_define_method(cX509Store, "add_crl",      ossl_x509store_add_crl, 1);
-    rb_define_method(cX509Store, "verify",       ossl_x509store_verify, 1);
+    rb_define_method(cX509Store, "verify",       ossl_x509store_verify, -1);
 
     cX509StoreContext = rb_define_class_under(mX509,"StoreContext",rb_cObject);
     x509stctx = cX509StoreContext;
     rb_define_alloc_func(cX509StoreContext, ossl_x509stctx_alloc);
     rb_define_method(x509stctx,"initialize",  ossl_x509stctx_initialize, -1);
-    rb_define_method(x509stctx,"cert=",       ossl_x509stctx_set_cert, 1);
     rb_define_method(x509stctx,"verify",      ossl_x509stctx_verify, 0);
     rb_define_method(x509stctx,"chain",       ossl_x509stctx_get_chain,0);
     rb_define_method(x509stctx,"error",       ossl_x509stctx_get_err, 0);
