@@ -4,19 +4,27 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.9  2001/11/26 11:48:36  majkl
+	- Just forgot to add stuff to changelog...
+
 Revision 1.8  2001/11/21 09:37:03  gotoyuzo
 - buffering.rb went under ``openssl'' directory.
 
+2001/11/21 majkl
+	* BN added (only proof of concept)
+	* indent changed
+	* rand.h to ossl.h added
+
 Revision 1.7  2001/11/20 19:39:37  majkl
-- HMAC added
-- Config came back
-- API changed in PKCS7 (param. order)
-- API changed in Cipher (can't add data in .new)
-- indentation changed (only half of files, 2nd half to do)
-- some API doc added to README
+	* HMAC added
+	* Config came back
+	* API changed in PKCS7 (param. order)
+	* API changed in Cipher (can't add data in .new)
+	* indentation changed (only half of files, 2nd half to do)
+	* some API doc added to README
 
 Revision 1.6  2001/11/19 12:44:57  majkl
-added X509::Certificate .to_der
+	* added X509::Certificate .to_der
 
 2001/11/18 (ossl-0.0.9)
 	* all project is moved to savannah.gnu.org
