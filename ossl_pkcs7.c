@@ -494,7 +494,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
     int flg, ok, status;
-    BIO *in;
+    BIO *in, *out;
     PKCS7 *p7;
     VALUE ret, data;
     const char *msg;
@@ -513,11 +513,20 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
 	    rb_jump_tag(status);
 	}
     }
-    ok = PKCS7_verify(p7, x509s, x509st, in, NULL, flg);
+    if(!(out = BIO_new(BIO_s_mem()))){
+	BIO_free(in);
+	sk_X509_free(x509s);
+	ossl_raise(ePKCS7Error, NULL);
+    }
+    ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
     msg = ERR_reason_error_string(ERR_get_error());
     ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
+    data = ossl_protec_membio2str(out, &status);
+    ossl_pkcs7_set_data(self, data);
     BIO_free(in);
+    BIO_free(out);
     sk_X509_free(x509s);
+    if(status) rb_jump_buf(status);
 
     return (ok == 1) ? Qtrue : Qfalse;
 }
