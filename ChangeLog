@@ -1,3 +1,6 @@
+Sat, 25 Jan 2003 22:15:12 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* extconf.rb: add "dep" file to distclean target
+
 Sun, 19 Jan 2003 16:48:48 +0100 -- Michal Rokos <michal@rokos.homeip.net>
 	* extconf.rb: Use /usr/include by default when checking OpenSSL version
 	

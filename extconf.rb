@@ -50,10 +50,7 @@ if with_config("debug") or enable_config("debug")
     end
     srcs = srcs.join(" ")
     
-    ##
-    # mkmf.rb needs to be changes to allow this...
-    #
-    # $distcleanfiles << "dep"
+    $distcleanfiles << "dep"
     
     File.open("depend", "w") {|f|
       f.print <<EOD
