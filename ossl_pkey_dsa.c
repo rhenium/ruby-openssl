@@ -154,6 +154,7 @@ static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	unsigned long h = 0;
 	BIO *in = NULL;
 	char *passwd = NULL;
+	void (*cb)() = NULL;
 	VALUE buffer, pass;
 	
 	GetDSA_unsafe(self, dsap);
@@ -169,7 +170,9 @@ static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 			if (!RAND_bytes(seed, seed_len)) {
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
-			if (!(dsa = DSA_generate_parameters(FIX2INT(buffer), seed, seed_len, &counter, &h, ossl_dsa_generate_cb, NULL))) { /* arg to cb = NULL */
+			if (rb_block_given_p())
+				cb = ossl_dsa_generate_cb;
+			if (!(dsa = DSA_generate_parameters(FIX2INT(buffer), seed, seed_len, &counter, &h, cb, NULL))) { /* arg to cb = NULL */
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
 			if (!DSA_generate_key(dsa)) {

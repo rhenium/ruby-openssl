@@ -23,7 +23,7 @@ This program is licenced under the same licence as Ruby.
 = Cipher::... - various ciphers
 = basic PRNG functions (random generator) for OpenSSL module and class Random
 = SSLSocket (merged Gotou Yuuzou's SSLsocket-Ruby project)
-= PKCS7 (first try)
+= PKCS7 (signing&data_verify is working, rest needs some testing)
 
 [To-Do]
 = check for memory leaking :-))
@@ -66,14 +66,14 @@ OpenSSL::
 
 	Random
 		.seed(String) => true|false
-		.load_random_file(Filename) => true|false
-		.write_random_file(Filename) => true|false
+		.load_random_file(String (filename)) => true|false
+		.write_random_file(String (filename)) => true|false
 		.random_bytes(size) => String
 
 	Cipher::
 		constants:	UNSPEC
-				ECB, CFB, OFB, CBC (modes)
-				EDE, EDE3, BIT40, BIT64 (types)
+			modes:	ECB, CFB, OFB, CBC
+			types:	EDE, EDE3, BIT40, BIT64
 
 		BlowFish (allowed: ECB, CFB, OFB, CBC)
 		Cast5 (ECB, CFB, OFB, CBC)
@@ -116,11 +116,32 @@ OpenSSL::
 			.sign(PKey, Digest) => self
 			.verify(PKey) => true|false
 			.challenge => String
-			.challenge(String) => String
+			.challenge=(String) => String
 
+	PKCS7::
+		constants: SIGNED, ENVELOPED, SIGNED_ENVELOPED
+
+		PKCS7
+			.new(CONST|String (PEM)) => self
+			.add_signer(PKey::Any (private), PKCS7::Signer)
+			.signers => Ary of PKCS7::Signer
+			.cipher=(Cipher::Any) => Cipher
+			.add_recipient(X509::Certificate) => self
+			.add_certificate(X509::Certificate) => self
+			.add_crl(X509::CRL) => self
+			.add_data(String (data), [true|false] (detached)) => self
+			.verify_data(X509::Store, [String] (detached)) => true|false, yields PKCS7::Signer
+			.decode_data(PKey::Any (private), X509::Certificate) => String
+			.to_pem => String (PEM)
+
+		Signer
+			.new(PKey::Any (private), X509::Certificate, Digest::Any) => self
+			.name => X509::Name
+			.serial => FixNum
+			.signed_time => Time
 	PKey::
 		DSA
-			.new([keylen | String (PEM)]) => self
+			.new([keylen | String (PEM)]) => self, yields |p,n| when generating new
 			.public? => true|false
 			.private? => true|false
 			.to_str => String
@@ -134,7 +155,7 @@ OpenSSL::
 			.verify_digest(String (dig), String (sig)) => true|false
 			
 		RSA
-			.new([keylen | String (PEM)]) => self
+			.new([keylen | String (PEM)]) => self, yields |p,n| when generating new
 			.public? => true|false
 			.private? => true|false
 			.to_str => String

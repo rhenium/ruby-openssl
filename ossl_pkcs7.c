@@ -608,7 +608,7 @@ void Init_PKCS7(VALUE mPKCS7)
 	rb_define_singleton_method(cPKCS7, "new", ossl_pkcs7_s_new, -1);
 	rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, -1);
 	rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 2);
-	rb_define_method(cPKCS7, "signer", ossl_pkcs7_get_signer, 0);
+	rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);
 	rb_define_method(cPKCS7, "cipher=", ossl_pkcs7_set_cipher, 1);
 	rb_define_method(cPKCS7, "add_recipient", ossl_pkcs7_add_recipient, 1);
 	rb_define_method(cPKCS7, "add_certificate", ossl_pkcs7_add_certificate, 1);

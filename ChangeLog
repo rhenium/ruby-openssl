@@ -3,6 +3,10 @@ $Id$
 Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
+2001/11/18 (ossl-0.0.9)
+	* all project is moved to savannah.gnu.org
+	* applied patch to make yielding optional (GOTOU Yuuzou - thanks!)
+
 2001/11/17
 	* ossl_version.h - new file
 	* SSL::VERSION and SSL::OPENSSL_VERSION went under OpenSSL

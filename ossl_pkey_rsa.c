@@ -152,6 +152,7 @@ static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	int type = 0;
 	BIO *in = NULL;
 	char *passwd = NULL;
+	void (*cb)() = NULL;
 	VALUE buffer, pass;
 	
 	GetRSA_unsafe(self, rsap);
@@ -164,7 +165,9 @@ static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 		}
 	} else switch (TYPE(buffer)) {
 		case T_FIXNUM:
-			if (!(rsa = RSA_generate_key(FIX2INT(buffer), RSA_F4, ossl_rsa_generate_cb, NULL))) { /* arg to cb = NULL */
+			if (rb_block_given_p())
+				cb = ossl_rsa_generate_cb;
+			if (!(rsa = RSA_generate_key(FIX2INT(buffer), RSA_F4, cb, NULL))) { /* arg to cb = NULL */
 				rb_raise(eRSAError, "%s", ossl_error());
 			}
 			break;

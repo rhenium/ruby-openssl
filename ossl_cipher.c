@@ -19,6 +19,7 @@
 }
 
 #define DefCipherConst(x) rb_define_const(mCipher, #x, INT2FIX(##x))
+
 /*
  * Constants
  */

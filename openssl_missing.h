@@ -15,18 +15,22 @@
  */
 
 /* to pem.h */
+#ifndef NO_DSA
 #define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
         (char *(*)())d2i_DSAPublicKey,PEM_STRING_DSA_PUBLIC,bp,(char **)x,cb,u)
 #define PEM_write_bio_DSAPublicKey(bp,x) \
 	PEM_ASN1_write_bio((int (*)())i2d_DSAPublicKey,\
 		PEM_STRING_DSA_PUBLIC,\
 		bp,(char *)x,NULL,NULL,0,NULL,NULL)
+#endif
 
 /* to x509.h */
+#ifndef NO_DSA
 #define DSAPrivateKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPrivateKey, \
 	(char *(*)())d2i_DSAPrivateKey,(char *)dsa)
 #define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPublicKey, \
 	(char *(*)())d2i_DSAPublicKey,(char *)dsa)
+#endif
 
 /* to pkcs7.h */
 #define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \

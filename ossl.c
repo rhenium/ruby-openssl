@@ -19,6 +19,23 @@ void ossl_check_type(VALUE obj, VALUE klass)
 	}
 }
 
+/*
+ * Debug prints
+#ifdef OSSL_DEBUG
+inline char *ossl_error() {
+	char *ret = NULL, *err = NULL;
+	int err_len = NULL;
+	
+	err = ERR_error_string(ERR_get_error(), NULL);
+	ret = malloc(strlen(err)+strlen(__FILE__)+(sizeof(__LINE__)*3)+5);
+	sprintf(ret, "%s [%s:%d]", err, __FILE__, __LINE__);
+
+	return ret;
+}
+#else
+#define ossl_error() ERR_error_string(ERR_get_error(), NULL)
+#endif
+ */
 char *ossl_error(void)
 {
 	return ERR_error_string(ERR_get_error(), NULL);
@@ -42,8 +59,8 @@ VALUE asn1time_to_time(ASN1_UTCTIME *time)
 		default:
 			rb_raise(rb_eTypeError, "unknown time format");
 	}
-	
-	return rb_time_new(mktime(&tm), 0);
+	/*return rb_time_new(mktime(gmtime(mktime(&tm))), 0); /* Is this correct? */
+	return rb_time_new(mktime(&tm), 0); /* or this one? */
 }
 
 /*
