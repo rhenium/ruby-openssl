@@ -24,6 +24,13 @@ else
   SSLLIB="ssl"
 end
 
+if !defined? message
+  def message(*s)
+    printf(*s)
+    Logging::message(*s)
+  end
+end
+
 includes, = dir_config("openssl")
 includes ||= "/usr/include"
 
@@ -50,7 +57,7 @@ if with_config("debug") or enable_config("debug")
     end
     srcs = srcs.join(" ")
     
-    $distcleanfiles << "dep"
+    $distcleanfiles << "dep" if defined? $distcleanfiles
     
     File.open("depend", "w") {|f|
       f.print <<EOD
@@ -70,23 +77,22 @@ EOD
   end
 end
 
-def have_ruby_180()
-  checking_for("Ruby >= 1.8.0") do
-    (RUBY_VERSION < "1.8.0") ? false : true
-  end
-end
 
 def have_openssl_097(inc_dir)
-  checking_for("OpenSSL >= 0.9.7") do
-    txt = File.read(inc_dir+"/openssl/opensslv.h")
-    ((txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1] < "0.9.7") ? false : true
-  end
+# FIXME:
+#  checking_for("OpenSSL >= 0.9.7") do
+  printf "Checking for OpenSSL >= 0.9.7..."
+  File.open(inc_dir+"/openssl/opensslv.h") {|f|
+    txt = f.read
+    result = ((txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1] < "0.9.7")
+    puts result ? "no" : "yes"
+    !result
+  }
 end
 
 message "=== Checking for required stuff... ===\n"
 
-result  = have_ruby_180()
-result &= have_header("openssl/crypto.h")
+result = have_header("openssl/crypto.h")
 result &= have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules")
 result &= have_library(SSLLIB, "SSL_library_init")
 result &= have_openssl_097(includes)

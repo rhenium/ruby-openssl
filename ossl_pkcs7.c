@@ -143,6 +143,7 @@ ossl_pkcs7_alloc(VALUE klass)
     
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_pkcs7_alloc)
 
 static VALUE
 ossl_pkcs7_initialize(VALUE self, VALUE arg)
@@ -453,6 +454,7 @@ ossl_pkcs7si_alloc(VALUE klass)
 
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_pkcs7si_alloc)
 
 static VALUE
 ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)

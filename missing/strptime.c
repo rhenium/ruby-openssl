@@ -36,7 +36,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#if defined(NT)
+#if defined(NT) || defined(_WIN32)
 #  define strncasecmp _strnicmp
 #elif !defined(HAVE_STRNCASECMP)
 #  include "./strncasecmp.c"

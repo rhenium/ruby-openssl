@@ -90,6 +90,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     ossl_sslctx_st *p;
     return Data_Make_Struct(klass, ossl_sslctx_st, 0, ossl_sslctx_free, p);
 }
+DEFINE_ALLOC_WRAPPER(ossl_sslctx_s_alloc)
 
 static VALUE
 ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
@@ -352,6 +353,7 @@ ossl_ssl_s_alloc(VALUE klass)
     ossl_ssl_st *p;
     return Data_Make_Struct(klass, ossl_ssl_st, 0, ossl_ssl_free, p);
 }
+DEFINE_ALLOC_WRAPPER(ossl_ssl_s_alloc)
 
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)

@@ -73,6 +73,7 @@ ossl_x509crl_alloc(VALUE klass)
 
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_x509crl_alloc)
 
 static VALUE 
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)

@@ -106,6 +106,7 @@ ossl_x509extfactory_alloc(VALUE klass)
 
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_x509extfactory_alloc)
 
 static VALUE 
 ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)

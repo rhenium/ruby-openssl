@@ -50,6 +50,7 @@ ossl_spki_alloc(VALUE klass)
 	
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_spki_alloc)
 
 static VALUE
 ossl_spki_initialize(int argc, VALUE *argv, VALUE self)

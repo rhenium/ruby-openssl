@@ -24,8 +24,8 @@ extern "C" {
 #include <version.h>
 #include <openssl/opensslv.h>
 
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L) && (RUBY_VERSION_CODE < 172)
-#  error ! OSSL2 needs Ruby >= 1.7.2 and OpenSSL >= 0.9.7 its run.
+#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
+#  error ! This version of OSSL needs OpenSSL >= 0.9.7 for its run!
 #endif
 
 #if defined(NT) || defined(_WIN32)
@@ -140,6 +140,7 @@ void ossl_debug(const char *, ...);
  * Include all parts
  */
 #include "openssl_missing.h"
+#include "ruby_missing.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
 #include "ossl_config.h"
@@ -158,3 +159,4 @@ void ossl_debug(const char *, ...);
 #endif
 
 #endif /* _OSSL_H_ */
+

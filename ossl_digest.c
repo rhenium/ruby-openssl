@@ -56,6 +56,7 @@ ossl_digest_alloc(VALUE klass)
 	
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_digest_alloc)
 
 static VALUE
 ossl_digest_initialize(VALUE self, VALUE str)
@@ -157,7 +158,12 @@ ossl_digest_hexdigest(VALUE self)
 static VALUE
 ossl_digest_s_digest(VALUE klass, VALUE str, VALUE data)
 {
-    VALUE obj = rb_class_new_instance(1, &str, klass);
+    VALUE obj =
+#if HAVE_RB_DEFINE_ALLOC_FUNC
+	rb_class_new_instance(1, &str, klass);
+#else
+	ossl_digest_alloc_wrapper(1, &str, klass);
+#endif
 
     ossl_digest_update(obj, data);
 
@@ -167,7 +173,12 @@ ossl_digest_s_digest(VALUE klass, VALUE str, VALUE data)
 static VALUE
 ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
 {
-    VALUE obj = rb_class_new_instance(1, &str, klass);
+    VALUE obj =
+#if HAVE_RB_DEFINE_ALLOC_FUNC
+	rb_class_new_instance(1, &str, klass);
+#else
+	ossl_digest_alloc_wrapper(1, &str, klass);
+#endif
 
     ossl_digest_update(obj, data);
 

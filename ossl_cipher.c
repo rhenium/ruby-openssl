@@ -36,7 +36,7 @@ VALUE eCipherError;
  * Struct
  */
 typedef struct ossl_cipher_st {
-    int init; /* HACK - not to coredump when calling
+    int init; /* FIXME: THIS IS NASTY HACK - not to coredump when calling
 		 #update or #final without previous en/decrypt */
     const EVP_CIPHER *cipher;
     EVP_CIPHER_CTX ctx;
@@ -81,6 +81,7 @@ ossl_cipher_alloc(VALUE klass)
 
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_cipher_alloc)
 
 static VALUE
 ossl_cipher_initialize(VALUE self, VALUE str)

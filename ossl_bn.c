@@ -99,6 +99,7 @@ ossl_bn_alloc(VALUE klass)
 
     return obj;
 }
+DEFINE_ALLOC_WRAPPER(ossl_bn_alloc)
 
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
