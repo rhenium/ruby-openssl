@@ -1,3 +1,7 @@
+Sun, 08 Jun 2003 21:15:36 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_x509ext.c: fix to_a - should not raise exceptions even if
+	  unknown oid appeared in extension.
+
 Sun, 08 Jun 2003 10:26:18 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: new method SSL::Context#options added by NaHi. 
 	* lib/openssl/buffering.rb: avoid wornings for uninitialized ivars.

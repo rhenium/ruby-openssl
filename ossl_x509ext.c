@@ -238,21 +238,34 @@ static VALUE
 ossl_x509ext_to_a(VALUE obj)
 {
     X509_EXTENSION *ext;
+    ASN1_OBJECT *extobj;
     BIO *out;
     BUF_MEM *buf;
     int nid, critical;
-    VALUE ary, value;
+    char* sn;
+    VALUE ary, tag, value;
 
     GetX509Ext(obj, ext);
     ary = rb_ary_new2(3);
-    nid = OBJ_obj2nid(X509_EXTENSION_get_object(ext));
-    rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
+
+    extobj = X509_EXTENSION_get_object(ext);
+    if ((nid = OBJ_obj2nid(extobj)) == NID_undef) {
+        if (!(out = BIO_new(BIO_s_mem()))) {
+	    ossl_raise(eX509ExtError, "");
+	}
+	i2a_ASN1_OBJECT(out, extobj);
+	BIO_get_mem_ptr(out, &buf);
+	rb_ary_push(ary, rb_str_new(buf->data, buf->length));
+	BIO_free(out);
+    } else {
+	sn = OBJ_nid2sn(nid);
+	rb_ary_push(ary, rb_str_new2(sn));
+    }
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509ExtError, "");
     }
     if (!X509V3_EXT_print(out, ext, 0, 0)) {
-	BIO_free(out);
-	ossl_raise(eX509ExtError, "");
+	M_ASN1_OCTET_STRING_print(out, ext->value);
     }
     BIO_get_mem_ptr(out, &buf);
     value = rb_str_new(buf->data, buf->length);
