@@ -11,8 +11,20 @@
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
-#define WrapBN OSSLWrapBN
+#define WrapBN(obj, bn) do { \
+	if (!bn) { \
+		rb_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
+	} \
+	obj = Data_Wrap_Struct(cBN, 0, BN_clear_free, bn); \
+} while (0)
 #define GetBN(obj, bn) do { \
+	Data_Get_Struct(obj, BIGNUM, bn); \
+	if (!bn) { \
+		rb_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
+	} \
+} while (0)
+#define OSSLGetBN(obj, bn) do { \
+	OSSL_Check_Instance(obj, cBN); \
 	Data_Get_Struct(obj, BIGNUM, bn); \
 	if (!bn) { \
 		rb_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
@@ -98,7 +110,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 			OSSL_Raise(eBNError, "");
 		}
 	} else {
-		str = rb_String(str);
+		StringValue(str);
 
 		switch (base) {
 			/*

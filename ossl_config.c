@@ -10,8 +10,18 @@
  */
 #include "ossl.h"
 
-#define WrapConfig(obj, conf) obj = Data_Wrap_Struct(cConfig, 0, CONF_free, conf)
-#define GetConfig(obj, conf) Data_Get_Struct(obj, LHASH, conf)
+#define WrapConfig(obj, conf) do { \
+	if (!conf) { \
+		rb_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
+	} \
+	obj = Data_Wrap_Struct(cConfig, 0, CONF_free, conf); \
+} while (0)
+#define GetConfig(obj, conf) do { \
+	Data_Get_Struct(obj, LHASH, conf); \
+	if (!conf) { \
+		rb_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
+	} \
+} while (0)
 
 /*
  * Classes
@@ -29,23 +39,22 @@ VALUE eConfigError;
 static VALUE
 ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 {
-	LHASH *conf = NULL;
+	LHASH *conf;
 	long err_line = 0;
 	VALUE obj, path;
 	
 	rb_scan_args(argc, argv, "10", &path);
 
-	path = rb_str_to_str(path);
-	Check_SafeStr(path);
+	SafeStringValue(path);
 	
-	if (!(conf = CONF_load(NULL, RSTRING(path)->ptr, &err_line))) {
-		if (err_line <= 0)
-			rb_raise(eConfigError, "wrong config file %s", RSTRING(path)->ptr);
-		else
-			rb_raise(eConfigError, "error on line %ld in config file %s",\
-					err_line, RSTRING(path)->ptr);
+	if (!(conf = CONF_load(NULL, StringValuePtr(path), &err_line))) {
+		if (err_line <= 0) {
+			rb_raise(eConfigError, "wrong config file %s", StringValuePtr(path));
+		} else {
+			rb_raise(eConfigError, "error on line %ld in config file %s", \
+					err_line, StringValuePtr(path));
+		}
 	}
-	
 	WrapConfig(obj, conf);
 
 	return obj;
@@ -54,18 +63,15 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 {
-	LHASH *conf = NULL;
-	char *sect = NULL, *str = NULL;
+	LHASH *conf;
+	char *sect = NULL, *str;
 	
 	GetConfig(self, conf);
 	
 	if (!NIL_P(section)) {
-		section = rb_String(section);
-		sect = RSTRING(section)->ptr;
+		sect = StringValuePtr(section);
 	}
-	item = rb_String(item);
-
-	if (!(str = CONF_get_string(conf, sect, RSTRING(item)->ptr))) {
+	if (!(str = CONF_get_string(conf, sect, StringValuePtr(item)))) {
 		OSSL_Raise(eConfigError, "");
 	}
 	return rb_str_new2(str);
@@ -73,38 +79,33 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 
 /*
  * Get all numbers as strings - use str.to_i to convert
- * long number = CONF_get_number(confp->config, sect, RSTRING(item)->ptr);
+ * long number = CONF_get_number(confp->config, sect, StringValuePtr(item));
  */
 
 static VALUE
 ossl_config_get_section(VALUE self, VALUE section)
 {
-	LHASH *conf = NULL;
-	STACK_OF(CONF_VALUE) *sk = NULL;
-	CONF_VALUE *entry = NULL;
-	int i, entries = 0;
+	LHASH *conf;
+	STACK_OF(CONF_VALUE) *sk;
+	CONF_VALUE *entry;
+	int i, entries;
 	VALUE hash;
 
 	GetConfig(self, conf);
 	
-	section = rb_String(section);
-	
-	if (!(sk = CONF_get_section(conf, RSTRING(section)->ptr))) {
+	if (!(sk = CONF_get_section(conf, StringValuePtr(section)))) {
 		OSSL_Raise(eConfigError, "");
 	}
-	
 	hash = rb_hash_new();
 	
 	if ((entries = sk_CONF_VALUE_num(sk)) < 0) {
 		rb_warning("# of items in section is < 0?!?");
 		return hash;
 	}
-
 	for (i=0; i<entries; i++) {
 		entry = sk_CONF_VALUE_value(sk, i);		
 		rb_hash_aset(hash, rb_str_new2(entry->name), rb_str_new2(entry->value));
 	}
-	
 	return hash;
 }
 
@@ -112,16 +113,16 @@ ossl_config_get_section(VALUE self, VALUE section)
  * INIT
  */
 void
-Init_ossl_config(VALUE module)
+Init_ossl_config()
 {
-	eConfigError = rb_define_class_under(module, "ConfigError", eOSSLError);
+	eConfigError = rb_define_class_under(mOSSL, "ConfigError", eOSSLError);
 
-	cConfig = rb_define_class_under(module, "Config", rb_cObject);
+	cConfig = rb_define_class_under(mOSSL, "Config", rb_cObject);
 	
 	rb_define_singleton_method(cConfig, "load", ossl_config_s_load, -1);
 	rb_define_alias(CLASS_OF(cConfig), "new", "load");
 	
-	rb_define_method(cConfig, "get_value", ossl_config_get_value, 2);
-	rb_define_method(cConfig, "get_section", ossl_config_get_section, 1);
+	rb_define_method(cConfig, "value", ossl_config_get_value, 2);
+	rb_define_method(cConfig, "section", ossl_config_get_section, 1);
 }
 

@@ -10,8 +10,23 @@
  */
 #include "ossl.h"
 
-#define WrapDigest OSSLWrapDigest
+#define WrapDigest(klass, obj, ctx) do { \
+	if (!ctx) { \
+		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
+	} \
+	obj = Data_Wrap_Struct(klass, 0, CRYPTO_free, ctx); \
+} while (0)
+
 #define GetDigest(obj, ctx) do { \
+	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
+	if (!ctx) { \
+		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
+	} \
+} while (0)
+#define DigestValue(obj) \
+	OSSL_Check_Instance((obj), cDigest)
+#define OSSLGetDigest(obj, ctx) do { \
+	DigestValue(obj); \
 	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
 	if (!ctx) { \
 		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \

@@ -105,7 +105,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
-	pass = rb_String(pass);
+	StringValue(pass);
 
 	if (NIL_P(init_v)) {
 		/*
@@ -150,7 +150,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
-	pass = rb_String(pass);
+	StringValue(pass);
 	
 	if (NIL_P(init_v)) {
 		/*
@@ -194,7 +194,7 @@ ossl_cipher_update(VALUE self, VALUE data)
 		rb_raise(eCipherError, "Don't call 'update' without preceding 'en/decrypt'.");
 	}
 	
-	data = rb_String(data);
+	StringValue(data);
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
 	

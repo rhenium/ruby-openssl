@@ -15,9 +15,6 @@ extern VALUE mCipher;
 extern VALUE cCipher;
 extern VALUE eCipherError;
 
-#define OSSLCipherValue(obj) OSSL_Check_Instance((obj), cCipher)
-#define OSSLCipherValuePtr(obj) ossl_cipher_get_EVP_CIPHER((obj))
-
 const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE);
 void Init_ossl_cipher(void);
 

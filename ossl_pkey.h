@@ -18,5 +18,5 @@ typedef struct ossl_pkey_st {
 	EVP_PKEY *(*get_EVP_PKEY)(VALUE);
 } ossl_pkey;
 
-#endif
+#endif /* _OSSL_PKEY_H_ */
 

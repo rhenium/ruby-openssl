@@ -31,8 +31,8 @@
 void
 ossl_check_kind(VALUE obj, VALUE klass)
 {
-	if (rb_obj_is_kind_of(obj, klass) == Qfalse) {
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",\
+	if (!RTEST(rb_obj_is_kind_of(obj, klass))) {
+		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
 }
@@ -40,7 +40,7 @@ ossl_check_kind(VALUE obj, VALUE klass)
 void
 ossl_check_instance(VALUE obj, VALUE klass)
 {
-	if (rb_obj_is_instance_of(obj, klass) == Qfalse) {
+	if (!RTEST(rb_obj_is_instance_of(obj, klass))) {
 		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
@@ -68,8 +68,12 @@ asn1time_to_time(ASN1_UTCTIME *time)
 		default:
 			rb_raise(rb_eTypeError, "unknown time format");
 	}
-	/*return rb_time_new(mktime(gmtime(mktime(&tm))), 0); * Is this correct? */
-	return rb_time_new(mktime(&tm), 0); /* or this one? */
+	/*
+	 * QUESTION:
+	 * return rb_time_new(mktime(gmtime(mktime(&tm))), 0);
+	 * Is this better than following?
+	 */
+	return rb_time_new(mktime(&tm), 0);
 }
 
 /*
@@ -80,9 +84,7 @@ extern struct timeval rb_time_timeval(VALUE time);
 time_t
 time_to_time_t(VALUE time)
 {
-	struct timeval t;
-
-	t = rb_time_timeval(time);
+	struct timeval t = rb_time_timeval(time);
 	
 	return t.tv_sec;
 }
@@ -146,7 +148,7 @@ Init_openssl()
 	 */
 	Init_ossl_bn();
 	Init_ossl_cipher();
-	Init_ossl_config(mOSSL);
+	Init_ossl_config();
 	Init_ossl_digest();
 	Init_ossl_hmac(mOSSL);
 	Init_ossl_pkcs7(mPKCS7);

@@ -8,11 +8,13 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(_OSSL_VERSION_H_)
-#define _OSSL_VERSION_H_
+#if !defined(_OSSL_CONFIG_H_)
+#define _OSSL_CONFIG_H_
 
-/*#define OSSL_VERSION "0.2.0"*/
-#define OSSL_VERSION "OSSL2 - CVS SNAPSHOT ($Date$)"
+extern VALUE cConfig;
+extern VALUE eConfigError;
 
-#endif /* _OSSL_VERSION_H_ */
+void Init_ossl_config(void);
+
+#endif /* _OSSL_CONFIG_H_ */
 

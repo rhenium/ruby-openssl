@@ -91,17 +91,14 @@ extern VALUE ePKCS7Error;
 /* HMAC */
 extern VALUE cHMAC;
 extern VALUE eHMACError;
-/* Conf */
-extern VALUE cConfig;
-extern VALUE eConfigError;
 
 /*
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) ossl_check_kind(obj, klass)
+#define OSSL_Check_Type(obj, klass) ossl_check_kind(obj, klass)
 void ossl_check_kind(VALUE, VALUE);
 #define OSSL_Check_Instance(obj, klass) ossl_check_instance(obj, klass)
-#define OSSL_Check_Type(obj, klass) OSSL_Check_Instance(obj, klass)
 void ossl_check_instance(VALUE, VALUE);
 
 /*
@@ -117,7 +114,7 @@ time_t time_to_time_t(VALUE);
 	ERR_error_string(ERR_get_error(), NULL)
 
 #if defined(OSSL_DEBUG)
-#  define OSSL_Raise(klass,text) \
+#  define OSSL_Raise(klass, text) \
 	rb_raise(klass, "%s%s [in '%s', ('%s':%d)]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
 #  define OSSL_Warn(text) \
@@ -127,18 +124,13 @@ time_t time_to_time_t(VALUE);
 	rb_warning("%s%s [in '%s', ('%s':%d)]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
 #else /* OSSL_DEBUG */
-#  define OSSL_Raise(klass,text) \
+#  define OSSL_Raise(klass, text) \
 	rb_raise(klass, "%s%s", text, OSSL_ErrMsg())
 #  define OSSL_Warn(text) \
 	rb_warn("%s%s", text, OSSL_ErrMsg())
 #  define OSSL_Warning(text) \
 	rb_warning("%s%s", text, OSSL_ErrMsg())
 #endif /* OSSL_DEBUG */
-
-/*
- * Config
- */
-void Init_ossl_config(VALUE);
 
 /*
  * Netscape SPKI
@@ -208,7 +200,17 @@ void Init_ossl_hmac(VALUE);
 #include "openssl_missing.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
+#include "ossl_config.h"
 #include "ossl_digest.h"
+/*
+ * TODO
+#include "ossl_hmac.h"
+#include "ossl_pkcs7.h"
+#include "ossl_pkey.h"
+#include "ossl_rand.h"
+#include "ossl_spki.h"
+#include "ossl_ssl.h"
+ */
 #include "ossl_version.h"
 #include "ossl_x509.h"
 
