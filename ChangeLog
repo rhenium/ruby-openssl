@@ -1,3 +1,6 @@
+Thu, 03 Jul 2003 02:52:47 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: added ossl_sslctx_free() as a workaround.
+
 Thu, 03 Jul 2003 01:37:28 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509name.c: add X509::Name::eql? (ossl_x509name_eql).
 

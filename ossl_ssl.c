@@ -77,6 +77,17 @@ struct {
 #undef OSSL_SSL_METHOD_ENTRY
 };
 
+int ossl_ssl_ex_vcb_idx;
+int ossl_ssl_ex_store_p;
+
+static void
+ossl_sslctx_free(SSL_CTX *ctx)
+{
+    if(ctx && SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_store_p)== (void*)1)
+	ctx->cert_store = NULL;
+    SSL_CTX_free(ctx);
+}
+
 static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
@@ -87,7 +98,7 @@ ossl_sslctx_s_alloc(VALUE klass)
         ossl_raise(eSSLError, "SSL_CTX_new:");
     }
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
-    return Data_Wrap_Struct(klass, 0, SSL_CTX_free, ctx);
+    return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
 DEFINE_ALLOC_WRAPPER(ossl_sslctx_s_alloc)
 
@@ -125,8 +136,6 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-int ossl_ssl_ex_vcb_idx;
-
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
@@ -155,8 +164,15 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_cert_store(self);
     if(!NIL_P(val)){
-        store = DupX509StorePtr(val);
+	/*
+         * WORKAROUND:
+	 *   X509_STORE can count references, but
+	 *   X509_STORE_free() doesn't care it.
+	 *   So we won't increment it but mark it by ex_data.
+	 */
+        store = GetX509StorePtr(val); /* NO NEED TO DUP */
         SSL_CTX_set_cert_store(ctx, store);
+        SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_store_p, (void*)1);
     }
 
     /* private key may be bundled in certificate file. */
@@ -590,6 +606,7 @@ Init_ossl_ssl()
     int i;
 
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_vcb_idx",0,0,0);
+    ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,"ossl_ssl_ex_store_p",0,0,0);
 
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
