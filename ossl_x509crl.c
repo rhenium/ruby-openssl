@@ -100,7 +100,7 @@ ossl_x509crl_get_version(VALUE self)
 
 	GetX509CRL(self, crl);
 
-	ver = ASN1_INTEGER_get(crl->crl->version);
+	ver = X509_CRL_get_version(crl);
 
 	return LONG2NUM(ver);
 }
@@ -109,7 +109,6 @@ static VALUE
 ossl_x509crl_set_version(VALUE self, VALUE version)
 {
 	X509_CRL *crl;
-	ASN1_INTEGER *asn1int;
 	long ver;
 	
 	GetX509CRL(self, crl);
@@ -117,15 +116,9 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
 	if ((ver = NUM2LONG(version)) < 0) {
 		ossl_raise(eX509CRLError, "version must be >= 0!");
 	}
-	if (!(asn1int = ASN1_INTEGER_new())) {
+	if (!X509_CRL_set_version(crl, ver)) {
 		ossl_raise(eX509CRLError, "");
 	}
-	if (!ASN1_INTEGER_set(asn1int, ver)) {
-		ossl_raise(eX509CRLError, "");
-	}
-	ASN1_INTEGER_free(crl->crl->version);
-	crl->crl->version = asn1int;
-
 	return version;
 }
 
@@ -159,7 +152,7 @@ ossl_x509crl_get_last_update(VALUE self)
 
 	GetX509CRL(self, crl);
 
-	return asn1time_to_time(crl->crl->lastUpdate);
+	return asn1time_to_time(X509_CRL_get_lastUpdate(crl));
 }
 
 static VALUE 
@@ -185,7 +178,7 @@ ossl_x509crl_get_next_update(VALUE self)
 
 	GetX509CRL(self, crl);
 
-	return asn1time_to_time(crl->crl->nextUpdate);
+	return asn1time_to_time(X509_CRL_get_nextUpdate(crl));
 }
 
 static VALUE 
@@ -214,7 +207,7 @@ ossl_x509crl_get_revoked(VALUE self)
 
 	GetX509CRL(self, crl);
 
-	num = sk_X509_CRL_num(crl->crl->revoked);
+	num = sk_X509_CRL_num(X509_CRL_get_REVOKED(crl));
 
 	if (num < 0) {
 		rb_warning("num < 0???");
@@ -223,7 +216,7 @@ ossl_x509crl_get_revoked(VALUE self)
 	ary = rb_ary_new2(num);
 
 	for(i=0; i<num; i++) {
-		rev = (X509_REVOKED *)sk_X509_CRL_value(crl->crl->revoked, i); /* NO DUP - don't free! */
+		rev = (X509_REVOKED *)sk_X509_CRL_value(X509_CRL_get_REVOKED(crl), i); /* NO DUP - don't free! */
 		revoked = ossl_x509revoked_new(rev);
 		rb_ary_push(ary, revoked);
 	}
@@ -256,7 +249,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 			ossl_raise(eX509CRLError, "");
 		}
 	}
-	sk_X509_REVOKED_sort(crl->crl->revoked);
+	X509_CRL_sort(crl);
 	
 	return ary;
 }
@@ -274,7 +267,7 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
 	if (!sk_X509_CRL_push(crl->crl->revoked, rev)) { /* NO DUP - don't free! */
 		ossl_raise(eX509CRLError, "");
 	}
-	sk_X509_REVOKED_sort(crl->crl->revoked);
+	X509_CRL_sort(crl);
 	
 	return revoked;
 }

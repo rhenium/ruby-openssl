@@ -184,7 +184,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 	Check_Type(ary, T_ARRAY);
 	
 	for (i=0; i<RARRAY(ary)->len; i++) {
-		OSSL_Check_Type(RARRAY(ary)->ptr[i], cX509Ext);
+		OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
 	}
 	
 	sk_X509_EXTENSION_pop_free(rev->extensions, X509_EXTENSION_free);

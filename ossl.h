@@ -70,7 +70,6 @@ extern VALUE eOSSLError;
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) ossl_check_kind(obj, klass)
-#define OSSL_Check_Type(obj, klass) ossl_check_kind(obj, klass)
 void ossl_check_kind(VALUE, VALUE);
 #define OSSL_Check_Instance(obj, klass) ossl_check_instance(obj, klass)
 void ossl_check_instance(VALUE, VALUE);

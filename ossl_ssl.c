@@ -274,7 +274,6 @@ ssl_initialize(int argc, VALUE *argv, VALUE self)
 			if (!NIL_P(key)){
 				if(TYPE(key) == T_STRING) ssl_set_key_file2(self, key);
 				else{
-					OSSL_Check_Type(key, cPKey);
 					ssl_set_key2(self, key);
 				}
 			}
@@ -283,7 +282,6 @@ ssl_initialize(int argc, VALUE *argv, VALUE self)
 			if (!NIL_P(cert)){
 				if(TYPE(cert) == T_STRING) ssl_set_cert_file2(self, cert);
 				else{
-					OSSL_Check_Type(cert, cX509Cert);
 					ssl_set_cert2(self, cert);
 				}
 			}
@@ -562,7 +560,7 @@ ssl_get_state(VALUE self)
 static VALUE
 ssl_set_cert2(VALUE self, VALUE v)
 {
-	if(!NIL_P(v)) OSSL_Check_Type(v, cX509Cert);
+	if(!NIL_P(v)) OSSL_Check_Kind(v, cX509Cert);
 	ssl_set_cert(self, v);
 	ssl_set_cert_file(self, Qnil);
 	return v;
@@ -581,7 +579,7 @@ ssl_set_cert_file2(VALUE self, VALUE v)
 static VALUE
 ssl_set_key2(VALUE self, VALUE v)
 {
-	if(!NIL_P(v)) OSSL_Check_Type(v, cPKey);
+	if(!NIL_P(v)) OSSL_Check_Kind(v, cPKey);
 	ssl_set_key(self, v);
 	ssl_set_key_file(self, Qnil);
 	return v;

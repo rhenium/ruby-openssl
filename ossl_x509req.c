@@ -343,7 +343,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	Check_Type(ary, T_ARRAY);
 
 	for (i=0;i<RARRAY(ary)->len; i++) {
-		OSSL_Check_Type(RARRAY(ary)->ptr[i], cX509Attr);
+		OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Attr);
 	}
 
 	sk_X509_ATTRIBUTE_pop_free(req->req_info->attributes, X509_ATTRIBUTE_free);

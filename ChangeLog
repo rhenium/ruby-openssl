@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Thu, 13 Jun 2002 15:15:58 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.h: Dropped OSSL_Check_Type macro; update related files
+
 Thu, 13 Jun 2002 12:33:16 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* config.c: fix build for Windows
 

@@ -82,7 +82,9 @@ X509 *
 GetX509CertPtr(VALUE obj)
 {
 	X509 *x509;
+	
 	SafeGetX509(obj, x509);
+	
 	return x509;
 }
 
@@ -90,8 +92,11 @@ X509 *
 DupX509CertPtr(VALUE obj)
 {
 	X509 *x509;
+	
 	SafeGetX509(obj, x509);
+	
 	CRYPTO_add(&x509->references,1,CRYPTO_LOCK_X509);
+	
 	return x509;
 }
 
@@ -546,7 +551,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 	Check_Type(ary, T_ARRAY);
 	
 	for (i=0; i<RARRAY(ary)->len; i++) { /* All ary's members should be X509Extension */
-		OSSL_Check_Type(RARRAY(ary)->ptr[i], cX509Ext);
+		OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
 	}
 
 	sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);

@@ -65,6 +65,8 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 	if (!(conf = NCONF_new(NULL))) {
 		ossl_raise(eConfigError, "");
 	}
+	OSSL_Debug("Loading file: %s", filename);
+
 	if (!NCONF_load(conf, filename, &err_line)) {
 		if (err_line <= 0) {
 			ossl_raise(eConfigError, "wrong config file %s", filename);
@@ -73,7 +75,6 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 					err_line, filename);
 		}
 	}
-	OSSL_Debug("Loaded file: %s", filename);
 
 	WrapConfig(klass, obj, conf);
 

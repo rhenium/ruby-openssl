@@ -192,7 +192,7 @@ ossl_pkcs7_add_signer(VALUE self, VALUE signer, VALUE key)
 	
 	GetPKCS7(self, pkcs7);
 
-	OSSL_Check_Type(signer, cPKCS7SignerInfo);
+	OSSL_Check_Kind(signer, cPKCS7SignerInfo);
 	
 	pkey = DupPrivPKeyPtr(key);
 	p7si = ossl_pkcs7si_get_PKCS7_SIGNER_INFO(signer); /* DUP needed to make PKCS7_add_signer GCsafe */
@@ -415,8 +415,6 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 	if(!PKCS7_type_is_enveloped(pkcs7)) {
 		ossl_raise(ePKCS7Error, "Wrong content type - PKCS7 is not ENVELOPED");
 	}
-	OSSL_Check_Type(cert, cX509Cert);
-
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
 

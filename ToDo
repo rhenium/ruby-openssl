@@ -16,8 +16,8 @@ OpenSSL::
   * Add PKCS#8
   * Add PKCS#12
   * Is there any need to implement BIO? (Wrap BIO to Ruby's IO?)
-  * Add Comp?
-  * Add krb5?
+  [NO] Add Comp? [It's just RLE and ZLIB - no use for]
+  [NO] Add krb5? [It's just ASN.1!]
   * Add ocsp
   
   BN::
