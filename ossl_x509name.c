@@ -124,10 +124,16 @@ static VALUE
 ossl_x509name_to_s(VALUE self)
 {
 	X509_NAME *name;
+	char *buf;
+	VALUE str;
 
 	GetX509Name(self, name);
 
-	return rb_str_new2(X509_NAME_oneline(name, NULL, 0));
+	buf = X509_NAME_oneline(name, NULL, 0);
+	str = rb_str_new2(buf);
+	OPENSSL_free(buf);
+
+	return str;
 }
 
 static VALUE 
@@ -200,7 +206,7 @@ ossl_x509name_cmp(VALUE self, VALUE other)
 	result = X509_NAME_cmp(name1, name2);
 	
 	if (result < 0) return INT2FIX(-1);
-	if (result > 1) return INT2FIX(1);
+	if (result >= 1) return INT2FIX(1);
 	return INT2FIX(0);
 }
 

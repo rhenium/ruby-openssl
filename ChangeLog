@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 23 Jul 2002 15:10:46 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	x509name.c: FIX mem leak in #to_s
+
 Wed, 10 Jul 2002 17:36:28 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509crl.c: GetX509CRLPtr and DupX509CRLPtr macros introduced and subst for ossl_x509crl_get_X509_CRL
 
