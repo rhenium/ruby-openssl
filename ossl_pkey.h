@@ -68,5 +68,45 @@ extern VALUE eDHError;
 VALUE ossl_dh_new(EVP_PKEY *);
 void Init_ossl_dh();
 
+#define OSSL_PKEY_BN(type,  name)					\
+static VALUE ossl_##type##_get_##name##(VALUE self)			\
+{									\
+	EVP_PKEY *pkey;							\
+	BIGNUM *bn;							\
+									\
+	GetPKey(self, pkey);						\
+	bn = pkey->pkey.##type##->##name;				\
+	if (bn == NULL)							\
+		return Qnil;						\
+	return ossl_bn_new(bn);						\
+}									\
+static VALUE ossl_##type##_set_##name##(VALUE self, VALUE bignum)	\
+{									\
+	EVP_PKEY *pkey;							\
+	BIGNUM *bn, *newbn;						\
+									\
+	GetPKey(self, pkey);						\
+	if (NIL_P(bignum)) {						\
+		BN_clear_free(pkey->pkey.##type##->##name##);		\
+		pkey->pkey.##type##->##name## = NULL;			\
+		return Qnil;						\
+	}								\
+									\
+	bn = GetBNPtr(bignum);						\
+	if (pkey->pkey.##type##->##name## == NULL)			\
+		pkey->pkey.##type##->##name## = BN_new();		\
+	if (pkey->pkey.##type##->##name## == NULL)			\
+		ossl_raise(eBNError, "");				\
+	if (BN_copy(pkey->pkey.##type##->##name##, bn) == NULL)		\
+		ossl_raise(eBNError, "");				\
+	return bignum;							\
+}
+
+#define DEF_OSSL_PKEY_BN(class, type, name)				\
+do {									\
+	rb_define_method(class, #name, ossl_##type##_get_##name##, 0);	\
+	rb_define_method(class, #name "=", ossl_##type##_set_##name##, 1);	\
+} while (0)
+
 #endif /* _OSSL_PKEY_H_ */
 
