@@ -1,3 +1,6 @@
+Sat, 01 Feb 2003 17:51:56 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl.h: respect new func rb_obj_classname()
+
 Sat, 25 Jan 2003 22:15:12 +0100 -- Michal Rokos <michal@rokos.homeip.net>
 	* extconf.rb: add "dep" file to distclean target
 
