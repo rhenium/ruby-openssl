@@ -4,6 +4,11 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.17  2002/01/04 11:27:45  majkl
+	* API doc in README (but still not completed)
+	* missing str(ncasecmp|strptime).c files moved to missing/
+	* ifdef NO_* handled
+
 Revision 1.16  2002/01/04 11:22:55  majkl
 	* SelfDispatching used for X509:: Name, Extension, Attribute
 		def XXX.new(arg)
