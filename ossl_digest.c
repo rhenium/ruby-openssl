@@ -220,25 +220,25 @@ ossl_digest_hexdigest(VALUE self)
 /*
  * Define digest initialize methods
  */
-#ifndef NO_MD2
+#if !defined(NO_MD2) && !defined(OPENSSL_NO_MD2)
 	DefDigestInit(md2);
 #endif
-#ifndef NO_MD4
+#if !defined(NO_MD4) && !defined(OPENSSL_NO_MD4)
 	DefDigestInit(md4);
 #endif
-#ifndef NO_MD5
+#if !defined(NO_MD5) && !defined(OPENSSL_NO_MD5)
 	DefDigestInit(md5);
 #endif
-#ifndef NO_SHA
+#if !defined(NO_SHA) && !defined(OPENSSL_NO_SHA)
 	DefDigestInit(sha);
 	DefDigestInit(sha1);
 	DefDigestInit(dss);
 	DefDigestInit(dss1);
 #endif
-#ifndef NO_RIPEMD
+#if !defined(NO_RIPEMD) && !defined(OPENSSL_NO_RIPEMD)
 	DefDigestInit(ripemd160);
 #endif
-#ifndef NO_MDC2
+#if !defined(NO_MDC2) && !defined(OPENSSL_NO_MDC2)
 	DefDigestInit(mdc2);
 #endif
 
@@ -275,26 +275,50 @@ Init_ossl_digest(VALUE module)
 /*
  * create classes and bind initialize method
  */
-#ifndef NO_MD2
+#if !defined(NO_MD2) && !defined(OPENSSL_NO_MD2)
 	DefDigest(MD2, md2);
-#endif
-#ifndef NO_MD4
+#else
+#	warning >>> OpenSSL is compiled without MD2 support <<<
+	rb_warning("OpenSSL is compiled without MD2 support");
+#endif /* NO_MD2 */
+	
+#if !defined(NO_MD4) && !defined(OPENSSL_NO_MD4)
 	DefDigest(MD4, md4);
-#endif
-#ifndef NO_MD5
+#else
+#	warning >>> OpenSSL is compiled without MD4 support <<<
+	rb_warning("OpenSSL is compiled without MD4 support");
+#endif /* NO_MD4 */
+	
+#if !defined(NO_MD5) && !defined(OPENSSL_NO_MD5)
 	DefDigest(MD5, md5);
-#endif
-#ifndef NO_SHA
+#else
+#	warning >>> OpenSSL is compiled without MD5 support <<<
+	rb_warning("OpenSSL is compiled without MD5 support");
+#endif /* NO_MD5 */
+	
+#if !defined(NO_SHA) && !defined(OPENSSL_NO_SHA)
 	DefDigest(SHA, sha);
 	DefDigest(SHA1, sha1);
 	DefDigest(DSS, dss);
 	DefDigest(DSS1, dss1);
-#endif
-#ifndef NO_RIPEMD
+#else
+#	warning >>> OpenSSL is compiled without SHA, DSS support <<<
+	rb_warning("OpenSSL is compiled without SHA, DSS support");
+#endif /* NO_SHA */
+	
+#if !defined(NO_RIPEMD) && !defined(OPENSSL_NO_RIPEMD)
 	DefDigest(RIPEMD160, ripemd160);
-#endif
-#ifndef NO_MDC2
+#else
+#	warning >>> OpenSSL is compiled without RIPEMD160 support <<<
+	rb_warning("OpenSSL is compiled without RIPEMD160 support");
+#endif /* NO_RIPEMD */
+	
+#if !defined(NO_MDC2) && !defined(OPENSSL_NO_MDC2)
 	DefDigest(MDC2, mdc2);
-#endif
-}
+#else
+#	warning >>> OpenSSL is compiled without MDC2 support <<<
+	rb_warning("OpenSSL is compiled without MDC2 support");
+#endif /* NO_MDC2 */
+	
+} /* Init_ */
 

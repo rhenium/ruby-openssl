@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#ifndef NO_DSA
+#if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
 
 #include "ossl.h"
 #include "ossl_pkey.h"
@@ -444,11 +444,12 @@ Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 }
 
 #else /* defined NO_DSA */
+#	warning >>> OpenSSL is compiled without DSA support <<<
 
 void
 Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 {
-	rb_warning("DSA keys will NOT be avaible: OpenSSL is compiled without DSA support.");
+	rb_warning("OpenSSL is compiled without DSA support");
 }
 
 #endif /* NO_DSA */

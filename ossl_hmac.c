@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#ifndef NO_HMAC
+#if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
 
 #include "ossl.h"
 
@@ -177,7 +177,7 @@ Init_hmac(VALUE module)
 	rb_define_alias(cHMAC, "to_str", "hexhmac");
 }
 
-#else /* NO_HMAC is defined */
+#else /* NO_HMAC */
 
 void
 Init_hmac(VALUE module)

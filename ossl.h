@@ -82,7 +82,7 @@ extern VALUE eSSLError;
 /* Cipher */
 extern VALUE cCipher;
 extern VALUE eCipherError;
-extern VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5;
+extern VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5, cAES;
 /* Digest */
 extern VALUE cDigest;
 extern VALUE eDigestError;
@@ -250,23 +250,23 @@ void Init_ossl_pkey(VALUE);
 /*
  * RSA
  */
-#ifndef NO_RSA
+#if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
 VALUE ossl_rsa_new_null();
 VALUE ossl_rsa_new(RSA *);
 RSA *ossl_rsa_get_RSA(VALUE);
 EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE);
-#endif /*NO_RSA*/
+#endif /* NO_RSA */
 void Init_ossl_rsa(VALUE, VALUE, VALUE);
 
 /*
  * DSA
  */
-#ifndef NO_DSA
+#if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
 VALUE ossl_dsa_new_null();
 VALUE ossl_dsa_new(DSA *);
 DSA *ossl_dsa_get_DSA(VALUE);
 EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE);
-#endif /*NO_RSA*/
+#endif /* NO_RSA */
 void Init_ossl_dsa(VALUE, VALUE, VALUE);
 
 /*

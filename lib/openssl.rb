@@ -6,6 +6,7 @@ require 'thread'
 
 module OpenSSL
   module PKey
+if defined? DSA
     class DSA
       def DSA::new(arg, pass=nil)
         if arg.kind_of? Fixnum
@@ -41,7 +42,8 @@ module OpenSSL
 	self.verify_digest(digest.update(data.to_s).digest, signature)
       end # verify
     end # DSA
-    
+end #defined? DSA
+if defined? RSA
     class RSA
       def RSA::new(arg, pass=nil)
         if arg.kind_of? Fixnum
@@ -79,6 +81,7 @@ module OpenSSL
 	md_s == md_d
       end # verify
     end # RSA
+end # defined? RSA
   end # PKey
 
   module SSL

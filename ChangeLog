@@ -4,6 +4,13 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.21  2002/01/10 13:46:09  majkl
+	* added OpenSSL-SNAPSHOT style NO_* (OPENSSL_NO_*)
+	* added AES cipher when compiled under OpenSSL-SNAPSHOT
+	* added warnings if the OpenSSL is compiled without some feature
+	* handle NO_RSA, NO_DSA in openssl.rb
+	* incremented version in ossl_version.h
+
 Revision 1.20  2002/01/10 00:44:17  majkl
 	* OpenSSL 0.9.6c support (BN)
 	* MS_CALLBACK to ossl_pkey_*.c

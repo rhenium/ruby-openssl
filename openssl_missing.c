@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#ifndef NO_HMAC
+#if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
 
 #include <openssl/hmac.h>
 
@@ -25,5 +25,5 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 	return 1;
 }
 
-#endif
+#endif /* NO_HMAC */
 

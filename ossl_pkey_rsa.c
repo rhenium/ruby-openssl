@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#ifndef NO_RSA
+#if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
 
 #include "ossl.h"
 #include "ossl_pkey.h"
@@ -580,11 +580,12 @@ Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 }
 
 #else /* defined NO_RSA */
+#	warning >>> OpenSSL is compiled without RSA support <<<
 
 void
 Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 {
-	rb_warning("RSA keys will NOT be avaible: OpenSSL is compiled without RSA support.");
+	rb_warning("OpenSSL is compiled without RSA support");
 }
 
 #endif /* NO_RSA */

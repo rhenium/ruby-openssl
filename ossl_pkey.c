@@ -37,11 +37,11 @@ ossl_pkey_new(EVP_PKEY *key)
 		rb_raise(ePKeyError, "Empty key!");
 	
 	switch (key->type) {
-#ifndef NO_RSA
+#if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
 		case EVP_PKEY_RSA:
 			return ossl_rsa_new(key->pkey.rsa);
 #endif
-#ifndef NO_DSA
+#if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
 		case EVP_PKEY_DSA:
 			return ossl_dsa_new(key->pkey.dsa);
 #endif
