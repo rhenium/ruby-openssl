@@ -244,6 +244,12 @@ module OpenSSL
       self.to_str.to_i
     end
   end # BN
+
+  class Config
+    def Config.new(filename)
+      Config.load(filename)
+    end
+  end #Config
 end # OpenSSL
 
 class Integer

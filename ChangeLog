@@ -4,6 +4,10 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.18  2002/01/06 16:10:37  majkl
+	* BN is (somewhat) full imp. now
+	* Config reworked (get_value, get_section)
+
 Revision 1.17  2002/01/04 11:27:45  majkl
 	* API doc in README (but still not completed)
 	* missing str(ncasecmp|strptime).c files moved to missing/

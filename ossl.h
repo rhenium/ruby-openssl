@@ -111,8 +111,11 @@ extern VALUE eBNError;
 /*
  * CheckTypes
  */
-#define OSSL_Check_Type(obj, klass) ossl_check_type(obj, klass)
-void ossl_check_type(VALUE, VALUE);
+#define OSSL_Check_Kind(obj, klass) ossl_check_kind(obj, klass)
+void ossl_check_kind(VALUE, VALUE);
+#define OSSL_Check_Instance(obj, klass) ossl_check_instance(obj, klass)
+void ossl_check_instance(VALUE, VALUE);
+#define OSSL_Check_Type OSSL_Check_Kind /* COMPAT */
 
 /*
  * DATE conversion

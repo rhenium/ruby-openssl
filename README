@@ -73,6 +73,7 @@ A|B	- argument can be A or B
 bXXX	- XXX is true or false
 cXXX	- XXX is defined as constant
 fXXX	- XXX is Fixnum
+hXXX	- XXX is Hash
 nXXX	- XXX is Number (Fixnum or Bignum)
 oXXX	- argument.kind_of?(XXX) => true
 sXXX	- XXX is String
@@ -112,9 +113,10 @@ OpenSSL::
 		CipherError
 		
 	Config
-		.new(sFilename)
-		.get_string(sSection|nil, sKey) => sValue
-		.get_number(sSection|nil, sKey) => nValue
+		.new(sFilename) - dispatches .load
+		.load(sFilename)
+		.get_value(sSection|nil, sKey) => sValue
+		.get_section(sSection) => hSection
 		
 	ConfigError
 			

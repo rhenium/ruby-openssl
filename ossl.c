@@ -8,7 +8,6 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-/*#include <openssl/err.h>*/
 #include "ossl.h"
 
 /*
@@ -22,15 +21,27 @@
 /*
  * Check Types
  */
-void ossl_check_type(VALUE obj, VALUE klass)
+void
+ossl_check_kind(VALUE obj, VALUE klass)
 {
-	if (rb_obj_is_kind_of(obj, klass) == Qfalse) {
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected %s)",
-		rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
-	}
+	if (rb_obj_is_kind_of(obj, klass) == Qfalse)
+		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",
+				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 }
 
-VALUE asn1time_to_time(ASN1_UTCTIME *time)
+void
+ossl_check_instance(VALUE obj, VALUE klass)
+{
+	if (rb_obj_is_instance_of(obj, klass) == Qfalse)
+		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",
+				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
+}
+
+/*
+ * DATE conversion
+ */
+VALUE
+asn1time_to_time(ASN1_UTCTIME *time)
 {
 	struct tm tm;
 
@@ -115,7 +126,11 @@ Init_openssl()
 }
 
 #if defined(OSSL_DEBUG)
-int main(int argc, char *argv[], char *env[])
+/*
+ * Check if all symbols are OK with 'make LDSHARED=gcc all'
+ */
+int
+main(int argc, char *argv[], char *env[])
 {
 	return 0;
 }

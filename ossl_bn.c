@@ -499,6 +499,41 @@ ossl_bn_s_rand_range(VALUE klass, VALUE range)
 	return ossl_bn_new_nodup(result);
 }
 
+static VALUE
+ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
+{
+	ossl_bn *bn1p, *bn2p;
+	BIGNUM *result = NULL, *add = NULL, *rem = NULL;
+	int safe = 1;
+	VALUE vnum, vsafe, vadd, vrem;
+
+	rb_scan_args(argc, argv, "13", &vnum, &vsafe, &vadd, &vrem);
+
+	if (vsafe == Qfalse)
+		safe = 0;
+
+	if (!NIL_P(vadd)) {
+		if (NIL_P(vrem))
+			rb_raise(rb_eArgError, "if add specified, rem must be also given");
+
+		OSSL_Check_Type(vadd, cBN);
+		OSSL_Check_Type(vrem, cBN);
+		
+		GetBN(vadd, bn1p);
+		add = bn1p->bignum;
+		GetBN(vrem, bn2p);
+		rem = bn2p->bignum;
+	}
+
+	if (!(result = BN_new()))
+		OSSL_Raise(eBNError, "");
+	
+	if (!BN_generate_prime(result, NUM2INT(vnum), safe, add, rem, NULL, NULL))
+		OSSL_Raise(eBNError, "");
+	
+	return ossl_bn_new_nodup(result);
+}
+
 #define BIGNUM_RETURN_INT(func)								\
 	static VALUE 									\
 	ossl_bn_##func(VALUE self)							\
@@ -545,6 +580,68 @@ ossl_bn_eql(VALUE self, VALUE other)
 		return Qtrue;
 	
 	return Qfalse;
+}
+
+static VALUE
+ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
+{
+	ossl_bn *bnp = NULL;
+	BN_CTX ctx;
+	VALUE vchecks;
+	int checks = BN_prime_checks;
+
+	rb_scan_args(argc, argv, "01", &vchecks);
+
+	GetBN(self, bnp);
+	
+	if (!NIL_P(vchecks))
+		checks = NUM2INT(vchecks);
+
+	BN_CTX_init(&ctx);
+	switch (BN_is_prime(bnp->bignum, checks, NULL, &ctx, NULL)) {
+		case 1:
+			return Qtrue;
+		case 0:
+			return Qfalse;
+		default:
+			OSSL_Raise(eBNError, "");
+	}
+
+	/* not reachable */
+	return Qnil;
+}
+
+static VALUE
+ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
+{
+	ossl_bn *bnp = NULL;
+	BN_CTX ctx;
+	VALUE vchecks, vtrivdiv;
+	int checks = BN_prime_checks, do_trial_division = 1;
+
+	rb_scan_args(argc, argv, "02", &vchecks, &vtrivdiv);
+
+	GetBN(self, bnp);
+
+	if (!NIL_P(vchecks))
+		checks = NUM2INT(vchecks);
+
+	/* handle true/false */
+	if (vtrivdiv == Qfalse)
+		do_trial_division = 0;
+
+	BN_CTX_init(&ctx);
+	switch (BN_is_prime_fasttest(bnp->bignum, checks, NULL, &ctx, NULL, do_trial_division)) {
+		case 1:
+			return Qtrue;
+		case 0:
+			return Qfalse;
+		default:
+			OSSL_Raise(eBNError, "");
+	}
+
+	/* not reachable */
+	return Qnil;
 }
 
 /*
@@ -599,6 +696,7 @@ Init_bn(VALUE module)
 	rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, 3);
 	rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, 3);
 	rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);
+	rb_define_singleton_method(cBN, "generate_prime", ossl_bn_s_generate_prime, -1);
 
 	rb_define_method(cBN, "num_bytes", ossl_bn_num_bytes, 0);
 	rb_define_method(cBN, "num_bits", ossl_bn_num_bits, 0);
@@ -612,5 +710,8 @@ Init_bn(VALUE module)
 	rb_define_method(cBN, "eql?", ossl_bn_eql, 1);
 	rb_define_alias(cBN, "==", "eql?");
 	rb_define_alias(cBN, "===", "eql?");
+
+	rb_define_method(cBN, "prime?", ossl_bn_is_prime, -1);
+	rb_define_method(cBN, "prime_fasttest?", ossl_bn_is_prime_fasttest, -1);
 }
 

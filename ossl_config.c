@@ -10,100 +10,78 @@
  */
 #include "ossl.h"
 
-#define MakeConfig(obj, configp) {\
-	obj = Data_Make_Struct(cConfig, ossl_config, 0, ossl_config_free, configp);\
+#define MakeConfig(obj, confp) {\
+	obj = Data_Make_Struct(cConfig, ossl_config, 0, ossl_config_free, confp);\
 }
-#define GetConfig(obj, configp) Data_Get_Struct(obj, ossl_config, configp)
+
+#define GetConfig_unsafe(obj, confp) Data_Get_Struct(obj, ossl_config, confp)
+#define GetConfig(obj, confp) {\
+	GetConfig_unsafe(obj, confp);\
+	if (!confp->config) rb_raise(eConfigError, "not initialized!");\
+}
 
 /*
  * Classes
  */
 VALUE cConfig;
 VALUE eConfigError;
-/*VALUE cConfigSection;*/
 
 /*
- * Structs
+ * Struct
  */
 typedef struct ossl_config_st {
 	LHASH *config;
 } ossl_config;
 
-/*
- * It's not ready!
- * 
-typedef struct ossl_configsect_st {
-	int ossl_type;
-	STACK_OF(CONF_VALUE) *section;
-} ossl_configsect;
- */
-
-
 static void
-ossl_config_free(ossl_config *configp)
+ossl_config_free(ossl_config *confp)
 {
-	if (configp) {
-		if (configp->config) CONF_free(configp->config);
-		configp->config = NULL;
-		free(configp);
+	if (confp) {
+		if (confp->config) CONF_free(confp->config);
+		confp->config = NULL;
+		free(confp);
 	}
 }
 
-/*
- * It's not ready!
- * 
-static void ossl_config_section_free(ossl_configsect *sectp)
-{
-	if (configp) {
-		if (configp->section) sk_CONF_VALUE_pop_free(configp->...);
-	free(sectp);
-}
+/* 
+ * Public 
  */
 
+/*
+ * Private
+ */
 static VALUE
-ossl_config_s_new(int argc, VALUE *argv, VALUE klass)
+ossl_config_s_load(int argc, VALUE* argv, VALUE klass)
 {
-	ossl_config *configp = NULL;
-	VALUE obj;
-	
-	MakeConfig(obj, configp);
-	rb_obj_call_init(obj, argc, argv);
-
-	return obj;
-}
-
-static VALUE
-ossl_config_initialize(int argc, VALUE* argv, VALUE self)
-{
-	ossl_config *configp = NULL;
+	ossl_config *confp = NULL;
+	LHASH *config = NULL;
 	long err_line = 0;
-	VALUE path;
+	VALUE obj, path;
 	
-	GetConfig(self, configp);
 	rb_scan_args(argc, argv, "10", &path);
 	
 	Check_SafeStr(path);
 	
-	configp->config = CONF_load(configp->config, RSTRING(path)->ptr, &err_line);
-	
-	if (configp->config == NULL) {
+	if (!(config = CONF_load(NULL, RSTRING(path)->ptr, &err_line))) {
 		if (err_line <= 0)
 			rb_raise(eConfigError, "wrong config file %s", RSTRING(path)->ptr);
 		else
 			rb_raise(eConfigError, "error on line %ld in config file %s", err_line, RSTRING(path)->ptr);
 	}
 	
-	return self;
+	MakeConfig(obj, confp);
+	confp->config = config;
+
+	return obj;
 }
 
 static VALUE
-ossl_config_get_string(VALUE self, VALUE section, VALUE item)
+ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 {
-	ossl_config *configp = NULL;
-	char *sect = NULL;
-	char *string = NULL;
+	ossl_config *confp = NULL;
+	char *sect = NULL, *str = NULL;
 	
-	GetConfig(self, configp);
+	GetConfig(self, confp);
 	
 	if (!NIL_P(section)) {
 		Check_SafeStr(section);
@@ -111,55 +89,45 @@ ossl_config_get_string(VALUE self, VALUE section, VALUE item)
 	}
 	Check_SafeStr(item);
 
-	string = CONF_get_string(configp->config, sect, RSTRING(item)->ptr);
+	if (!(str = CONF_get_string(confp->config, sect, RSTRING(item)->ptr)))
+		OSSL_Raise(eConfigError, "");
 	
-	return rb_str_new2(string);
+	return rb_str_new2(str);
 }
 
-static VALUE
-ossl_config_get_number(VALUE self, VALUE section, VALUE item)
-{
-	ossl_config *configp = NULL;
-	char *sect = NULL;
-	long number;
+/* long number = CONF_get_number(confp->config, sect, RSTRING(item)->ptr); */
 
-	GetConfig(self, configp);
-	
-	if (!NIL_P(section)) {
-		Check_SafeStr(section);
-		sect = RSTRING(section)->ptr;
-	}
-	Check_SafeStr(item);
-
-	number = CONF_get_number(configp->config, sect, RSTRING(item)->ptr);
-	return INT2NUM(number);
-}
-
-/*
- * TO BE REWORKED
- *
 static VALUE
 ossl_config_get_section(VALUE self, VALUE section)
 {
-	ossl_config *configp = NULL;
-	VALUE obj;
-	ossl_configsect_st *ps;
+	ossl_config *confp = NULL;
+	STACK_OF(CONF_VALUE) *sk = NULL;
+	CONF_VALUE *entry = NULL;
+	int i, entries = 0;
+	VALUE hash;
 
-	Check_SafeStr(section);
-
-	GetConfig(self, p);
+	GetConfig(self, confp);
 	
-	obj = Data_Make_Struct(cOSSLConfigSection, ossl_configsect_st, 0, ossl_config_section_free, ps);
-	memset(ps, 0, sizeof(ossl_configsect_st));
+	Check_SafeStr(section);
+	
+	if (!(sk = CONF_get_section(confp->config, RSTRING(section)->ptr)))
+		OSSL_Raise(eConfigError, "");
 
-	ps->section = CONF_get_section(p->config, RSTRING(section)->ptr);
+	hash = rb_hash_new();
+	
+	if ((entries = sk_CONF_VALUE_num(sk)) < 0) {
+		rb_warning("# of items in section is < 0?!?");
+		return hash;
+	}
 
-	if (ps->section == NULL)
-		return Qnil;
-	else
-		return obj;
+	for (i=0; i<entries; i++) {
+		entry = sk_CONF_VALUE_value(sk, i);
+		
+		rb_hash_aset(hash, rb_str_new2(entry->name), rb_str_new2(entry->value));
+	}
+	
+	return hash;
 }
- */
 
 /*
  * INIT
@@ -171,17 +139,9 @@ Init_ossl_config(VALUE module)
 
 	cConfig = rb_define_class_under(module, "Config", rb_cObject);
 	
-	rb_define_singleton_method(cConfig, "new", ossl_config_s_new, -1);
+	rb_define_singleton_method(cConfig, "load", ossl_config_s_load, -1);
 	
-	rb_define_method(cConfig, "initialize", ossl_config_initialize, -1);
-	rb_define_method(cConfig, "get_string", ossl_config_get_string, 2);
-	rb_define_method(cConfig, "get_number", ossl_config_get_number, 2);
-/*
- * TODO:
- * rework
+	rb_define_method(cConfig, "get_value", ossl_config_get_value, 2);
 	rb_define_method(cConfig, "get_section", ossl_config_get_section, 1);
-	cConfigSection = rb_define_class_under(mOSSL, "ConfigSection", rb_cObject);
-	rb_undef_method(CLASS_OF(cConfigSection), "new");
- */
 }
 
