@@ -6,8 +6,8 @@ include X509
 include PKey
 
 def usage
-  $stderr.puts "Usage: #{File::basename($0)} Cert_to_revoke1.pem*"
-  exit 1
+  $stderr.puts "\nWarning: You're publishing empty CRL."
+  $stderr.puts "For revoking certificates use it like this: '#{File::basename($0)} Cert_to_revoke1.pem*'\n\n"
 end
 
 ARGV.empty? && usage()
@@ -18,7 +18,10 @@ ca = Certificate.new(File.read(ca_file))
 
 ca_key_file = "./0key-plain.pem"
 puts "Reading CA key (from #{ca_key_file})"
-ca_key = RSA.new(File.read(ca_key_file))
+ca_key = RSA.new(File.read(ca_key_file)) {
+  print "Enter password: "
+  gets.chop!
+}
 
 crl = CRL.new
 crl.issuer = ca.issuer
