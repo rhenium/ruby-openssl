@@ -296,13 +296,7 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 	GetX509CRL(self, crl);
 
 	md = ossl_digest_get_EVP_MD(digest);
-	
-	OSSL_Check_Kind(key, cPKey);
-	
-	if (rb_funcall(key, id_private_q, 0, NULL) == Qfalse) {
-		rb_raise(eX509CRLError, "PRIVATE key needed to sign CRL!");
-	}
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	
 	if (!X509_CRL_sign(crl, pkey, md)) {
 		EVP_PKEY_free(pkey);

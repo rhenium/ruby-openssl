@@ -3,6 +3,14 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Fri,  7 Jun 2002 16:59:10 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.c: new helper func: ossl_pkey_get_private_EVP_PKEY
+	* ns_spki.c: use new helper func
+	* pkcs7.c: ditto.
+	* x509cert.c: ditto.
+	* x509crl.c: ditto.
+	* x509req.c: ditto.
+
 Fri,  7 Jun 2002 14:06:48 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* cipher.c: Checks around GetCipher
 	* digest.c: Use Make_Struct instead of Wrap_Struct and OPENSSL_malloc

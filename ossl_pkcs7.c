@@ -108,14 +108,10 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	BIO *bio;
 	VALUE obj;
 	
-	OSSL_Check_Type(key, cPKey);
-	OSSL_Check_Type(cert, X509Cert);
 	StringValue(data);
+	OSSL_Check_Type(cert, X509Cert);
 
-	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
-		rb_raise(ePKCS7Error, "private key needed!");
-	}
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(bio = BIO_new_mem_buf(RSTRING(data)->ptr, RSTRING(data)->len))) {
@@ -204,14 +200,9 @@ ossl_pkcs7_add_signer(VALUE self, VALUE signer, VALUE key)
 	GetPKCS7(self, pkcs7);
 
 	OSSL_Check_Type(signer, cPKCS7SignerInfo);
-	OSSL_Check_Type(key, cPKey);
-
-	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
-		rb_raise(ePKCS7Error, "Private key needed!");
-	}
 	
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	si = ossl_pkcs7si_get_PKCS7_SIGNER_INFO(signer);
-	pkey = ossl_pkey_get_EVP_PKEY(key);
 	si->pkey = pkey;
 	
 	if (!PKCS7_add_signer(pkcs7, si)) {
@@ -439,14 +430,9 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 	if(!PKCS7_type_is_enveloped(pkcs7)) {
 		rb_raise(ePKCS7Error, "Wrong content type - PKCS7 is not ENVELOPED");
 	}
-	OSSL_Check_Type(key, cPKey);
 	OSSL_Check_Type(cert, cX509Cert);
 
-	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
-		rb_raise(ePKCS7Error, "private key needed!");
-	}
-	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(bio = PKCS7_dataDecode(pkcs7, pkey, NULL, x509))) {
@@ -515,15 +501,10 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 
 	GetPKCS7si(self, p7si);
 
-	OSSL_Check_Type(key, cPKey);
 	OSSL_Check_Type(cert, cX509Cert);
 	md = ossl_digest_get_EVP_MD(digest);
 
-	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
-		rb_raise(ePKCS7Error, "private key needed!");
-	}
-	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {

@@ -131,21 +131,21 @@ ossl_spki_get_public_key(VALUE self)
 }
 
 static VALUE
-ossl_spki_set_public_key(VALUE self, VALUE pubk)
+ossl_spki_set_public_key(VALUE self, VALUE key)
 {
 	NETSCAPE_SPKI *spki;
 	EVP_PKEY *pkey;
 
 	GetSPKI(self, spki);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(pubk);
+	pkey = ossl_pkey_get_EVP_PKEY(key);
 
 	if (!NETSCAPE_SPKI_set_pubkey(spki, pkey)) {
 		EVP_PKEY_free(pkey);
 		OSSL_Raise(eSPKIError, "");
 	}
 
-	return pubk;
+	return key;
 }
 
 static VALUE
@@ -187,11 +187,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 	GetSPKI(self, spki);
 	
 	md = ossl_digest_get_EVP_MD(digest);
-	
-	if (rb_funcall(key, id_private_q, 0, NULL) == Qfalse) {
-		rb_raise(eSPKIError, "PRIVATE key needed to sign SPKI!");
-	}
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 
 	if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
 		EVP_PKEY_free(pkey);

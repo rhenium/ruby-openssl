@@ -470,13 +470,7 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 	GetX509(self, x509);
 	
 	md = ossl_digest_get_EVP_MD(digest);
-	
-	OSSL_Check_Kind(key, cPKey);
-	
-	if (rb_funcall(key, rb_intern("private?"), 0, NULL) == Qfalse) {
-		rb_raise(eX509CertError, "PRIVATE key needed to sign X509 Cert!");
-	}
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	
 	if (!X509_sign(x509, pkey, md)) {
 		EVP_PKEY_free(pkey);
@@ -513,7 +507,7 @@ ossl_x509_verify(VALUE self, VALUE key)
 }
 
 /*
- * Checks is 'key' is PRIV key for this cert
+ * Checks if 'key' is PRIV key for this cert
  */
 static VALUE 
 ossl_x509_check_private_key(VALUE self, VALUE key)
@@ -524,7 +518,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
 	
 	GetX509(self, x509);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = ossl_pkey_get_private_EVP_PKEY(key); /* not needed private key, but should be */
 	
 	if (!X509_check_private_key(x509, pkey)) {
 		OSSL_Warning("Check private key:");

@@ -88,6 +88,20 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 	return pkey;
 }
 
+EVP_PKEY *
+ossl_pkey_get_private_EVP_PKEY(VALUE obj)
+{
+	EVP_PKEY *pkey = ossl_pkey_get_EVP_PKEY(obj);
+
+	if (RTEST(rb_funcall(obj, id_private_q, 0, NULL))) { /* returns Qtrue */
+		return pkey;
+	}
+	EVP_PKEY_free(pkey);
+	rb_raise(rb_eArgError, "Private key is needed.");
+
+	return 0; /* unreachable */
+}
+
 /*
  * Private
  */
