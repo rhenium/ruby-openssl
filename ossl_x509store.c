@@ -128,7 +128,7 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
     rb_iv_set(self, "@flags", INT2NUM(0));
     rb_iv_set(self, "@purpose", INT2NUM(0));
     rb_iv_set(self, "@trust", INT2NUM(0));

@@ -2,6 +2,7 @@
 
 rm -f *.pem
 
+ruby -r openssl -e 'p [ :OPENSSL_VERSION, OpenSSL::OPENSSL_VERSION ]'
 echo "===> Issueing CA certificate"
 dn="/C=JP/O=Does.Notwork.Org/OU=demoCA/CN=CA"
 ruby gen_ca_cert.rb "${dn}"

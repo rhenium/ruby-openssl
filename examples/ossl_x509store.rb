@@ -104,5 +104,7 @@ puts "========== Add CRL to the Store and Verify Certs =========="
 store.add_crl(crl)
 #store.add_path("./crl")
 #store.add_file("./0crl.pem")
-store.flags = X509::V_FLAG_CRL_CHECK|X509::V_FLAG_CRL_CHECK_ALL
+if OPENSSL_VERSION_NUMBER >= 0x00907000
+  store.flags = X509::V_FLAG_CRL_CHECK|X509::V_FLAG_CRL_CHECK_ALL
+end
 verify_with_store(store, certs, verify_cb)
