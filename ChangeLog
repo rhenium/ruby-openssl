@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.36  2002/03/11 21:35:39  majkl
+	* Cipher IV fixup
+
 Revision 1.35  2002/03/11 17:20:22  majkl
 	* Big internal cleanup (all structs with only 1 member rearranged)
 	* improved getting time_t from cTime

@@ -124,7 +124,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		 * TODO:
 		 * random IV generation!
 		 */ 
-		memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
+		memcpy(iv, "OpenSSL for Ruby rulez!", EVP_MAX_IV_LENGTH);
 		/*
 		RAND_add(data,i,0); where from take data?
 		if (RAND_pseudo_bytes(iv, 8) < 0) {
@@ -133,7 +133,11 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		 */
 	} else {
 		init_v = rb_obj_as_string(init_v);
-		memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
+		if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
+			memset(iv, 0, EVP_MAX_IV_LENGTH);
+			memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
+		} else
+			memcpy(iv, RSTRING(init_v)->ptr, EVP_MAX_IV_LENGTH);
 	}
 	EVP_CIPHER_CTX_init(ciphp->ctx);
 
@@ -165,10 +169,14 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 		 * TODO:
 		 * random IV generation!
 		 */
-		memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
+		memcpy(iv, "OpenSSL for Ruby rulez!", EVP_MAX_IV_LENGTH);
 	} else {
 		init_v = rb_obj_as_string(init_v);
-		memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
+		if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
+			memset(iv, 0, EVP_MAX_IV_LENGTH);
+			memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
+		} else
+			memcpy(iv, RSTRING(init_v)->ptr, EVP_MAX_IV_LENGTH);
 	}
 	EVP_CIPHER_CTX_init(ciphp->ctx);
 
