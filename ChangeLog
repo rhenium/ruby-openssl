@@ -1,3 +1,13 @@
+Sun, 29 Jun 2003 19:07:01 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* exapmles/ca: CA maintenance scripts examples.
+	* examples/ca/ca_config.rb: configuration.
+	* examples/ca/init_ca.rb: initialize CA.  requires some directory
+	  scheme.  see ca_config.rb for more detail (no document).
+	* examples/ca/gen_clientee_from_csr.rb: generate client EE from CSR.
+	  you can generate CSR with examples/gen_csr.rb.
+	* examples/ca/gen_clientee_from_scratch.rb: generate client EE from
+	  scratch.  generates keypair for a client, too.
+
 Sun, 29 Jun 2003 18:56:08 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/gen_csr.rb: new sample to generate CSR.
 
