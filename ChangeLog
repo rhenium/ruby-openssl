@@ -1,3 +1,6 @@
+Sun, 05 Jan 2003 17:22:04 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* extconf.rb: Add checks for Ruby >= 1.8.0 and OpenSSL >= 0.9.7
+
 Thu, 02 Jan 2003 21:03:46 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Check for Ruby >= 1.8
 

@@ -24,11 +24,14 @@ else
   SSLLIB="ssl"
 end
 
-dir_config("openssl")
+includes, = dir_config("openssl")
 
+message "=== OpenSSL for Ruby configurator ===\n"
+message "=== Checking for system dependent stuff... ===\n"
 have_header("unistd.h")
 have_header("sys/time.h")
 have_func("strptime", "time.h")
+message "=== Checking for system dependent stuff done. ===\n"
 
 
 ##
@@ -45,6 +48,11 @@ if with_config("debug") or enable_config("debug")
       srcs.push File.basename(f)
     end
     srcs = srcs.join(" ")
+    
+    ##
+    # mkmf.rb needs to be changes to allow this...
+    #
+    # $distcleanfiles << "dep"
     
     File.open("depend", "w") {|f|
       f.print <<EOD
@@ -64,31 +72,33 @@ EOD
   end
 end
 
-print "checking for Ruby >= 1.8.0... "
-if RUBY_VERSION < "1.8.0"
-  puts "no"
-  exit
-else
-  puts "yes"
+def have_ruby_180()
+  checking_for("Ruby >= 1.8.0") do
+    (RUBY_VERSION < "1.8.0") ? false : true
+  end
 end
 
-##
-# TODO:
-# print "checking for OpenSSL >= 0.9.7... "
-# txt = File.read("/home/michal/local/include/openssl/opensslv.h")
-# if (txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1] < "0.9.7"
-#   puts "no"
-#   exit
-# else
-#   puts "yes"
-#  end
+def have_openssl_097(inc_dir)
+  checking_for("OpenSSL >= 0.9.7") do
+    txt = File.read(inc_dir+"/openssl/opensslv.h")
+    ((txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1] < "0.9.7") ? false : true
+  end
+end
 
-if have_header("openssl/crypto.h") and 
-    have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules") and 
-    have_library(SSLLIB, "SSL_library_init")
+message "=== Checking for required stuff... ===\n"
+
+result  = have_ruby_180()
+result &= have_header("openssl/crypto.h")
+result &= have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules")
+result &= have_library(SSLLIB, "SSL_library_init")
+result &= have_openssl_097(includes)
+    
+if result
+  message "=== Checking for required stuff done. ===\n"
   create_makefile("openssl")
-  puts "Done."
+  message "Done.\n"
 else
-  puts "Makefile wasn't created. Fix the errors above."
+  message "=== Checking for required stuff failed. ===\n"
+  message "Makefile wasn't created. Fix the errors above.\n"
 end
 
