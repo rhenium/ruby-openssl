@@ -63,4 +63,4 @@ File.open(crl_file, "w") do |f|
   f << crl.to_pem
 end
 
-puts "DONE."
+puts "DONE. (Generated CRL for '#{ca.subject}')"

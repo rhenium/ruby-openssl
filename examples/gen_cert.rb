@@ -47,7 +47,9 @@ key = PKey::RSA.new(1024){ putc "." }
 putc "\n"
 
 cert = X509::Certificate.new
-name = [['C', 'CZ'],['O', 'Ruby'],['CN', cn]]
+name = ca.subject.to_a.collect {|id, val|
+  if id =~ /CN/ then [id, cn] else [id, val] end
+}
 cert.subject = X509::Name.new(name)
 cert.issuer = ca.subject
 cert.not_before = Time.now
@@ -74,7 +76,7 @@ end
 
 key_plain_file = "./#{cert.serial}key-plain.pem"
 puts "Writing #{key_plain_file}."
-File.open(key_plain_file, "w") do |f|
+File.open(key_plain_file, "w", 0600) do |f|
   f << key.to_pem
 end
 
@@ -84,4 +86,4 @@ File.open(key_file, "w") do |f|
   f << key.export(Cipher::DES.new(:EDE3, :CBC), &passwd_cb)
 end
 
-puts "DONE."
+puts "DONE. (Generated certificate for '#{cert.subject}')"

@@ -1,3 +1,6 @@
+Thu, 19 Jun 2003 20:13:29 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* example/gen_*.rb: Store plain keys more secure (with 0600 (rw- --- ---))
+
 Thu, 19 Jun 2003 20:58:01 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* example/gen_*.rb: passwd_cb improved.
 

@@ -53,7 +53,7 @@ end
 
 key_plain_file = "./#{cert.serial}key-plain.pem"
 puts "Writing #{key_plain_file}."
-File.open(key_plain_file, "w") do |f|
+File.open(key_plain_file, "w", 0600) do |f|
   f << key.to_pem
 end
 
@@ -63,4 +63,4 @@ File.open(key_file, "w") do |f|
   f << key.export(Cipher::DES.new(:EDE3, :CBC), &passwd_cb)
 end
 
-puts "DONE."
+puts "DONE. (Generated certificate for '#{cert.subject}')"
