@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue,  4 Jun 2002 08:48:05 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* OSSL2 commited to CVS
+
 Mon,  3 Jun 2002 21:14:34 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* digest.c: new methods added to have the same protocol as Ruby's classes
 		Digest::digest(name, data)
