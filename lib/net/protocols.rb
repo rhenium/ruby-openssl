@@ -30,7 +30,7 @@ module Net
     class SSLSocket < Socket
       extend Forwardable
 
-      def_delegators(:@socket,
+      def_delegators(:@ssl_context,
                      :key=, :cert=, :key_file=, :cert_file=,
                      :ca_file=, :ca_path=,
                      :verify_mode=, :verify_callback=, :verify_depth=,
@@ -39,13 +39,15 @@ module Net
       def initialize(addr, port, otime = nil, rtime = nil, pipe = nil)
         super
         @raw_socket = @socket
-        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket)
+        @ssl_context = OpenSSL::SSL::SSLContext.new()
+        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
       end
 
       def reopen(tout=nil)
         super
         @raw_socket = @socket
-        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket)
+        @ssl_context = OpenSSL::SSL::SSLContext.new()
+        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
       end
 
       def close

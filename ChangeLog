@@ -3,6 +3,11 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Sun, 13 Oct 2002 01:46:20 -9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: fixed around verify callback invocation.
+	* net/protocols.rb: improved for new version.
+	* net/https.rb: ditto.
+
 Fri, 27 Sep 2002 09:40:43 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* config.c: added alias to Config#section as Config[]
 

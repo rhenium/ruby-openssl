@@ -121,9 +121,7 @@ module Net
 
       def exec( sock, addr, port, ver )
         @socket = sock
-        request addr, port, ver
-        @response = get_response(sock)
-        @response
+        request(addr, port, ver)
       end
 
       def request( addr, port, ver )
@@ -135,7 +133,8 @@ module Net
     def on_connect
       if use_ssl
         if proxy?
-          resp = Conn.new.exec(@socket, @address, @port, "1.0")
+          Conn.new.exec(@socket, @address, @port, "1.0")
+          resp = HTTPResponse.read_new(@socket)
           if resp.code != '200'
             raise resp.message
           end
