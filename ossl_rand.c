@@ -21,20 +21,22 @@ VALUE eRandomError;
  */
 
 /*
- * public
+ * Public
  */
 
 /*
- * private
+ * Private
  */
-static VALUE ossl_rand_seed(VALUE self, VALUE str)
+static VALUE
+ossl_rand_seed(VALUE self, VALUE str)
 {
 	Check_SafeStr(str);
 	RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
 	return str;
 }
 
-static VALUE ossl_rand_load_file(VALUE self, VALUE filename)
+static VALUE
+ossl_rand_load_file(VALUE self, VALUE filename)
 {
 	Check_SafeStr(filename);
 	if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
@@ -44,7 +46,8 @@ static VALUE ossl_rand_load_file(VALUE self, VALUE filename)
 	return Qtrue;
 }
 
-static VALUE ossl_rand_write_file(VALUE self, VALUE filename)
+static VALUE
+ossl_rand_write_file(VALUE self, VALUE filename)
 {
 	Check_SafeStr(filename);
 	if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
@@ -54,7 +57,8 @@ static VALUE ossl_rand_write_file(VALUE self, VALUE filename)
 	return Qtrue;
 }
 
-static VALUE ossl_rand_bytes(VALUE self, VALUE len)
+static VALUE
+ossl_rand_bytes(VALUE self, VALUE len)
 {
 	unsigned char *buffer = NULL;
 	VALUE str;
@@ -76,7 +80,7 @@ static VALUE ossl_rand_bytes(VALUE self, VALUE len)
 }
 
 /*
- * RAND init
+ * INIT
  */
 void Init_ossl_rand(VALUE mOSSL)
 {

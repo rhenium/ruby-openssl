@@ -7,7 +7,6 @@ This program is licenced under the same licence as Ruby.
 (See the file 'LICENCE'.)
  
 [Done] (but not fully tested)
-= OpenSSL config file parser (part) --- TO BE DROPPED? (any idea?)
 = PKey:: RSA,DSA keys - new, load, export
 = X509::Certificate - generating new certs, load, looking inside
 = X509::CRL - load, new, looking inside
@@ -24,6 +23,8 @@ This program is licenced under the same licence as Ruby.
 = basic PRNG functions (random generator) for OpenSSL module and class Random
 = SSLSocket (merged Gotou Yuuzou's SSLsocket-Ruby project)
 = PKCS7 (signing&data_verify is working, rest needs some testing)
+= HMAC
+= OpenSSL config file parser (part)
 
 [To-Do]
 = check for memory leaking :-))
@@ -41,7 +42,6 @@ This program is licenced under the same licence as Ruby.
 = safe BigNums
 = PKCS12
 = PKCS8
-= HMAC
 = ASN.1 ???
 = BIO ???
 = compat tests for RSA/DSA sign/encrypt
@@ -64,6 +64,20 @@ OpenSSL::
 	.load_random_file(Filename) => true|false
 	.write_random_file(Filename) => true|false
 
+	Config
+		.new(String (filename)) => self
+		.get_string(String (section)|nil, String (key)) => String (value)
+		.get_number(String (section)|nil, String (key)) => String (value)
+		
+	HMAC
+		.new(String(key), Digest) => self
+		.update(String) => self
+		.<<(String) <=> .update(String)
+		.hmac() => String
+		.hexhmac() => String
+		.inspect() <=> .hexhmac()
+		.to_str() <=> .hexhmac()
+		
 	Random
 		.seed(String) => true|false
 		.load_random_file(String (filename)) => true|false
@@ -80,11 +94,11 @@ OpenSSL::
 		DES (ECB, EDE, EDE3, CFB, CFB:EDE, CFB:EDE3, OFB, OFB:EDE, OFB:EDE3, CBC, CBC:EDE, CBC:EDE3)
 		Idea (ECB, CFB, OFB, CBC)
 		RC2 (ECB, CBC, BIT40:CBC, BIT64:CBC, CFB, OFB)
-		RC4 (UNSPEC, BIT40)
+		RC4 (nil, UNSPEC, BIT40)
 		RC5 (ECB, CFB, OFB, CBC)
 			.new([mode|type] [,type|mode]) => self
-			.encrypt(Password [, Init_Vect] [, Data]) => self or String
-			.decrypt(Password [, Init_Vect] [, Data]) => self or String
+			.encrypt(Password [, Init_Vect]) => self
+			.decrypt(Password [, Init_Vect]) => self
 			.update(String) => String
 			.<<(String) <=> .update
 			.cipher => String
@@ -123,19 +137,19 @@ OpenSSL::
 
 		PKCS7
 			.new(CONST|String (PEM)) => self
-			.add_signer(PKey::Any (private), PKCS7::Signer)
+			.add_signer(PKCS7::Signer, PKey (his private))
 			.signers => Ary of PKCS7::Signer
 			.cipher=(Cipher::Any) => Cipher
 			.add_recipient(X509::Certificate) => self
 			.add_certificate(X509::Certificate) => self
 			.add_crl(X509::CRL) => self
-			.add_data(String (data), [true|false] (detached)) => self
-			.verify_data(X509::Store, [String] (detached)) => true|false, yields PKCS7::Signer
+			.add_data(String (data), [(true|false) (detached?)]) => self
+			.verify_data(X509::Store, [String (detached)]) => true|false, yields PKCS7::Signer
 			.decode_data(PKey::Any (private), X509::Certificate) => String
 			.to_pem => String (PEM)
 
 		Signer
-			.new(PKey::Any (private), X509::Certificate, Digest::Any) => self
+			.new(X509::Certificate, PKey (his private), Digest::Any) => self
 			.name => X509::Name
 			.serial => FixNum
 			.signed_time => Time

@@ -13,10 +13,7 @@
 #define MakeDigest(klass, obj, digestp) {\
 	obj = Data_Make_Struct(klass, ossl_digest, 0, ossl_digest_free, digestp);\
 }
-
-#define GetDigest(obj, digestp) {\
-	Data_Get_Struct(obj, ossl_digest, digestp);\
-}
+#define GetDigest(obj, digestp) Data_Get_Struct(obj, ossl_digest, digestp)
 
 /*
  * Classes
@@ -39,10 +36,11 @@ typedef struct ossl_digest_st {
 	EVP_MD_CTX *md;
 } ossl_digest;
 
-static void ossl_digest_free(ossl_digest *digestp)
+static void
+ossl_digest_free(ossl_digest *digestp)
 {
 	if (digestp) {
-		if (digestp->md) free(digestp->md);
+		if (digestp->md) OPENSSL_free(digestp->md);
 		free(digestp);
 	}
 }
@@ -50,7 +48,8 @@ static void ossl_digest_free(ossl_digest *digestp)
 /*
  * PUBLIC
  */
-int ossl_digest_get_NID(VALUE obj)
+int
+ossl_digest_get_NID(VALUE obj)
 {
 	ossl_digest *digestp = NULL;
 	
@@ -59,7 +58,8 @@ int ossl_digest_get_NID(VALUE obj)
 	return EVP_MD_CTX_type(digestp->md); /*== digestp->md->digest->type*/
 }
 
-const EVP_MD *ossl_digest_get_EVP_MD(VALUE obj)
+const EVP_MD *
+ossl_digest_get_EVP_MD(VALUE obj)
 {
 	ossl_digest *digestp = NULL;
 
@@ -71,13 +71,14 @@ const EVP_MD *ossl_digest_get_EVP_MD(VALUE obj)
 /*
  * PRIVATE
  */
-static VALUE ossl_digest_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_digest_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_digest *digestp = NULL;
 	VALUE obj;
 
 	if (klass == cDigest)
-		rb_raise(rb_eNotImpError, "cannot do Digest.new - Digest is an abstract class");
+		rb_raise(rb_eNotImpError, "cannot do Digest::ANY.new - it is an abstract class");
 
 	MakeDigest(klass, obj, digestp);
 	rb_obj_call_init(obj, argc, argv);
@@ -85,7 +86,8 @@ static VALUE ossl_digest_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-static VALUE ossl_digest_update(VALUE self, VALUE data)
+static VALUE
+ossl_digest_update(VALUE self, VALUE data)
 {
 	ossl_digest *digestp = NULL;
 
@@ -97,7 +99,8 @@ static VALUE ossl_digest_update(VALUE self, VALUE data)
 	return self;
 }
 
-static VALUE ossl_digest_digest(VALUE self)
+static VALUE
+ossl_digest_digest(VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	char *digest_txt = NULL;
@@ -111,7 +114,7 @@ static VALUE ossl_digest_digest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(digestp->md)))) {
+	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
@@ -125,7 +128,8 @@ static VALUE ossl_digest_digest(VALUE self)
 /*
  * RUBY attitude
  */
-static VALUE ossl_digest_hexdigest(VALUE self)
+static VALUE
+ossl_digest_hexdigest(VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	static const char hex[]="0123456789abcdef";
@@ -140,7 +144,7 @@ static VALUE ossl_digest_hexdigest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(digestp->md)))) {
+	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
@@ -163,7 +167,8 @@ static VALUE ossl_digest_hexdigest(VALUE self)
 /*
  * OPENSSL attitude
  *
-static VALUE ossl_digest_hexdigest(VALUE self)
+static VALUE
+ossl_digest_hexdigest(VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	unsigned char *digest_txt = NULL, *hexdigest_txt = NULL;
@@ -177,7 +182,7 @@ static VALUE ossl_digest_hexdigest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(digestp->md)))) {
+	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
@@ -194,13 +199,14 @@ static VALUE ossl_digest_hexdigest(VALUE self)
 /*
  * MD2
  */
-static VALUE ossl_md2_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_md2_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_md2());
@@ -215,13 +221,14 @@ static VALUE ossl_md2_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * MD5
  */
-static VALUE ossl_md5_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_md5_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_md5());
@@ -236,13 +243,14 @@ static VALUE ossl_md5_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * MDC2
  */
-static VALUE ossl_mdc2_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_mdc2_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_mdc2());
@@ -257,13 +265,14 @@ static VALUE ossl_mdc2_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * RIPEmd160
  */
-static VALUE ossl_ripemd160_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_ripemd160_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_ripemd160());
@@ -278,13 +287,14 @@ static VALUE ossl_ripemd160_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * SHA
  */
-static VALUE ossl_sha_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_sha_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_sha());
@@ -299,13 +309,14 @@ static VALUE ossl_sha_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * SHA1
  */
-static VALUE ossl_sha1_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_sha1_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 	
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_sha1());
@@ -317,13 +328,14 @@ static VALUE ossl_sha1_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_dss());
@@ -335,13 +347,14 @@ static VALUE ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_digest *digestp = NULL;
 	VALUE data;
 
 	GetDigest(self, digestp);
-	if (!(digestp->md = malloc(sizeof(EVP_MD_CTX)))) {
+	if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for new digest");
 	}
 	EVP_DigestInit(digestp->md, EVP_dss1());
@@ -356,7 +369,8 @@ static VALUE ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * INIT
  */
-void Init_ossl_digest(VALUE mDigest)
+void
+Init_ossl_digest(VALUE mDigest)
 {
 	eDigestError = rb_define_class_under(mDigest, "Error", rb_eStandardError);
 	

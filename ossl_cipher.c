@@ -13,10 +13,7 @@
 #define MakeCipher(obj, klass, ciphp) {\
 	obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp);\
 }
-
-#define GetCipher(obj, ciphp) {\
-	Data_Get_Struct(obj, ossl_cipher, ciphp);\
-}
+#define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
 
 #define DefCipherConst(x) rb_define_const(mCipher, #x, INT2FIX(##x))
 
@@ -57,7 +54,8 @@ typedef struct ossl_cipher_st {
 	EVP_CIPHER_CTX *ctx;
 } ossl_cipher;
 
-static void ossl_cipher_free(ossl_cipher *ciphp)
+static void
+ossl_cipher_free(ossl_cipher *ciphp)
 {
 	if (ciphp) {
 		if (ciphp->ctx) OPENSSL_free(ciphp->ctx);
@@ -68,7 +66,8 @@ static void ossl_cipher_free(ossl_cipher *ciphp)
 /*
  * PUBLIC
  */
-int ossl_cipher_get_NID(VALUE obj)
+int
+ossl_cipher_get_NID(VALUE obj)
 {
 	ossl_cipher *ciphp = NULL;
 
@@ -77,7 +76,8 @@ int ossl_cipher_get_NID(VALUE obj)
 	return ciphp->nid; /*EVP_CIPHER_CTX_nid(ciphp->ctx);*/
 }
 
-const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE obj)
+const EVP_CIPHER *
+ossl_cipher_get_EVP_CIPHER(VALUE obj)
 {
 	ossl_cipher *ciphp = NULL;
 
@@ -89,13 +89,14 @@ const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE obj)
 /*
  * PRIVATE
  */
-static VALUE ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_cipher *ciphp = NULL;
 	VALUE obj;
 
 	if (klass == cCipher)
-		rb_raise(rb_eNotImpError, "cannot do Cipher.new - Cipher is an abstract class");
+		rb_raise(rb_eNotImpError, "cannot do Cipher::ANY.new - it is an abstract class");
 	MakeCipher(obj, klass, ciphp);
 	
 	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX)))) {
@@ -107,41 +108,17 @@ static VALUE ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-static VALUE ossl_cipher_update(VALUE self, VALUE data)
-{
-	ossl_cipher *ciphp = NULL;
-	char *in = NULL, *out = NULL;
-	int in_len = 0, out_len = 0;
-	VALUE str;
-
-	GetCipher(self, ciphp);
-	Check_SafeStr(data);
-	in = RSTRING(data)->ptr;
-	in_len = RSTRING(data)->len;
-	
-	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
-	if (!EVP_CipherUpdate(ciphp->ctx, out, &out_len, in, in_len)) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
-	
-	str = rb_str_new(out, out_len);
-	OPENSSL_free(out);
-
-	return str;
-}
-
-static VALUE ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	const EVP_CIPHER *cipher = NULL;
 	unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
-	VALUE pass, init_v, data;
+	VALUE pass, init_v;
 
 	GetCipher(self, ciphp);
 	
-	rb_scan_args(argc, argv, "12", &pass, &init_v, &data);
+	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
 	Check_SafeStr(pass);
 	if (NIL_P(init_v)) {
@@ -169,22 +146,20 @@ static VALUE ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 
-	if (!NIL_P(data)) {
-		return ossl_cipher_update(self, data);
-	}
 	return self;
 }
 
-static VALUE ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	const EVP_CIPHER *cipher = NULL;
 	unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
-	VALUE pass, init_v, data;
+	VALUE pass, init_v;
 	
 	GetCipher(self, ciphp);
 	
-	rb_scan_args(argc, argv, "12", &pass, &init_v, &data);
+	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
 	Check_SafeStr(pass);
 	if (NIL_P(init_v)) {
@@ -207,10 +182,32 @@ static VALUE ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 
-	if (!NIL_P(data)) {
-		return ossl_cipher_update(self, data);
-	}
 	return self;
+}
+
+static VALUE ossl_cipher_update(VALUE self, VALUE data)
+{
+	ossl_cipher *ciphp = NULL;
+	char *in = NULL, *out = NULL;
+	int in_len = 0, out_len = 0;
+	VALUE str;
+
+	GetCipher(self, ciphp);
+	Check_SafeStr(data);
+	in = RSTRING(data)->ptr;
+	in_len = RSTRING(data)->len;
+	
+	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
+		rb_raise(eCipherError, "%s", ossl_error());
+	}
+	if (!EVP_CipherUpdate(ciphp->ctx, out, &out_len, in, in_len)) {
+		rb_raise(eCipherError, "%s", ossl_error());
+	}
+	
+	str = rb_str_new(out, out_len);
+	OPENSSL_free(out);
+
+	return str;
 }
 
 static VALUE ossl_cipher_cipher(VALUE self)

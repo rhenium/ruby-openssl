@@ -15,9 +15,7 @@
 	obj = Data_Make_Struct(cDSA, ossl_dsa, 0, ossl_dsa_free, dsap);\
 	dsap->pkey.get_EVP_PKEY = ossl_dsa_get_EVP_PKEY;\
 }
-
 #define GetDSA_unsafe(obj, dsap) Data_Get_Struct(obj, ossl_dsa, dsap)
-
 #define GetDSA(obj, dsap) {\
 	GetDSA_unsafe(obj, dsap);\
 	if (!dsap->dsa) rb_raise(eDSAError, "not initialized!");\
@@ -39,7 +37,8 @@ typedef struct ossl_dsa_st {
 	DSA *dsa;
 } ossl_dsa;
 
-static void ossl_dsa_free(ossl_dsa *dsap)
+static void
+ossl_dsa_free(ossl_dsa *dsap)
 {
 	if (dsap) {
 		if (dsap->dsa) DSA_free(dsap->dsa);
@@ -51,7 +50,8 @@ static void ossl_dsa_free(ossl_dsa *dsap)
 /*
  * Public
  */
-VALUE ossl_dsa_new_null()
+VALUE
+ossl_dsa_new_null()
 {
 	ossl_dsa *dsap = NULL;
 	VALUE obj;
@@ -64,7 +64,8 @@ VALUE ossl_dsa_new_null()
 	return obj;
 }
 
-VALUE ossl_dsa_new(DSA *dsa)
+VALUE
+ossl_dsa_new(DSA *dsa)
 {
 	ossl_dsa *dsap = NULL;
 	VALUE obj;
@@ -82,7 +83,8 @@ VALUE ossl_dsa_new(DSA *dsa)
 	return obj;
 }
 
-DSA *ossl_dsa_get_DSA(VALUE obj)
+DSA *
+ossl_dsa_get_DSA(VALUE obj)
 {
 	ossl_dsa *dsap = NULL;
 	DSA *dsa = NULL;
@@ -97,7 +99,8 @@ DSA *ossl_dsa_get_DSA(VALUE obj)
 	return dsa;
 }
 
-EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE obj)
+EVP_PKEY *
+ossl_dsa_get_EVP_PKEY(VALUE obj)
 {
 	DSA *dsa = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -120,7 +123,8 @@ EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE obj)
 /*
  * Private
  */
-static VALUE ossl_dsa_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_dsa_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_dsa *dsap = NULL;
 	VALUE obj;
@@ -134,7 +138,8 @@ static VALUE ossl_dsa_s_new(int argc, VALUE *argv, VALUE klass)
 /*
  * CB for yielding when generating DSA params
  */
-static void ossl_dsa_generate_cb(int p, int n, void *arg)
+static void
+ossl_dsa_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;
 
@@ -145,7 +150,8 @@ static void ossl_dsa_generate_cb(int p, int n, void *arg)
 	rb_yield(ary);
 }
 
-static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	DSA *dsa = NULL;
@@ -210,7 +216,8 @@ static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_dsa_is_public(VALUE self)
+static VALUE
+ossl_dsa_is_public(VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 
@@ -223,7 +230,8 @@ static VALUE ossl_dsa_is_public(VALUE self)
 	return (dsap->dsa->pub_key) ? Qtrue : Qfalse;
 }
 
-static VALUE ossl_dsa_is_private(VALUE self)
+static VALUE
+ossl_dsa_is_private(VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	
@@ -232,7 +240,8 @@ static VALUE ossl_dsa_is_private(VALUE self)
 	return (DSA_PRIVATE(dsap->dsa)) ? Qtrue : Qfalse;
 }
 
-static VALUE ossl_dsa_export(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	BIO *out = NULL;
@@ -275,7 +284,8 @@ static VALUE ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 	return str;
 }
 
-static VALUE ossl_dsa_to_der(VALUE self)
+static VALUE
+ossl_dsa_to_der(VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	DSA *dsa = NULL;
@@ -320,7 +330,8 @@ static VALUE ossl_dsa_to_der(VALUE self)
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
  */
-static VALUE ossl_dsa_to_str(VALUE self)
+static VALUE
+ossl_dsa_to_str(VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	BIO *out = NULL;
@@ -346,7 +357,8 @@ static VALUE ossl_dsa_to_str(VALUE self)
 /*
  * Makes new instance DSA PUBLIC_KEY from PRIVATE_KEY
  */
-static VALUE ossl_dsa_to_public_key(VALUE self)
+static VALUE
+ossl_dsa_to_public_key(VALUE self)
 {
 	ossl_dsa *dsap1 = NULL, *dsap2 = NULL;
 	VALUE obj;
@@ -361,7 +373,8 @@ static VALUE ossl_dsa_to_public_key(VALUE self)
 	return obj;
 }
 
-static VALUE ossl_dsa_sign(VALUE self, VALUE data)
+static VALUE
+ossl_dsa_sign(VALUE self, VALUE data)
 {
 	ossl_dsa *dsap = NULL;
 	char *sig = NULL;
@@ -389,7 +402,8 @@ static VALUE ossl_dsa_sign(VALUE self, VALUE data)
 	return str;
 }
 
-static VALUE ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
+static VALUE
+ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 {
 	ossl_dsa *dsap = NULL;
 	int ret = -1;
@@ -408,7 +422,11 @@ static VALUE ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 	return Qnil;
 }
 
-void Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+/*
+ * INIT
+ */
+void
+Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 {
 	eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
 

@@ -40,5 +40,19 @@
 #define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
 	(char *(*)())d2i_PKCS7_RECIP_INFO,(char *)ri)
 
+/* to hmac.[ch] */
+static inline int
+HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
+{
+	if (in == NULL) {
+        	/*HMACerr(HMAC_CTX_COPY,HMAC_R_INPUT_NOT_INITIALIZED);*/
+        	return 0;
+    	}
+
+	memcpy(out, in, sizeof(HMAC_CTX));
+
+	return 1;
+}
+
 #endif
 

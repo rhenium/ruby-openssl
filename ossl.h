@@ -15,11 +15,17 @@
 #include <openssl/asn1_mac.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
+#include <openssl/hmac.h>
+
 #include "openssl_missing.h"
+#include "ossl_version.h"
+
+/*
+ * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
+ */
 #if !defined(OSSL_DEBUG) && defined(RFILE)
 #  undef RFILE
 #endif
-#include "ossl_version.h"
 #include <ruby.h>
 
 /*
@@ -83,6 +89,12 @@ EXTERN VALUE cDSA;
 EXTERN VALUE cPKCS7;
 EXTERN VALUE cPKCS7SignerInfo;
 EXTERN VALUE ePKCS7Error;
+/* HMAC */
+EXTERN VALUE cHMAC;
+EXTERN VALUE eHMACError;
+/* Conf */
+EXTERN VALUE cConfig;
+EXTERN VALUE eConfigError;
 
 /*
  * CheckTypes
@@ -102,10 +114,8 @@ char *ossl_error(void);
 
 /*
  * Config
- * TO BE DROPPED OUT
- *
-void Init_ossl_config(VALUE);
  */
+void Init_ossl_config(VALUE);
 
 /*
  * Digest
@@ -224,7 +234,12 @@ void Init_ssl(VALUE);
 VALUE ossl_pkcs7si_new_null(void);
 VALUE ossl_pkcs7si_new(PKCS7_SIGNER_INFO *);
 PKCS7_SIGNER_INFO *ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE);
-void Init_PKCS7(VALUE);
+void Init_pkcs7(VALUE);
+
+/*
+ * HMAC
+ */
+void Init_hmac(VALUE);
 
 #endif
 

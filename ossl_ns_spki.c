@@ -31,7 +31,8 @@ typedef struct ossl_spki_st {
 	NETSCAPE_SPKI *spki;
 } ossl_spki;
 
-static void ossl_spki_free(ossl_spki *spkip)
+static void
+ossl_spki_free(ossl_spki *spkip)
 {
 	if(spkip) {
 		if(spkip->spki) NETSCAPE_SPKI_free(spkip->spki);
@@ -46,7 +47,8 @@ static void ossl_spki_free(ossl_spki *spkip)
 /*
  * Private functions
  */
-static VALUE ossl_spki_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_spki_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_spki *spkip = NULL;
 	VALUE obj;
@@ -57,7 +59,8 @@ static VALUE ossl_spki_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-static VALUE ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	NETSCAPE_SPKI *spki = NULL;
@@ -86,7 +89,8 @@ static VALUE ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_spki_to_pem(VALUE self)
+static VALUE
+ossl_spki_to_pem(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	char *data = NULL;
@@ -101,7 +105,8 @@ static VALUE ossl_spki_to_pem(VALUE self)
 	return rb_str_new2(data);
 }
 
-static VALUE ossl_spki_to_str(VALUE self)
+static VALUE
+ossl_spki_to_str(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	BIO *out = NULL;
@@ -124,7 +129,8 @@ static VALUE ossl_spki_to_str(VALUE self)
 	return str;
 }
 
-static VALUE ossl_spki_get_public_key(VALUE self)
+static VALUE
+ossl_spki_get_public_key(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -140,7 +146,8 @@ static VALUE ossl_spki_get_public_key(VALUE self)
 	return pub_key;
 }
 
-static VALUE ossl_spki_set_public_key(VALUE self, VALUE pubk)
+static VALUE
+ossl_spki_set_public_key(VALUE self, VALUE pubk)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -158,7 +165,8 @@ static VALUE ossl_spki_set_public_key(VALUE self, VALUE pubk)
 	return self;
 }
 
-static VALUE ossl_spki_get_challenge(VALUE self)
+static VALUE
+ossl_spki_get_challenge(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	VALUE str;
@@ -171,7 +179,8 @@ static VALUE ossl_spki_get_challenge(VALUE self)
 	return rb_str_new2("");
 }
 
-static VALUE ossl_spki_set_challenge(VALUE self, VALUE str)
+static VALUE
+ossl_spki_set_challenge(VALUE self, VALUE str)
 {
 	ossl_spki *spkip = NULL;
 
@@ -185,7 +194,8 @@ static VALUE ossl_spki_set_challenge(VALUE self, VALUE str)
 	return str;
 }
 
-static VALUE ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
+static VALUE
+ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -213,7 +223,8 @@ static VALUE ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 /*
  * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
  */
-static VALUE ossl_spki_verify(VALUE self, VALUE key)
+static VALUE
+ossl_spki_verify(VALUE self, VALUE key)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -237,7 +248,8 @@ static VALUE ossl_spki_verify(VALUE self, VALUE key)
 /*
  * NETSCAPE_SPKI init
  */
-void Init_ossl_spki(VALUE mNetscape)
+void
+Init_ossl_spki(VALUE mNetscape)
 {
 	eSPKIError = rb_define_class_under(mNetscape, "SPKIError", rb_eStandardError);
 	

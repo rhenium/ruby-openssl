@@ -32,7 +32,6 @@
 
 /*
  * Constants
- * types
  */
 #define SIGNED NID_pkcs7_signed
 #define ENVELOPED NID_pkcs7_enveloped
@@ -60,7 +59,8 @@ typedef struct ossl_pkcs7si_st {
 	PKCS7_SIGNER_INFO *signer;
 } ossl_pkcs7si;
 
-static void ossl_pkcs7_free(ossl_pkcs7 *pkcs7p)
+static void
+ossl_pkcs7_free(ossl_pkcs7 *pkcs7p)
 {
 	if (pkcs7p) {
 		if (pkcs7p->pkcs7) {
@@ -70,7 +70,8 @@ static void ossl_pkcs7_free(ossl_pkcs7 *pkcs7p)
 	}
 }
 
-static void ossl_pkcs7si_free(ossl_pkcs7si *p7sip)
+static void
+ossl_pkcs7si_free(ossl_pkcs7si *p7sip)
 {
 	if (p7sip) {
 		if (p7sip->signer) {
@@ -83,7 +84,8 @@ static void ossl_pkcs7si_free(ossl_pkcs7si *p7sip)
 /*
  * Public
  */
-VALUE ossl_pkcs7si_new_null(void)
+VALUE
+ossl_pkcs7si_new_null(void)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	VALUE obj;
@@ -97,7 +99,8 @@ VALUE ossl_pkcs7si_new_null(void)
 	return obj;
 }
 
-VALUE ossl_pkcs7si_new(PKCS7_SIGNER_INFO *si)
+VALUE
+ossl_pkcs7si_new(PKCS7_SIGNER_INFO *si)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	VALUE obj;
@@ -114,7 +117,8 @@ VALUE ossl_pkcs7si_new(PKCS7_SIGNER_INFO *si)
 	return obj;
 }
 
-PKCS7_SIGNER_INFO *ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE obj)
+PKCS7_SIGNER_INFO *
+ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE obj)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	PKCS7_SIGNER_INFO *si = NULL;
@@ -169,7 +173,8 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 }
  */
 
-static VALUE ossl_pkcs7_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_pkcs7_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_pkcs7 *pkcs7p = NULL;
 	VALUE obj;
@@ -180,7 +185,8 @@ static VALUE ossl_pkcs7_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-static VALUE ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_pkcs7 *p7p = NULL;
 	BIO *in = NULL;
@@ -227,7 +233,8 @@ static VALUE ossl_pkcs7_set_type(VALUE self, VALUE type)
 }
  */
 
-static VALUE ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
+static VALUE
+ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
 {
 	ossl_pkcs7 *p7p = NULL;
 
@@ -242,7 +249,8 @@ static VALUE ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
 	return cipher;
 }
 
-static VALUE ossl_pkcs7_add_signer(VALUE self, VALUE pkey, VALUE signer)
+static VALUE
+ossl_pkcs7_add_signer(VALUE self, VALUE signer, VALUE pkey)
 {
 	ossl_pkcs7 *p7p = NULL;
 	PKCS7_SIGNER_INFO *si = NULL;
@@ -270,7 +278,8 @@ static VALUE ossl_pkcs7_add_signer(VALUE self, VALUE pkey, VALUE signer)
 	return self;
 }
 
-static VALUE ossl_pkcs7_get_signer(VALUE self)
+static VALUE
+ossl_pkcs7_get_signer(VALUE self)
 {
 	ossl_pkcs7 *p7p = NULL;
 	STACK_OF(PKCS7_SIGNER_INFO) *sk = NULL;
@@ -299,7 +308,8 @@ static VALUE ossl_pkcs7_get_signer(VALUE self)
 	return ary;
 }
 
-static VALUE ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
+static VALUE
+ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
 {
 	ossl_pkcs7 *p7p = NULL;
 	PKCS7_RECIP_INFO *ri = NULL;
@@ -322,7 +332,8 @@ static VALUE ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
 	return self;
 }
 
-static VALUE ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
+static VALUE
+ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
 {
 	ossl_pkcs7 *p7p = NULL;
 
@@ -337,7 +348,8 @@ static VALUE ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
 	return self;
 }
 
-static VALUE ossl_pkcs7_add_crl(VALUE self, VALUE crl)
+static VALUE
+ossl_pkcs7_add_crl(VALUE self, VALUE crl)
 {
 	ossl_pkcs7 *p7p = NULL;
 
@@ -352,7 +364,8 @@ static VALUE ossl_pkcs7_add_crl(VALUE self, VALUE crl)
 	return self;
 }
 
-static VALUE ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
 {
 	ossl_pkcs7 *p7p = NULL;
 	BIO *bio = NULL;
@@ -386,7 +399,8 @@ static VALUE ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_pkcs7_data_verify(VALUE self, VALUE x509store, VALUE detached)
+static VALUE
+ossl_pkcs7_data_verify(VALUE self, VALUE x509store, VALUE detached)
 {
 	ossl_pkcs7 *p7p = NULL;
 	BIO *bio = NULL, *data = NULL;
@@ -453,7 +467,8 @@ static VALUE ossl_pkcs7_data_verify(VALUE self, VALUE x509store, VALUE detached)
 	return Qtrue;
 }
 
-static VALUE ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
+static VALUE
+ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 {
 	ossl_pkcs7 *p7p = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -488,7 +503,8 @@ static VALUE ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 	return str;
 }
 
-static VALUE ossl_pkcs7_to_pem(VALUE self)
+static VALUE
+ossl_pkcs7_to_pem(VALUE self)
 {
 	ossl_pkcs7 *p7p = NULL;
 	BIO *out = NULL;
@@ -514,7 +530,8 @@ static VALUE ossl_pkcs7_to_pem(VALUE self)
 /*
  * SIGNER INFO
  */
-static VALUE ossl_pkcs7si_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_pkcs7si_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	VALUE obj;
@@ -526,7 +543,8 @@ static VALUE ossl_pkcs7si_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-static VALUE ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	PKCS7_SIGNER_INFO *si = NULL;
@@ -538,7 +556,7 @@ static VALUE ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
 	GetPKCS7si_unsafe(self, p7sip);
 
 	rb_warn("HERE!");
-	rb_scan_args(argc, argv, "30", &key, &cert, &digest);
+	rb_scan_args(argc, argv, "30", &cert, &key, &digest);
 	
 	OSSL_Check_Type(key, cPKey);
 	OSSL_Check_Type(cert, cX509Certificate);
@@ -562,7 +580,8 @@ static VALUE ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_pkcs7si_get_name(VALUE self)
+static VALUE
+ossl_pkcs7si_get_name(VALUE self)
 {
 	ossl_pkcs7si *p7sip = NULL;
 
@@ -571,7 +590,8 @@ static VALUE ossl_pkcs7si_get_name(VALUE self)
 	return ossl_x509name_new2(p7sip->signer->issuer_and_serial->issuer);
 }
 
-static VALUE ossl_pkcs7si_get_serial(VALUE self)
+static VALUE
+ossl_pkcs7si_get_serial(VALUE self)
 {
 	ossl_pkcs7si *p7sip = NULL;
 
@@ -580,7 +600,8 @@ static VALUE ossl_pkcs7si_get_serial(VALUE self)
 	return INT2NUM(ASN1_INTEGER_get(p7sip->signer->issuer_and_serial->serial));
 }
 
-static VALUE ossl_pkcs7si_get_signed_time(VALUE self)
+static VALUE
+ossl_pkcs7si_get_signed_time(VALUE self)
 {
 	ossl_pkcs7si *p7sip = NULL;
 	ASN1_TYPE *asn1obj = NULL;
@@ -596,7 +617,11 @@ static VALUE ossl_pkcs7si_get_signed_time(VALUE self)
 	return Qnil;
 }
 
-void Init_PKCS7(VALUE mPKCS7)
+/*
+ * INIT
+ */
+void
+Init_pkcs7(VALUE mPKCS7)
 {
 	ePKCS7Error = rb_define_class_under(mPKCS7, "Error", rb_eStandardError);
 

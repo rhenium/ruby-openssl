@@ -87,7 +87,7 @@ void Init_openssl()
 	ERR_load_crypto_strings();
 
 	/*
-	 * Universe of Module
+	 * Universe of Modules
 	 */
 	mOSSL = rb_define_module("OpenSSL");
 	mX509 = rb_define_module_under(mOSSL, "X509");
@@ -103,10 +103,11 @@ void Init_openssl()
 	 */
 	rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
 	rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+	
 	/*
 	 * Components
 	 */
-	/* Init_ossl_config(mOSSL); TO BE DROPPED OUT??? */
+	Init_ossl_config(mOSSL);
 	Init_ossl_x509(mX509);
 	Init_ossl_x509name(mX509);
 	Init_ossl_x509revoked(mX509);
@@ -121,6 +122,7 @@ void Init_openssl()
 	Init_ossl_rand(mOSSL);
 	Init_ossl_pkey(mPKey);
 	Init_ssl(mSSL);
-	Init_PKCS7(mPKCS7);
+	Init_pkcs7(mPKCS7);
+	Init_hmac(mOSSL);
 }
 

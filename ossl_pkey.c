@@ -30,7 +30,8 @@ VALUE ePKeyError;
 /*
  * Public
  */
-VALUE ossl_pkey_new(EVP_PKEY *key)
+VALUE
+ossl_pkey_new(EVP_PKEY *key)
 {
 	if (!key)
 		rb_raise(ePKeyError, "Empty key!");
@@ -41,34 +42,38 @@ VALUE ossl_pkey_new(EVP_PKEY *key)
 		case EVP_PKEY_DSA:
 			return ossl_dsa_new(key->pkey.dsa);
 	}
-	/*
-	 * Make it or not?
-	 * EVP_PKEY_free(new_key);
-	 */
+	
 	rb_raise(ePKeyError, "unsupported key type");
 	return Qnil;
 }
 
-VALUE ossl_pkey_new_from_file(VALUE v)
+VALUE
+ossl_pkey_new_from_file(VALUE path)
 {
-	char *path;
-	FILE *fp;
-	EVP_PKEY *pkey;
+	char *filename = NULL;
+	FILE *fp = NULL;
+	EVP_PKEY *pkey = NULL;
 	VALUE obj;
 
-	path = RSTRING(v)->ptr;
-	if((fp = fopen(path, "r")) == NULL)
+	filename = RSTRING(path)->ptr;
+	if ((fp = fopen(filename, "r")) == NULL)
 		rb_raise(ePKeyError, "%s", strerror(errno));
+	/*
+	 * Will we handle user passwords?
+	 */
 	pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
-	if(!pkey) rb_raise(ePKeyError, "%s", ossl_error());
-	obj = rb_ensure(ossl_pkey_new, (VALUE)pkey,
-			(VALUE(*)(VALUE))EVP_PKEY_free, (VALUE)pkey);
+	if (!pkey)
+		rb_raise(ePKeyError, "%s", ossl_error());
+
+	obj = ossl_pkey_new(pkey);
+	EVP_PKEY_free(pkey);
 
 	return obj;
 }
 
-EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE obj)
+EVP_PKEY *
+ossl_pkey_get_EVP_PKEY(VALUE obj)
 {
 	ossl_pkey *pkeyp = NULL;
 	
@@ -80,18 +85,20 @@ EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE obj)
 /*
  * Private
  */
-static VALUE ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_pkey *pkeyp = NULL;
 	VALUE obj;
 	
 	if (klass == cPKey)
-		rb_raise(rb_eNotImpError, "cannot do PKey.new - PKey is an abstract class");
+		rb_raise(rb_eNotImpError, "cannot do PKey::ANY.new - it is an abstract class");
 	
 	return Qnil;
 }
 
-void Init_ossl_pkey(VALUE mPKey)
+void
+Init_ossl_pkey(VALUE mPKey)
 {
 	ePKeyError = rb_define_class_under(mPKey, "Error", rb_eStandardError);
 

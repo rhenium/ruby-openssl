@@ -8,23 +8,24 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-/*
- * WILL BE DROPPED OUT!?!???
- * 
 #include "ossl.h"
 
 #define MakeConfig(obj, configp) {\
 	obj = Data_Make_Struct(cConfig, ossl_config, 0, ossl_config_free, configp);\
-	configp->ossl_type = T_OSSL_CONFIG;\
 }
+#define GetConfig(obj, configp) Data_Get_Struct(obj, ossl_config, configp)
 
-#define GetConfig(obj, configp) {\
-	OSSL_Check_Type(obj, T_OSSL_CONFIG);\
-	Data_Get_Struct(obj, ossl_config, configp);\
-}
+/*
+ * Classes
+ */
+VALUE cConfig;
+VALUE eConfigError;
+/*VALUE cConfigSection;*/
 
+/*
+ * Structs
+ */
 typedef struct ossl_config_st {
-	int ossl_type;
 	LHASH *config;
 } ossl_config;
 
@@ -35,29 +36,29 @@ typedef struct ossl_configsect_st {
 	int ossl_type;
 	STACK_OF(CONF_VALUE) *section;
 } ossl_configsect;
- *
+ */
 
-VALUE cConfig;
-VALUE eConfigError;
-VALUE cConfigSection;
 
 static void
 ossl_config_free(ossl_config *configp)
 {
 	if (configp) {
-		if (configp->config) CONF_free(configp->config);
+		if (configp->config)
+			CONF_free(configp->config);
 		free(configp);
 	}
 }
 
 /*
+ * It's not ready!
+ * 
 static void ossl_config_section_free(ossl_configsect *sectp)
 {
 	if (configp) {
-		if (configp->section) sk_CONF_VALUE_pop_free(configp->
+		if (configp->section) sk_CONF_VALUE_pop_free(configp->...);
 	free(sectp);
 }
- *
+ */
 
 static VALUE
 ossl_config_s_new(int argc, VALUE *argv, VALUE klass)
@@ -79,11 +80,10 @@ ossl_config_initialize(int argc, VALUE* argv, VALUE self)
 	VALUE path;
 	
 	GetConfig(self, configp);
-	rb_scan_args(argc, argv, "1", &path);
+	rb_scan_args(argc, argv, "10", &path);
 	
 	Check_Type(path, T_STRING);
 	
-	configp->config = NULL;
 	configp->config = CONF_load(configp->config, RSTRING(path)->ptr, &err_line);
 	
 	if (configp->config == NULL) {
@@ -116,7 +116,7 @@ ossl_config_get_string(VALUE self, VALUE section, VALUE item)
 	return rb_str_new2(string);
 }
 
-static VALUE 
+static VALUE
 ossl_config_get_number(VALUE self, VALUE section, VALUE item)
 {
 	ossl_config *configp = NULL;
@@ -159,8 +159,11 @@ ossl_config_get_section(VALUE self, VALUE section)
 	else
 		return obj;
 }
- *
+ */
 
+/*
+ * INIT
+ */
 void
 Init_ossl_config(VALUE mOSSL)
 {
@@ -177,10 +180,6 @@ Init_ossl_config(VALUE mOSSL)
 	rb_define_method(cConfig, "get_section", ossl_config_get_section, 1);
 	cConfigSection = rb_define_class_under(mOSSL, "ConfigSection", rb_cObject);
 	rb_undef_method(CLASS_OF(cConfigSection), "new");
- *
-}
- *
- * CONFIG...
- * TO BE DROPPED OUT??
  */
+}
 

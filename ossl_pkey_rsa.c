@@ -15,9 +15,7 @@
 	obj = Data_Make_Struct(cRSA, ossl_rsa, 0, ossl_rsa_free, rsap);\
 	rsap->pkey.get_EVP_PKEY = ossl_rsa_get_EVP_PKEY;\
 }
-
 #define GetRSA_unsafe(obj, rsap) Data_Get_Struct(obj, ossl_rsa, rsap)
-
 #define GetRSA(obj, rsap) {\
 	GetRSA_unsafe(obj, rsap);\
 	if (!rsap->rsa) rb_raise(eRSAError, "not initialized!");\
@@ -39,7 +37,8 @@ typedef struct ossl_rsa_st {
 	RSA *rsa;
 } ossl_rsa;
 
-static void ossl_rsa_free(ossl_rsa *rsap)
+static void
+ossl_rsa_free(ossl_rsa *rsap)
 {
 	if (rsap) {
 		if (rsap->rsa) RSA_free(rsap->rsa);
@@ -51,7 +50,8 @@ static void ossl_rsa_free(ossl_rsa *rsap)
 /*
  * Public
  */
-VALUE ossl_rsa_new_null()
+VALUE
+ossl_rsa_new_null()
 {
 	ossl_rsa *rsap = NULL;
 	VALUE obj;
@@ -64,7 +64,8 @@ VALUE ossl_rsa_new_null()
 	return obj;
 }
 
-VALUE ossl_rsa_new(RSA *rsa)
+VALUE
+ossl_rsa_new(RSA *rsa)
 {
 	ossl_rsa *rsap = NULL;
 	VALUE obj;
@@ -82,7 +83,8 @@ VALUE ossl_rsa_new(RSA *rsa)
 	return obj;
 }
 
-RSA *ossl_rsa_get_RSA(VALUE obj)
+RSA *
+ossl_rsa_get_RSA(VALUE obj)
 {
 	ossl_rsa *rsap = NULL;
 	RSA *rsa = NULL;
@@ -97,7 +99,8 @@ RSA *ossl_rsa_get_RSA(VALUE obj)
 	return rsa;
 }
 
-EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE obj)
+EVP_PKEY *
+ossl_rsa_get_EVP_PKEY(VALUE obj)
 {
 	RSA *rsa = NULL;
 	EVP_PKEY *pkey = NULL;
@@ -120,7 +123,8 @@ EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE obj)
 /*
  * Private
  */
-static VALUE ossl_rsa_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE
+ossl_rsa_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_rsa *rsap = NULL;
 	VALUE obj;
@@ -134,7 +138,8 @@ static VALUE ossl_rsa_s_new(int argc, VALUE *argv, VALUE klass)
 /*
  * CB for yielding when generating RSA data
  */
-static void ossl_rsa_generate_cb(int p, int n, void *arg)
+static void
+ossl_rsa_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;
 
@@ -145,7 +150,8 @@ static void ossl_rsa_generate_cb(int p, int n, void *arg)
 	rb_yield(ary);
 }
 
-static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	RSA *rsa = NULL;
@@ -203,7 +209,8 @@ static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_rsa_is_public(VALUE self)
+static VALUE
+ossl_rsa_is_public(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 
@@ -216,7 +223,8 @@ static VALUE ossl_rsa_is_public(VALUE self)
 	return Qtrue;
 }
 
-static VALUE ossl_rsa_is_private(VALUE self)
+static VALUE
+ossl_rsa_is_private(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	
@@ -225,7 +233,8 @@ static VALUE ossl_rsa_is_private(VALUE self)
 	return (RSA_PRIVATE(rsap->rsa)) ? Qtrue : Qfalse;
 }
 
-static VALUE ossl_rsa_export(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	BIO *out = NULL;
@@ -268,7 +277,8 @@ static VALUE ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	return str;
 }
 
-static VALUE ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
+static VALUE
+ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 {
 	ossl_rsa *rsap = NULL;
 	char *enc_text = NULL;
@@ -293,7 +303,8 @@ static VALUE ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 	return enc;
 }
 
-static VALUE ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
+static VALUE
+ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 {
 	ossl_rsa *rsap = NULL;
 	char *txt = NULL;
@@ -318,7 +329,8 @@ static VALUE ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 	return text;
 }
 
-static VALUE ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
+static VALUE
+ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 {
 	ossl_rsa *rsap = NULL;
 	char *enc_text = NULL;
@@ -347,7 +359,8 @@ static VALUE ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 	return enc;
 }
 
-static VALUE ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
+static VALUE
+ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 {
 	ossl_rsa *rsap = NULL;
 	char *txt = NULL;
@@ -380,7 +393,8 @@ static VALUE ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
  * Just sample
  * (it's not (maybe) wise to show private RSA values)
  */
-static VALUE ossl_rsa_get_n(VALUE self)
+static VALUE
+ossl_rsa_get_n(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	BIO *out = NULL;
@@ -403,7 +417,8 @@ static VALUE ossl_rsa_get_n(VALUE self)
 	return num;
 }
 
-static VALUE ossl_rsa_to_der(VALUE self)
+static VALUE
+ossl_rsa_to_der(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	RSA *rsa = NULL;
@@ -448,7 +463,8 @@ static VALUE ossl_rsa_to_der(VALUE self)
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
  */
-static VALUE ossl_rsa_to_str(VALUE self)
+static VALUE
+ossl_rsa_to_str(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	BIO *out = NULL;
@@ -474,7 +490,8 @@ static VALUE ossl_rsa_to_str(VALUE self)
 /*
  * Makes new instance RSA PUBLIC_KEY from PRIVATE_KEY
  */
-static VALUE ossl_rsa_to_public_key(VALUE self)
+static VALUE
+ossl_rsa_to_public_key(VALUE self)
 {
 	ossl_rsa *rsap1 = NULL, *rsap2 = NULL;
 	VALUE obj;
@@ -492,7 +509,8 @@ static VALUE ossl_rsa_to_public_key(VALUE self)
 /*
  * Better to implement is in Ruby space?
  * 
-static VALUE ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
+static VALUE
+ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 {
 	ossl_rsa *rsap = NULL;
 	EVP_MD_CTX ctx;
@@ -523,11 +541,15 @@ static VALUE ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 	return str;
 }
 	
-static VALUE ossl_rsa_verify(VALUE self, VALUE digest, VALUE text)
+static VALUE
+ossl_rsa_verify(VALUE self, VALUE digest, VALUE text)
 {
 }
  */
 
+/*
+ * INIT
+ */
 void Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 {
 	eRSAError = rb_define_class_under(mPKey, "RSAError", ePKeyError);
@@ -548,7 +570,7 @@ void Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 	rb_define_method(cRSA, "n", ossl_rsa_get_n, 0);
 	rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
 /*
- * Rather in Ruby space?
+ * Implemented in Ruby space...
  * 
 	rb_define_method(cRSA, "sign", ossl_rsa_sign, 2);
 	rb_define_method(cRSA, "verify", ossl_rsa_verify, 3);
