@@ -146,6 +146,26 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
+static VALUE
+ossl_x509_become(VALUE copy, VALUE orig)
+{
+	X509 *x509;
+	
+	if (copy == orig) return copy;
+
+	rb_check_frozen(copy);
+
+	OSSL_Check_Same_Class(copy, orig);
+
+	if (!(x509 = X509_dup(DATA_PTR(orig)))) {
+		ossl_raise(eX509CertError, "");
+	}
+	X509_free(DATA_PTR(copy));
+	DATA_PTR(copy) = x509;
+	
+	return copy;
+}
+
 static VALUE 
 ossl_x509_to_der(VALUE self)
 {
@@ -589,6 +609,7 @@ Init_ossl_x509cert()
 	rb_define_singleton_method(cX509Cert, "allocate", ossl_x509_s_allocate, 0);
 	rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
 	
+	rb_define_method(cX509Cert, "become", ossl_x509_become, 1);
 	rb_define_method(cX509Cert, "to_der", ossl_x509_to_der, 0);
 	rb_define_method(cX509Cert, "to_pem", ossl_x509_to_pem, 0);
 	rb_define_alias(cX509Cert, "to_s", "to_pem");

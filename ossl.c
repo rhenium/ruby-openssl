@@ -38,27 +38,6 @@ struct timeval {
 #endif
 
 /*
- * Check Types
- */
-void
-ossl_check_kind(VALUE obj, VALUE klass)
-{
-	if (rb_obj_is_kind_of(obj, klass) != Qtrue) {
-		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
-				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
-	}
-}
-
-void
-ossl_check_instance(VALUE obj, VALUE klass)
-{
-	if (rb_obj_is_instance_of(obj, klass) != Qtrue) {
-		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
-				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
-	}
-}
-
-/*
  * DATE conversion
  */
 VALUE

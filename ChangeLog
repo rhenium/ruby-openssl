@@ -3,6 +3,12 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 04 Sep 2002 11:20:11 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.c: drop type checking functions, and
+	* ossl.h: rewrite them as macros to ossl.h
+	* x509cert.c: implement Certificate#become method to support Ruby1.7.3 dup, clone interface
+	* BUG (in OpenSSL): Cannot do X509_dup(X509_new())!!!
+
 Wed, 07 Aug 2002 16:22:02 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ssl.c: fixes to make it compile (Who screwed it? Me?)
 

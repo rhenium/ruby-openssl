@@ -69,10 +69,23 @@ extern VALUE eOSSLError;
 /*
  * CheckTypes
  */
-#define OSSL_Check_Kind(obj, klass) ossl_check_kind(obj, klass)
-void ossl_check_kind(VALUE, VALUE);
-#define OSSL_Check_Instance(obj, klass) ossl_check_instance(obj, klass)
-void ossl_check_instance(VALUE, VALUE);
+#define OSSL_Check_Kind(obj, klass) do {\
+	if (!rb_obj_is_kind_of(obj, klass)) {\
+		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
+				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
+	}\
+} while (0)
+#define OSSL_Check_Instance(obj, klass) do {\
+	if (!rb_obj_is_instance_of(obj, klass)) {\
+		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
+				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
+	}\
+} while (0)
+#define OSSL_Check_Same_Class(obj1, obj2) do {\
+	if (!rb_obj_is_instance_of(obj1, rb_obj_class(obj2))) {\
+		ossl_raise(rb_eTypeError, "wrong argument type");\
+	}\
+} while (0)
 
 /*
  * DATE conversion
