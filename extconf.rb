@@ -59,8 +59,8 @@ if with_config("debug") or enable_config("debug")
 SRCS = #{srcs}
 
 test-link:
-	$(CC) $(DLDFLAGS) -o testlink $(OBJS) $(LIBS) $(LOCAL_LIBS)
-	@$(RM) testlink
+	$(CC) $(DLDFLAGS) -o .testlink $(OBJS) $(LIBPATH) $(LIBS) $(LOCAL_LIBS)
+	@$(RM) .testlink
 	@echo "Done."
 
 dep:

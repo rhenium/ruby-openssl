@@ -1,3 +1,9 @@
+Mon, 06 Jan 2003 12:43:56 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509crl.c: convert to Ruby1.8 dup framework
+
+Mon, 06 Jan 2003 12:40:36 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* extconf.rb: Fix test-link target
+
 Sun, 05 Jan 2003 17:22:04 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Add checks for Ruby >= 1.8.0 and OpenSSL >= 0.9.7
 

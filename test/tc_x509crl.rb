@@ -128,6 +128,11 @@ class TC_CRL < Test::Unit::TestCase
     crl = CRL::new($crl.to_pem)
     assert_equal(txt, crl.to_text, "new instance from PEM")
   end
+  def test_10dup
+    assert_equal($crl.to_text, $crl.dup.to_text, "dup")
+    assert_equal($crl.to_text, $crl.clone.to_text, "clone")
+##    assert_nothing_raised(CRL::new().dup, "OpenSSL doens't like duplicating not filled X509_CRL *")
+  end
   def teardown
     ##
     # NONE

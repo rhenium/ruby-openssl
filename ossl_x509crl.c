@@ -100,6 +100,24 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_x509crl_copy_object(VALUE self, VALUE other)
+{
+    X509_CRL *a, *b, *crl;
+	
+    rb_check_frozen(self);
+    if (self == other) return self;
+    GetX509CRL(self, a);
+    SafeGetX509CRL(other, b);
+    if (!(crl = X509_CRL_dup(b))) {
+	ossl_raise(eX509CRLError, "");
+    }
+    X509_CRL_free(a);
+    DATA_PTR(self) = crl;
+
+    return self;
+}
+
 static VALUE 
 ossl_x509crl_get_version(VALUE self)
 {
@@ -436,7 +454,8 @@ Init_ossl_x509crl()
 	
     rb_define_alloc_func(cX509CRL, ossl_x509crl_alloc);
     rb_define_method(cX509CRL, "initialize", ossl_x509crl_initialize, -1);
-	
+    rb_define_method(cX509CRL, "copy_object", ossl_x509crl_copy_object, 1);
+    
     rb_define_method(cX509CRL, "version", ossl_x509crl_get_version, 0);
     rb_define_method(cX509CRL, "version=", ossl_x509crl_set_version, 1);
     rb_define_method(cX509CRL, "issuer", ossl_x509crl_get_issuer, 0);
