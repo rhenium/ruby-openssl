@@ -47,7 +47,7 @@ p pkcs7.data
 
 # create PKCS#7 encrypted message
 flags = 0
-flags |= PKCS7::TEXT
+#flags |= PKCS7::TEXT
 cipher = Cipher::Cipher::new("DES-EDE3-CBC")
 pkcs7 = PKCS7::encrypt([cert1,cert2], data, cipher, flags)
 p [ pkcs7.type ]
@@ -56,4 +56,4 @@ puts PKCS7::write_smime(pkcs7, data, flags)
 # decrypt
 p pkcs7.decrypt(key1, cert1, flags).size
 p pkcs7.decrypt(key2, cert2, flags).size
-p pkcs7.decrypt(key3, cert3, flags).size
+p pkcs7.decrypt(key3, cert3, flags).size  # cert3 is not expected recipient.
