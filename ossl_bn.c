@@ -614,12 +614,12 @@ Init_ossl_bn()
 	rb_define_method(cBN, "%", ossl_bn_mod, 1);
 	/* nnmod */
 
-	rb_define_method(cBN, "mod_add", ossl_bn_mod_add, 1);
-	rb_define_method(cBN, "mod_sub", ossl_bn_mod_sub, 1);
-	rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 1);
+	rb_define_method(cBN, "mod_add", ossl_bn_mod_add, 2);
+	rb_define_method(cBN, "mod_sub", ossl_bn_mod_sub, 2);
+	rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 2);
 	rb_define_method(cBN, "mod_sqr", ossl_bn_mod_sqr, 1);
 	rb_define_method(cBN, "**", ossl_bn_exp, 1);
-	rb_define_method(cBN, "mod_exp", ossl_bn_mod_exp, 1);
+	rb_define_method(cBN, "mod_exp", ossl_bn_mod_exp, 2);
 	rb_define_method(cBN, "gcd", ossl_bn_gcd, 1);
 
 	/* add_word

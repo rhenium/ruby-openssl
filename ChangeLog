@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 12 Jun 2002 10:28:55 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: fix # of args for mod_* funcs (TestCase is GoodThing(TM) :-))
+
 Wed, 12 Jun 2002 00:45:17 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.c: Fixed buf in #to_s (problem with \0 in bin repr.)
 	* tc_bn.rb: NEW (TestCase for BN)
