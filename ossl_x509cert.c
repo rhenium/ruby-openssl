@@ -227,20 +227,21 @@ ossl_x509_to_text(VALUE self)
 {
     X509 *x509;
     BIO *out;
-    BUF_MEM *buf;
     VALUE str;
+    int status=0;
 	
     GetX509(self, x509);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509CertError, NULL);
-    }
+
+    out = BIO_new(BIO_s_mem());
+    if (!out) ossl_raise(eX509CertError, NULL);
+
     if (!X509_print(out, x509)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
+    str = ossl_protect_membio2str(out, &status);
     BIO_free(out);
+    if (status) rb_jump_tag(status);
 
     return str;
 }
@@ -322,21 +323,22 @@ ossl_x509_get_signature_algorithm(VALUE self)
 {
     X509 *x509;
     BIO *out;
-    BUF_MEM *buf;
     VALUE str;
+    int status=0;
 
     GetX509(self, x509);
 	
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509CertError, NULL);
-    }
+    out = BIO_new(BIO_s_mem());
+    if (!out) ossl_raise(eX509CertError, NULL);
+
     if (!i2a_ASN1_OBJECT(out, x509->cert_info->signature->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
+    str = ossl_protect_membio2str(out, &status);
     BIO_free(out);
+    if (status) rb_jump_tag(status);
+
     return str;
 }
 
