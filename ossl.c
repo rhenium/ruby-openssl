@@ -44,7 +44,8 @@ VALUE
 asn1time_to_time(ASN1_TIME *time)
 {
     struct tm tm;
-
+    VALUE argv[6];
+    
     if (!time) {
 	ossl_raise(rb_eTypeError, "ASN1_TIME is NULL!");
     }
@@ -64,7 +65,15 @@ asn1time_to_time(ASN1_TIME *time)
     default:
 	ossl_raise(rb_eTypeError, "unknown time format");
     }
-    return rb_time_new(mktime(&tm) - timezone, 0);
+//    return rb_time_new(mktime(&tm) - timezone, 0);
+    argv[0] = INT2NUM(tm.tm_year);
+    argv[1] = INT2NUM(tm.tm_mon+1);
+    argv[2] = INT2NUM(tm.tm_mday);
+    argv[3] = INT2NUM(tm.tm_hour);
+    argv[4] = INT2NUM(tm.tm_min);
+    argv[5] = INT2NUM(tm.tm_sec);
+
+    return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
 /*

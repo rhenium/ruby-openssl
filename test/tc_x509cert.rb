@@ -79,7 +79,7 @@ class TC_Certificate < Test::Unit::TestCase
     assert_equal(a, $x509.issuer.to_a, "issuer =")
   end
   def test_05not_before
-    t = Time.now
+    t = Time.now.utc
     
     ##
     # NOTE:
@@ -89,7 +89,7 @@ class TC_Certificate < Test::Unit::TestCase
     assert_equal(t.to_s, $x509.not_before.to_s, "not_before")
   end
   def test_06not_after
-    t = Time.now + 365 * 24 * 60 * 60
+    t = (Time.now + 365 * 24 * 60 * 60).utc
     
     ##
     # NOTE:

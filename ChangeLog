@@ -1,3 +1,6 @@
+Mon, 24 Feb 2003 17:21:18 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl.c: Use Time::utc for time conversion
+
 Mon, 24 Feb 2003 08:47:40 +0100 -- Michal Rokos <michal@rokos.homeip.net>
 	* Released as 0.2.0-pre0
 
