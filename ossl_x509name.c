@@ -57,16 +57,13 @@ ossl_x509name_new(X509_NAME *name)
 }
 
 X509_NAME *
-ossl_x509name_get_X509_NAME(VALUE obj)
+GetX509NamePtr(VALUE obj)
 {
-	X509_NAME *name, *new;
+	X509_NAME *name;
 
 	SafeGetX509Name(obj, name);
 
-	if (!(new = X509_NAME_dup(name))) {
-		ossl_raise(eX509NameError, "");
-	}	
-	return new;
+	return name;
 }
 
 /*

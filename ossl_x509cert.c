@@ -319,18 +319,12 @@ static VALUE
 ossl_x509_set_subject(VALUE self, VALUE subject)
 {
 	X509 *x509;
-	X509_NAME *name;
 	
 	GetX509(self, x509);
 
-	name = ossl_x509name_get_X509_NAME(subject);
-
-	if (!X509_set_subject_name(x509, name)) { /* DUPs name - FREE it */
-		X509_NAME_free(name);
+	if (!X509_set_subject_name(x509, GetX509NamePtr(subject))) { /* DUPs name */
 		ossl_raise(eX509CertError, "");
 	}
-	X509_NAME_free(name);
-
 	return subject;
 }
 
@@ -352,18 +346,12 @@ static VALUE
 ossl_x509_set_issuer(VALUE self, VALUE issuer)
 {
 	X509 *x509;
-	X509_NAME *name;
 	
 	GetX509(self, x509);
 
-	name = ossl_x509name_get_X509_NAME(issuer);
-	
-	if (!X509_set_issuer_name(x509, name)) { /* DUPs name - FREE it */
-		X509_NAME_free(name);
+	if (!X509_set_issuer_name(x509, GetX509NamePtr(issuer))) { /* DUPs name */
 		ossl_raise(eX509CertError, "");
 	}
-	X509_NAME_free(name);
-
 	return issuer;
 }
 

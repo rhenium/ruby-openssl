@@ -3,6 +3,13 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 12 Jun 2002 22:58:53 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509name.c: drop ossl_x509name_get_X509_NAME
+	* x509name.c: introduce GetX509NamePtr; and use it instead ossl_x509name_get_X509_NAME
+
+Wed, 12 Jun 2002 22:41:38 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.c: fix mem. bug in new_from_file
+
 Wed, 12 Jun 2002 20:45:32 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* openssl_missing.c: fixup HMAC_CTX_copy
 	* tc_hmac.rb: NEW (TestCase for HMAC)

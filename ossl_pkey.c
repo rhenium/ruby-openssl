@@ -51,7 +51,6 @@ ossl_pkey_new_from_file(VALUE filename)
 {
 	FILE *fp;
 	EVP_PKEY *pkey;
-	VALUE obj;
 
 	SafeStringValue(filename);
 	
@@ -67,10 +66,7 @@ ossl_pkey_new_from_file(VALUE filename)
 	if (!pkey) {
 		ossl_raise(ePKeyError, "");
 	}
-	obj = ossl_pkey_new(pkey);
-	EVP_PKEY_free(pkey);
-
-	return obj;
+	return ossl_pkey_new(pkey);
 }
 
 EVP_PKEY *

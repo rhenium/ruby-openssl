@@ -212,34 +212,25 @@ ossl_x509req_get_subject(VALUE self)
 {
 	X509_REQ *req;
 	X509_NAME *name;
-	VALUE subject;
 	
 	GetX509Req(self, req);
 
-	if (!(name = X509_REQ_get_subject_name(req))) {
+	if (!(name = X509_REQ_get_subject_name(req))) { /* NO DUP - don't free */
 		ossl_raise(eX509ReqError, "");
 	}
-	subject = ossl_x509name_new(name);
-	/*X509_NAME_free(name);*/
-	
-	return subject;
+	return ossl_x509name_new(name);
 }
 
 static VALUE 
 ossl_x509req_set_subject(VALUE self, VALUE subject)
 {
 	X509_REQ *req;
-	X509_NAME *name;
 	
 	GetX509Req(self, req);
 
-	name = ossl_x509name_get_X509_NAME(subject);
-
-	if (!X509_REQ_set_subject_name(req, name)) {
+	if (!X509_REQ_set_subject_name(req, GetX509NamePtr(subject))) { /* DUPs name */
 		ossl_raise(eX509ReqError, "");
 	}
-	/*X509_NAME_free(name);*/
-
 	return subject;
 }
 

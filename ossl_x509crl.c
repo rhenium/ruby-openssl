@@ -137,25 +137,19 @@ ossl_x509crl_get_issuer(VALUE self)
 	
 	GetX509CRL(self, crl);
 	
-	return ossl_x509name_new(crl->crl->issuer);
+	return ossl_x509name_new(X509_CRL_get_issuer(crl)); /* NO DUP - don't free */
 }
 
 static VALUE 
 ossl_x509crl_set_issuer(VALUE self, VALUE issuer)
 {
 	X509_CRL *crl;
-	X509_NAME *name;
 	
 	GetX509CRL(self, crl);
 
-	name = ossl_x509name_get_X509_NAME(issuer);
-	
-	if (!X509_NAME_set(&(crl->crl->issuer), name)) { /* DUPs name - FREE it */
-		X509_NAME_free(name);
+	if (!X509_CRL_set_issuer_name(crl, GetX509NamePtr(issuer))) { /* DUPs name */
 		ossl_raise(eX509CRLError, "");
 	}
-	X509_NAME_free(name);
-	
 	return issuer;
 }
 

@@ -67,7 +67,7 @@ extern VALUE cX509Name;
 extern VALUE eX509NameError;
 
 VALUE ossl_x509name_new(X509_NAME *);
-X509_NAME *ossl_x509name_get_X509_NAME(VALUE);
+X509_NAME *GetX509NamePtr(VALUE);
 void Init_ossl_x509name(void);
 
 /*
