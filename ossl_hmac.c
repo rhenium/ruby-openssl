@@ -83,6 +83,7 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
 		ossl_raise(eHMACError, "");
 	}
 	if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
+		OSSL_Debug("Allocating %d mem", HMAC_size(&final));
 		ossl_raise(eHMACError, "Cannot allocate memory for hmac");
 	}
 	HMAC_Final(&final, *buf, buf_len);
@@ -190,9 +191,10 @@ Init_ossl_hmac()
 }
 
 #else /* NO_HMAC */
+#  warning >>> OpenSSL is compiled without HMAC support <<<
 
 void
-Init_ossl_hmac(VALUE module)
+Init_ossl_hmac()
 {
 	rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC.");
 }

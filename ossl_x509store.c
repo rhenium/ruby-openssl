@@ -78,7 +78,7 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
 		ossl_raise(eX509StoreError, "");
 	}
 	X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
-	*/
+	 */
 	storep->store = ctx;
 	storep->protect = Qtrue; /* we're using pointer without DUP - don't free this one */
 	
@@ -189,11 +189,8 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 		ossl_raise(eX509StoreError, "");
 	}
 	X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
-	/* OpenSSL 0.9.6c
-	 * X509_STORE_CTX_set_verify_cb(ctx, func);
-	 */
 	X509_STORE_CTX_init(storep->store, store, NULL, NULL);
-	
+
 	/*
 	 * instance variable
 	 */
@@ -232,10 +229,9 @@ ossl_x509store_get_chain(VALUE self)
 	num = sk_X509_num(storep->store->chain);
 	
 	if (num < 0) {
-		rb_warning("certs in chain < 0???");
+		OSSL_Debug("certs in chain < 0???");
 		return rb_ary_new();
-	}
-	
+	}	
 	ary = rb_ary_new2(num);
 	
 	for(i=0; i<num; i++) {
@@ -261,11 +257,16 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 	
 	crl = ossl_x509crl_get_X509_CRL(crlst);
 
-	if (!X509_STORE_add_crl(storep->store->ctx, crl)) {
+	if (!X509_STORE_add_crl(storep->store->ctx, crl)) { /* FIXME: NO DUP needed */
 		X509_CRL_free(crl);
 		ossl_raise(eX509StoreError, "");
 	}
 	X509_CRL_free(crl);
+
+	/*
+	 * Check CRL
+	 */
+	X509_STORE_CTX_set_flags(storep->store, 0x4);
 
 	return crlst;
 }

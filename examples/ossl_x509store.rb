@@ -16,15 +16,24 @@ verify_cb = Proc.new {|ok, x509_store|
   ok # just throw 'ok' through
 }
 							  
-p ca = Certificate.new(File.open("./cacert.pem").read)
-puts "CA = #{ca.subject.to_s}, serial = #{ca.serial}"
+ca = Certificate.new(File.read("./cacert.pem"))
+puts "CA = #{ca.subject}, serial = #{ca.serial}"
 cakey = ca.public_key
 
-p cert = Certificate.new(File.open("./01cert.pem").read)
-puts "Cert = #{cert.subject.to_s}, serial = #{cert.serial}"
+cert = Certificate.new(File.read("./01cert.pem"))
+puts "Cert = #{cert.subject}, serial = #{cert.serial}"
 key = cert.public_key
+print "Is Cert signed by CA?..."
+if cert.verify cakey
+  puts "Yes - OK!"
+else
+  puts "NO - Let's stop."
+  exit
+end
 
-p crl = CRL.new(File.open("./01crl.pem").read)
+crl = CRL.new(File.read("./01crl.pem"))
+puts "CA = \"#{ca.issuer}\", CRL = \"#{crl.issuer}\""
+
 print "Is CRL signed by CA?..."
 if crl.verify cakey
   puts "Yes - OK!"
@@ -42,7 +51,7 @@ p store = Store.new
 
 ##
 # Uncomment to see what is checked...
-store.verify_callback = verify_cb
+# store.verify_callback = verify_cb
 
 store.add_trusted ca
 
@@ -56,16 +65,21 @@ else
   puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
 end
 
+puts "Trusted certs:"
+store.chain.each_with_index {|cert, i|
+	puts "> #{i} --- #{cert.subject.to_s}"
+}
+
 puts "Let's add CRL..."
- store.add_crl crl #CRL does NOT have affect on validity in current OpenSSL <= 0.9.6c !!!
+store.add_crl crl # CRL does NOT have affect on validity in current OpenSSL <= 0.9.6c !!!
 
 puts "===================="
-puts "Is CERT still OK?..."
+puts "Is CERT OK?..."
 if store.verify cert
   puts "Yes - HEY, this is bug! OpenSSL <= 0.9.6c doesn't care about CRL in Store :-(((("
   puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
 else
-  puts "No - now it works!"
+  puts "No - That's right!"
   puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
 end
 

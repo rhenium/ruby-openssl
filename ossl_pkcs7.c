@@ -220,7 +220,7 @@ ossl_pkcs7_get_signer(VALUE self)
 	GetPKCS7(self, pkcs7);
 
 	if (!(sk = PKCS7_get_signer_info(pkcs7))) {
-		rb_warning("OpenSSL::PKCS7#get_signer_info == NULL!");
+		OSSL_Debug("OpenSSL::PKCS7#get_signer_info == NULL!");
 		return rb_ary_new();
 	}
 	if ((num = sk_PKCS7_SIGNER_INFO_num(sk)) < 0) {

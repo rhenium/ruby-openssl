@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 10 Jul 2002 17:02:00 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Use OSSL_Warning and OSSL_Debug instead rb_warning where appropriate
+	* x509store.c: Fix lookup CRLs during #verify when CRL is added
+
 Tue, 09 Jul 2002 17:17:43 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* Some minor cleanups (bring back RSTRING macro (instead of StringValuePtr) where tested by StringValue)
 

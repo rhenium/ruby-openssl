@@ -318,7 +318,7 @@ ossl_x509req_get_attributes(VALUE self)
 	count = X509_REQ_get_attr_count(req);
 
 	if (count < 0) {
-		rb_warning("count < 0???");
+		OSSL_Debug("count < 0???");
 		return rb_ary_new();
 	}
 	ary = rb_ary_new2(count);

@@ -160,7 +160,7 @@ ossl_x509revoked_get_extensions(VALUE self)
 	count = X509_REVOKED_get_ext_count(rev);
 
 	if (count < 0) {
-		rb_warning("count < 0???");
+		OSSL_Debug("count < 0???");
 		return rb_ary_new();
 	}
 	ary = rb_ary_new2(count);

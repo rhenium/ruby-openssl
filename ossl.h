@@ -98,7 +98,12 @@ void ossl_raise(VALUE, const char *, ...);
  */
 extern VALUE dOSSL;
 
-#if !defined(NT)
+#if defined(NT)
+void ossl_debug(const char *, ...);
+#  define OSSL_Debug ossl_debug
+#  define OSSL_Warning rb_warning
+#  define OSSL_Warn rb_warn
+#else /* NT */
 #  define OSSL_Debug(fmt, ...) do { \
 	if (dOSSL == Qtrue) { \
 		fprintf(stderr, "OSSL_DEBUG: "); \
@@ -106,10 +111,15 @@ extern VALUE dOSSL;
 		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
 	} \
 } while (0)
-#else
-void ossl_debug(const char *, ...);
-#  define OSSL_Debug ossl_debug
-#endif
+#  define OSSL_Warning(fmt, ...) do { \
+	OSSL_Debug(fmt, ##__VA_ARGS__); \
+	rb_warning(fmt, ##__VA_ARGS__); \
+} while (0)
+#  define OSSL_Warn(fmt, ...) do { \
+	OSSL_Debug(fmt, ##__VA_ARGS__); \
+	rb_warn(fmt, ##__VA_ARGS__); \
+} while (0)
+#endif /* NT */
 
 /*
  * Include all parts

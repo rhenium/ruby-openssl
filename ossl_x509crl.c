@@ -210,7 +210,7 @@ ossl_x509crl_get_revoked(VALUE self)
 	num = sk_X509_CRL_num(X509_CRL_get_REVOKED(crl));
 
 	if (num < 0) {
-		rb_warning("num < 0???");
+		OSSL_Debug("num < 0???");
 		return rb_ary_new();
 	}
 	ary = rb_ary_new2(num);
@@ -370,7 +370,7 @@ ossl_x509crl_get_extensions(VALUE self)
 	count = X509_CRL_get_ext_count(crl);
 
 	if (count < 0) {
-		rb_warning("count < 0???");
+		OSSL_Debug("count < 0???");
 		return rb_ary_new();
 	}
 	ary = rb_ary_new2(count);

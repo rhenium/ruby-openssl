@@ -145,7 +145,7 @@ ossl_x509name_to_a(VALUE self)
 	entries = X509_NAME_entry_count(name);
 
 	if (entries < 0) {
-		rb_warning("name entries < 0!");
+		OSSL_Debug("name entries < 0!");
 		return rb_ary_new();
 	}
 	ary = rb_ary_new2(entries);

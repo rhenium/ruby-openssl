@@ -120,7 +120,7 @@ ossl_config_get_section(VALUE self, VALUE section)
 	hash = rb_hash_new();
 	
 	if ((entries = sk_CONF_VALUE_num(sk)) < 0) {
-		rb_warning("# of items in section is < 0?!?");
+		OSSL_Debug("# of items in section is < 0?!?");
 		return hash;
 	}
 	for (i=0; i<entries; i++) {
