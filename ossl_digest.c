@@ -59,15 +59,21 @@ ossl_digest_alloc(VALUE klass)
 }
 DEFINE_ALLOC_WRAPPER(ossl_digest_alloc)
 
+VALUE ossl_digest_update(VALUE, VALUE);
+
 static VALUE
-ossl_digest_initialize(VALUE self, VALUE str)
+ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
     char *name;
-	
+    VALUE type, data;
+
     GetDigest(self, ctx);
-    name = StringValuePtr(str);
+
+    rb_scan_args(argc, argv, "11", &type, &data);
+    name = StringValuePtr(type);
+    if (!NIL_P(data)) StringValue(data);
     
     md = EVP_get_digestbyname(name);
     if (!md) {
@@ -75,6 +81,7 @@ ossl_digest_initialize(VALUE self, VALUE str)
     }
     EVP_DigestInit(ctx, md);
     
+    if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
 }
 
@@ -106,7 +113,7 @@ ossl_digest_reset(VALUE self)
     return self;
 }
 
-static VALUE
+VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
     EVP_MD_CTX *ctx;
@@ -262,7 +269,7 @@ Init_ossl_digest()
     rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 2);
     rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 2);
 	
-    rb_define_method(cDigest, "initialize", ossl_digest_initialize, 1);
+    rb_define_method(cDigest, "initialize", ossl_digest_initialize, -1);
     rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     
     rb_define_copy_func(cDigest, ossl_digest_copy);

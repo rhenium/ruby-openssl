@@ -34,8 +34,8 @@ module Digest
 ].each do |digest|
   eval(<<-EOD)
     class #{digest} < Digest
-      def initialize()
-        super(\"#{digest}\")
+      def initialize(str=nil)
+        super(\"#{digest}\", str)
       end
       def #{digest}::digest(data)
         Digest::digest(\"#{digest}\", data)

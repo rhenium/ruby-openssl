@@ -4,7 +4,7 @@ require 'digest/sha1'
 require 'digest/md5'
 require 'openssl'
 
-str = "This is only bullshit! :-))"
+str = "This is only a dummy test :-))"
 md5 = Digest::MD5.new(str)
 md5a = OpenSSL::Digest::MD5.new(str)
 p md5.digest == md5a.digest

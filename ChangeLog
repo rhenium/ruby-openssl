@@ -1,3 +1,8 @@
+Mon, 21 Jul 2003 08:53:55 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* digest.c: Redo compatibility with original Ruby's digests
+	* pkey.c: Redo #to_der to be more straight going
+	* examples/*.rb: Fix parenthenses, File.open().read() -> File.read(), make some samples to work again
+
 Tue, 15 Jul 2003 05:27:57 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* extconf.rb: should make depend under $srcdir.
 	* ossl.h: ossl_raise is a NORETURN.

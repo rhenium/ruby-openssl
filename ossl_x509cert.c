@@ -117,9 +117,9 @@ ossl_x509_alloc(VALUE klass)
     X509 *x509;
     VALUE obj;
 
-    if (!(x509 = X509_new())) {
-	ossl_raise(eX509CertError, NULL);
-    }
+    x509 = X509_new();
+    if (!x509) ossl_raise(eX509CertError, NULL);
+
     WrapX509(klass, obj, x509);
 
     return obj;

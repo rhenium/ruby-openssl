@@ -25,7 +25,7 @@ def usage
   $stderr.puts 
   $stderr.puts "Warning: You're publishing empty CRL."
   $stderr.puts "For revoking certificates use it like this:"
-  $stderr.puts "\t$ #{myname} Cert_to_revoke1.pem*"
+  $stderr.puts "\t$ #{myname} Cert_to_revoke1.pem [... Cert_to_revokeN.pem]"
   $stderr.puts 
 end
 

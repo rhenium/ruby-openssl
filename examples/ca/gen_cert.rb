@@ -20,7 +20,7 @@ out_file = $OPT_out || 'cert.pem'
 csr_file = ARGV.shift or usage
 ARGV.empty? or usage
 
-csr = X509::Request.new(File.open(csr_file).read)
+csr = X509::Request.new(File.read(csr_file))
 unless csr.verify(csr.public_key)
   raise "CSR sign verification failed."
 end
@@ -50,7 +50,7 @@ ca_keypair_file = CAConfig::KEYPAIR_FILE
 puts "Reading CA keypair (from #{ca_keypair_file})"
 ca_keypair = PKey::RSA.new(File.read(ca_keypair_file), &CAConfig::PASSWD_CB)
 
-serial = File.open(CAConfig::SERIAL_FILE, "r").read.chomp.hex
+serial = File.read(CAConfig::SERIAL_FILE).chomp.hex
 File.open(CAConfig::SERIAL_FILE, "w") do |f|
   f << sprintf("%04X", serial + 1)
 end

@@ -5,7 +5,7 @@ include OpenSSL
 include X509
 include PKey
 
-p x509 = Certificate.new(File.open("./01cert.pem").read)
+p x509 = Certificate.new(File.read("./1cert.pem"))
 #puts x509.to_pem
 #p x509.serial
 #puts "Version = #{x509.version}"
@@ -24,7 +24,7 @@ p x509 = Certificate.new(File.open("./01cert.pem").read)
 #p k = x509.public_key
 #p k.private?
 #puts k.to_text
-#p priv = RSA.new(File.open("./01key.pem").read, "pejs8nek")
+#p priv = RSA.new(File.read("./1key.pem"))
 #p priv.private?
 #p x509.public_key = priv
 #puts x509.public_key.to_text

@@ -287,7 +287,7 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     if (EVP_CipherInit(ctx, NULL, RSTRING(key)->ptr, NULL, -1) != 1)
         ossl_raise(eCipherError, NULL);
 
-    return Qnil;
+    return key;
 }
 
 static VALUE
@@ -304,7 +304,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     if (EVP_CipherInit(ctx, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
 		ossl_raise(eCipherError, NULL);
 
-    return Qnil;
+    return iv;
 }
 
 static VALUE
@@ -317,7 +317,7 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
     if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
 		ossl_raise(eCipherError, NULL);
 
-    return Qnil;
+    return padding;
 }
 
 #define CIPHER_0ARG_INT(func)					\

@@ -134,24 +134,24 @@ static VALUE
 ossl_pkey_to_der(VALUE self)
 {
     EVP_PKEY *pkey;
-    X509_PUBKEY *key;
     VALUE str;
-    ASN1_OCTET_STRING *oc;
+    BIO *out;
+    BUF_MEM *buf;
     
     GetPKey(self, pkey);
-    if (!(key = X509_PUBKEY_new())) {
+
+    out = BIO_new(BIO_s_mem());
+    if (!out) ossl_raise(ePKeyError, NULL);
+
+    if (!i2d_PUBKEY_bio(out, pkey)) {
+	BIO_free(out);
 	ossl_raise(ePKeyError, NULL);
     }
-    if (!X509_PUBKEY_set(&key, pkey)) {
-	X509_PUBKEY_free(key);
-	ossl_raise(ePKeyError, NULL);
-    }
+    
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
 
-    oc = ASN1_item_pack(key, ASN1_ITEM_rptr(X509_PUBKEY), NULL);
-    str = rb_str_new(oc->data, oc->length);
-
-    X509_PUBKEY_free(key);
-    ASN1_OCTET_STRING_free(oc);
+    BIO_free(out);
 
     return str;
 }
