@@ -68,7 +68,9 @@ ossl_digest_initialize(VALUE self, VALUE str)
 	
     GetDigest(self, ctx);
     name = StringValuePtr(str);
-    if (!(md = EVP_get_digestbyname(name))) {
+    
+    md = EVP_get_digestbyname(name);
+    if (!md) {
 	ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     }
     EVP_DigestInit(ctx, md);
@@ -96,12 +98,12 @@ ossl_digest_copy_object(VALUE self, VALUE other)
 static VALUE
 ossl_digest_reset(VALUE self)
 {
-	EVP_MD_CTX *ctx;
+    EVP_MD_CTX *ctx;
 
-	GetDigest(self, ctx);
-	EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx));
+    GetDigest(self, ctx);
+    EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx));
 
-	return self;
+    return self;
 }
 
 static VALUE

@@ -22,6 +22,11 @@
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
 } while (0)
+#define SafeGetPKCS7(obj, pkcs7) do { \
+    OSSL_Check_Kind(obj, cPKCS7); \
+    GetPKCS7(obj, pkcs7); \
+} while (0)
+
 #define WrapPKCS7si(klass, obj, p7si) do { \
     if (!p7si) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
@@ -169,6 +174,27 @@ ossl_pkcs7_initialize(VALUE self, VALUE arg)
 	}
 	BIO_free(in);
     }
+
+    return self;
+}
+
+static VALUE
+ossl_pkcs7_copy_object(VALUE self, VALUE other)
+{
+    PKCS7 *a, *b, *pkcs7;
+
+    rb_check_frozen(self);
+    if (self == other) return self;
+
+    GetPKCS7(self, a);
+    SafeGetPKCS7(other, b);
+
+    pkcs7 = PKCS7_dup(b);
+    if (!pkcs7) {
+	ossl_raise(ePKCS7Error, "");
+    }
+    DATA_PTR(self) = pkcs7;
+    PKCS7_free(a);
 
     return self;
 }
@@ -535,6 +561,7 @@ Init_ossl_pkcs7()
      */
     rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, 1);
+    rb_define_method(cPKCS7, "copy_object", ossl_pkcs7_copy_object, 1);
 	
     rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 2);
     rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);

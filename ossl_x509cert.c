@@ -176,8 +176,8 @@ ossl_x509_copy_object(VALUE self, VALUE other)
     if (!(x509 = X509_dup(b))) {
 	ossl_raise(eX509CertError, "");
     }
-    X509_free(a);
     DATA_PTR(self) = x509;
+    X509_free(a);
 
     return self;
 }

@@ -1,3 +1,13 @@
+Sun, 20 Apr 2003 22:26:56 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_pkcs7.c: Added #copy_object for Ruby1.8 dup&copy framework
+
+Sat, 19 Apr 2003 22:06:02 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_cipher.c: Unwrap ossl struct - use pure EVP_CIPHER_CTX
+	* ossl_cipher.c: Fix #copy_object
+
+Sat, 19 Apr 2003 10:51:47 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_hmac.c: Fix subclassing...
+
 Mon, 14 Apr 2003 11:53:54 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* ossl_pkey_{rsa|dsa|dh}.c: method #params for inspection of private and public numbers
 

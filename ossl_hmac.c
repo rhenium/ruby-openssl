@@ -12,8 +12,8 @@
 
 #include "ossl.h"
 
-#define MakeHMAC(obj, ctx) \
-    obj = Data_Make_Struct(cHMAC, HMAC_CTX, 0, ossl_hmac_free, ctx)
+#define MakeHMAC(obj, klass, ctx) \
+    obj = Data_Make_Struct(klass, HMAC_CTX, 0, ossl_hmac_free, ctx)
 #define GetHMAC(obj, ctx) do { \
     Data_Get_Struct(obj, HMAC_CTX, ctx); \
     if (!ctx) { \
@@ -51,7 +51,7 @@ ossl_hmac_alloc(VALUE klass)
     HMAC_CTX *ctx;
     VALUE obj;
 
-    MakeHMAC(obj, ctx);
+    MakeHMAC(obj, klass, ctx);
 	
     return obj;
 }
