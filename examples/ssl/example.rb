@@ -46,10 +46,10 @@ module OpenSSL
 
     def get_verify_cb(want_verify)
       Proc.new{|ok, x509_store_ctx|
-        code  = x509_store_ctx.verify_status
-        msg   = x509_store_ctx.verify_message
-        depth = x509_store_ctx.verify_depth
-        x509  = x509_store_ctx.cert
+        code  = x509_store_ctx.error
+        msg   = x509_store_ctx.error_string
+        depth = x509_store_ctx.error_depth
+        x509  = x509_store_ctx.current_cert
 
         STDERR.puts "------verify callback start------"
         STDERR.puts "ok,code,depth = #{ok},#{code}:#{msg},#{depth}"
