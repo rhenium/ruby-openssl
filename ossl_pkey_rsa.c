@@ -141,13 +141,21 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))){
 	    ossl_raise(eRSAError, "");
 	}
-	if (!(rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL))) {
+
+	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, NULL, passwd);
+	if (!rsa) {
 	    BIO_reset(in);
-	    
-	    if (!(rsa = PEM_read_bio_RSAPrivateKey(in, NULL, NULL, passwd))) {
-		BIO_free(in);
-		ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
-	    }
+
+	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
+	}
+	if (!rsa) {
+	    BIO_reset(in);
+
+	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
+	}
+	if (!rsa) {
+	    BIO_free(in);
+	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
 	}
 	BIO_free(in);
     }

@@ -278,15 +278,29 @@ Init_openssl()
 {
     /*
      * Init timezone info
-     */
+     *
     tzset();
+     */
 
     /*
      * Init all digests, ciphers
      */
+/*    CRYPTO_malloc_init(); */
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
+/*    ENGINE_load_builtin_engines(); */
+    /*
+     * FIXME:
+     * On unload do:
+    CONF_modules_unload(1);
+    destroy_ui_method();
+    EVP_cleanup();
+    ENGINE_cleanup();
+    CRYPTO_cleanup_all_ex_data();
+    ERR_remove_state(0);
+    ERR_free_strings();
+     */
 
     /*
      * Init main module
