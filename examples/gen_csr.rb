@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'getopts'
 require 'openssl'
 
 include OpenSSL
@@ -12,6 +13,10 @@ Usage: #{myname} name [keypair_file]
 EOS
   exit
 end
+
+getopts nil, "csrout:", "keyout:"
+csrout = $OPT_csrout || "csr.pem"
+keyout = $OPT_keyout || "keypair.pem"
 
 name_str = ARGV.shift or usage()
 keypair_file = ARGV.shift
@@ -27,8 +32,8 @@ if keypair_file
 else
   keypair = PKey::RSA.new(1024) { putc "." }
   puts
-  puts "Writing keypair.pem..."
-  File.open("keypair.pem", "w", 0400) do |f|
+  puts "Writing #{keyout}..."
+  File.open(keyout, "w", 0400) do |f|
     f << keypair.to_pem
   end
 end
@@ -40,7 +45,7 @@ req.subject = name
 req.public_key = keypair.public_key
 req.sign(keypair, Digest::SHA1.new)
 
-puts "Writing csr.pem..."
-File.open("csr.pem", "w") do |f|
+puts "Writing #{csrout}..."
+File.open(csrout, "w") do |f|
   f << req.to_pem
 end

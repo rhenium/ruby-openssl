@@ -245,47 +245,57 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
  * Ext
  */
 static VALUE 
-ossl_x509ext_to_a(VALUE obj)
+ossl_x509ext_get_oid(VALUE obj)
 {
     X509_EXTENSION *ext;
     ASN1_OBJECT *extobj;
     BIO *out;
-    BUF_MEM *buf;
-    int nid, critical;
-    const char* sn;
-    VALUE ary, value;
+    VALUE ret;
+    int nid, status = 0;
 
     GetX509Ext(obj, ext);
-    ary = rb_ary_new2(3);
-
     extobj = X509_EXTENSION_get_object(ext);
-    if ((nid = OBJ_obj2nid(extobj)) == NID_undef) {
-        if (!(out = BIO_new(BIO_s_mem()))) {
-	    ossl_raise(eX509ExtError, "");
-	}
+    if ((nid = OBJ_obj2nid(extobj)) != NID_undef)
+	ret = rb_str_new2(OBJ_nid2sn(nid));
+    else{
+	if (!(out = BIO_new(BIO_s_mem())))
+	    ossl_raise(eX509ExtError, NULL);
 	i2a_ASN1_OBJECT(out, extobj);
-	BIO_get_mem_ptr(out, &buf);
-	rb_ary_push(ary, rb_str_new(buf->data, buf->length));
+	ret = ossl_protect_membio2str(out, &status);
 	BIO_free(out);
-    } else {
-	sn = OBJ_nid2sn(nid);
-	rb_ary_push(ary, rb_str_new2(sn));
+	if(status) rb_jump_tag(status);
     }
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ExtError, "");
-    }
-    if (!X509V3_EXT_print(out, ext, 0, 0)) {
-	M_ASN1_OCTET_STRING_print(out, ext->value);
-    }
-    BIO_get_mem_ptr(out, &buf);
-    value = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
-    rb_funcall(value, rb_intern("tr!"), 2, rb_str_new2("\n"), rb_str_new2(","));
-    rb_ary_push(ary, value);
-    critical = X509_EXTENSION_get_critical(ext);
-    rb_ary_push(ary, (critical) ? Qtrue : Qfalse);
 
-    return ary;
+    return ret;
+}
+
+static VALUE
+ossl_x509ext_get_value(VALUE obj)
+{
+    X509_EXTENSION *ext;
+    BIO *out;
+    VALUE ret;
+    char *p;
+    int status = 0;
+
+    GetX509Ext(obj, ext);
+    if (!(out = BIO_new(BIO_s_mem())))
+	ossl_raise(eX509ExtError, NULL);
+    if (!X509V3_EXT_print(out, ext, 0, 0))
+	M_ASN1_OCTET_STRING_print(out, ext->value);
+    ret = ossl_protect_membio2str(out, &status);
+    BIO_free(out);
+    if(status) rb_jump_tag(status);
+
+    return ret;
+}
+
+static VALUE
+ossl_x509ext_get_critical(VALUE obj)
+{
+    X509_EXTENSION *ext;
+    GetX509Ext(obj, ext);
+    return X509_EXTENSION_get_critical(ext) ? Qtrue : Qfalse;
 }
 
 /*
@@ -294,7 +304,6 @@ ossl_x509ext_to_a(VALUE obj)
 void
 Init_ossl_x509ext()
 {
-
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
     
     cX509ExtFactory = rb_define_class_under(mX509, "ExtensionFactory", rb_cObject);
@@ -314,6 +323,8 @@ Init_ossl_x509ext()
     rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);
     rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
  */
-    rb_define_method(cX509Ext, "to_a", ossl_x509ext_to_a, 0);
+    rb_define_method(cX509Ext, "oid", ossl_x509ext_get_oid, 0);
+    rb_define_method(cX509Ext, "value", ossl_x509ext_get_value, 0);
+    rb_define_method(cX509Ext, "critical?", ossl_x509ext_get_critical, 0);
 }
 

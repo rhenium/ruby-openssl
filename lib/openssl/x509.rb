@@ -65,32 +65,19 @@ class ExtensionFactory
 end # ExtensionFactory
     
 class Extension
-  # note: Extension.new is UNDEFed! - use ExtensionFactory.create_extension
-  #
-  # to_a is built-in
-  # 
   def to_s # "oid = critical, value"
-    ary = self.to_a
-    str = ary[0] + " = "
-    str += "critical, " if ary[2] == true
-    str += ary[1]
+    str = self.oid
+    str << " = "
+    str << "critical, " if self.critical?
+    str << self.value.gsub(/\n/, ", ")
   end
       
   def to_h # {"oid"=>sn|ln, "value"=>value, "critical"=>true|false}
-    ary = self.to_a
-    {"oid"=>ary[0],"value"=>ary[1],"critical"=>ary[2]}
+    {"oid"=>self.oid,"value"=>self.value,"critical"=>self.critical?}
   end
 
-  def oid
-    self.to_a[0]
-  end
-
-  def value
-    self.to_a[1]
-  end
-      
-  def critical?
-    self.to_a[2]
+  def to_a
+    [ self.oid, self.value, self.critical? ]
   end
 end # Extension
     

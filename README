@@ -71,6 +71,8 @@ This program is licenced under the same licence as Ruby.
 	= OpenSSL config file parser (part)
 	= BN (safe bignums)
 	= Diffie-Hellman
+	= PKCS#7 <-> S/MIME
+	= OCSP
 
 [To-Do]
 	= check for memory leaking :-))
@@ -91,7 +93,7 @@ This program is licenced under the same licence as Ruby.
 	= BIO ???
 	= compat tests for RSA/DSA sign/encrypt
 
-[Documentation/API]
+Documentation/API]
 	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_*method :-))
 
 --------------------------------------------------
@@ -217,17 +219,24 @@ OpenSSL::
 			type:	SIGNED, ENVELOPED, SIGNED_ENVELOPED
 
 		PKCS7
-			::new(cType|sPEM)
+			::new(sPEM)
+			::read_smime(sSMIME) => oPKCS7
+			::write_smime(oPKCS7 [, sText, fFlags]) => sSMIME
+			::sign(oX509::Certificate, oPKey, sData [, Ary(X509::Certificate), fFlags]) #=> oPKCS7
+			::encrypt(Ary(X509::Certificate), sData, oCipher [, fFlags]) #=> oPKCS7
 			----------------------------------
+			.decrypt(oPKey, oX509::Certificate [, iFlags]) => sData
+			.verify(Ary(X509::Certificate), oX509::Store [, sData, fFlags]) => sData
+			.type=(a Symbol as PKCS#7)
+			.detached=(bDetached)
+			.detached? => bResult
 			.cipher=(oCipher::ANY) => oCipher::ANY
 			.add_signer(oPKCS7::Signer, oPKey::ANY) => self
-			.signers() => Array of PKCS7::Signer
+			.signers() => Ary(PKCS7::Signer)
 			.add_recipient(oX509::Certificate) => self
 			.add_certificate(oX509::Certificate) => self
 			.add_crl(oX509::CRL) => self
-			.add_data(sData [, bDetached]) => self
-			.verify_data(oX509::Store [, sDetachedData]) => bResult, yields PKCS7::Signer
-			.decode_data(oPKey::ANY, oX509::Certificate) => sData
+			.add_data(sData) => self
 			.to_pem() => sPEM
 			.to_s <=> .to_pem
 
@@ -308,9 +317,37 @@ OpenSSL::
 	
 	RandomError
 	
-	SSL:: - Doc TODO!
+	SSL::
+		SSLContext
+			::new([a Symbols as SSL methods])
+			----------------------------------
+			.cert=(aX509::Certificate)
+			.key=(aPKey)
+			.client_ca=(aX509::Certificate|Ary(X509::Certificate))
+			.ca_file=(a path of PEM file)
+			.ca_path=(a path of directory)
+			.timeout=(fTimeout)
+			.verify_mode=(fMode)
+			.verify_depth=(fDepth)
+			.verify_callback=(aProc)
+			.cert_store=(aX509::Store)
+			.options=(fOptions)
 
-		Error
+		SSLSocket
+			::new(aIO [, aSSLContext])
+			----------------------------------
+			.to_io => aIO
+			.accept => self
+			.connect => self
+			.sysread(fLength) => aString
+			.syswrite(sData) => fSize
+			.sysclose => nil
+			.peer_cert => aX509::Certificate
+			.cert => aX509::Certificate
+			.cipher => Ary(sSipherName)
+			.state => sStateString
+
+		SSLError
 		
 	X509::
 		Attribute
@@ -381,7 +418,48 @@ OpenSSL::
 		
 		Store - Doc TODO!
 
+		StoreContext - Doc TODO!
+
 		StoreError
+
+	OCSP::
+		Request - Doc TODO!
+			::new(sDER)
+			----------------------------------
+			.add_nonce([sValue])
+			.check_nonce(oBasicResponse) => fResult
+			.certid => oCertificateId
+			.sign(oX509::Certificate, oPKey [, Ary(X509::Certificate), fFlags])
+			.verify(oX509::Certificate, oX509::Store [, fFlags]) => fResult
+			.to_der => sDER
+
+		Response - Doc TODO!
+			::new
+			----------------------------------
+			.status => fStatus
+			.status_string => sStatus
+			.basic => oBasicResponse
+			.to_der => sDER
+
+		BasicResponse
+			::new(sDER)
+			----------------------------------
+			.copy_nonce(oRequest)
+			.add_nonce([sValue])
+			.add_status(oCertificateId, fStatus, fRevokeReason, tRevokeTime, tThisUpdate, tNextUpdate, Ary(X509::Extension))
+			.status => Ary(oCertificateId, fStatus, fRevokeReason, tRevokeTime, tThisUpdate, tNextUpdate, Ary(X509::Extension))
+			.sign(oX509::Certificate, aPKey [, Ary(X509::Certificate), fFlags])
+			.verify(oX509::Certificate, oX509::Store [, fFlags]) => fResult
+
+		CertificateId
+			::new(oX509::Certificate, oX509::Certificate)
+			----------------------------------
+			.cmp(oCertificateId) => bResult
+			.cmp_issuer(aCertificateId) => bResult
+			.serial => fSerialNumber
+
+		OCSPError
+
 --------------------------------------------------
 
 [Examples]

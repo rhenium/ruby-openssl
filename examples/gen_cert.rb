@@ -22,14 +22,14 @@ passwd_cb = Proc.new{|flag|
 
 def usage
   myname = File::basename($0)
-  $stderr.puts "Usage: #{myname} [-c ca_cert] [-k ca_key] serial cn"
+  $stderr.puts "Usage: #{myname} [-c ca_cert] [-k ca_key] serial csr.pem"
   exit
 end
 
 getopts nil, "c:", "k:"
 
 num = ARGV.shift or usage()
-cn = ARGV.shift  or usage()
+csr = ARGV.shift  or usage()
 ARGV.empty?      or usage()
 
 $stdout.sync = true
@@ -42,19 +42,15 @@ ca_key_file = $OPT_k || "./0key-plain.pem"
 puts "Reading CA key (from #{ca_key_file})"
 ca_key = PKey::RSA.new(File.read(ca_key_file), &passwd_cb)
 
-print "Generating key: "
-key = PKey::RSA.new(1024){ putc "." }
-putc "\n"
+puts "Reading CSR (from #{csr})"
+req = X509::Request.new(File.read(csr))
 
 cert = X509::Certificate.new
-name = ca.subject.to_a.collect {|id, val|
-  if id =~ /CN/ then [id, cn] else [id, val] end
-}
-cert.subject = X509::Name.new(name)
+cert.subject = req.subject
 cert.issuer = ca.subject
 cert.not_before = Time.now
 cert.not_after = Time.now + 365 * 24 * 60 * 60
-cert.public_key = key
+cert.public_key = req.public_key
 cert.serial = num.to_i
 cert.version = 2 # X509v3
 
@@ -72,18 +68,6 @@ cert_file = "./#{cert.serial}cert.pem"
 puts "Writing #{cert_file}."
 File.open(cert_file, "w") do |f|
   f << cert.to_pem
-end
-
-key_plain_file = "./#{cert.serial}key-plain.pem"
-puts "Writing #{key_plain_file}."
-File.open(key_plain_file, "w", 0600) do |f|
-  f << key.to_pem
-end
-
-key_file = "./#{cert.serial}key.pem"
-puts "Writing #{key_file}."
-File.open(key_file, "w") do |f|
-  f << key.export(Cipher::DES.new(:EDE3, :CBC), &passwd_cb)
 end
 
 puts "DONE. (Generated certificate for '#{cert.subject}')"
