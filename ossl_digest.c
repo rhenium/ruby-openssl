@@ -264,8 +264,8 @@ Init_ossl_digest(VALUE module)
  * automation for classes creation and initialize method binding
  */
 #define DefDigest(name, func) 							\
-	c##name## = rb_define_class_under(module, #name, cDigest);			\
-	rb_define_method(c##name##, "initialize", ossl_##func##_initialize, -1)
+	c##name = rb_define_class_under(module, #name, cDigest);			\
+	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*
  * create classes and bind initialize method
