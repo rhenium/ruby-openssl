@@ -156,7 +156,7 @@ class TC_BN < Test::Unit::TestCase
     assert(bn3 == bn3, "eql? aka == aka ===")
     assert(!(bn1 == bn4), "eql? aka == aka ===")
   end
-  def tear_down
+  def teardown
     ##
     # None
     # 

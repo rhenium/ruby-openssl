@@ -53,7 +53,7 @@ class TC_Cipher < Test::Unit::TestCase
     assert_equal(@c1.name, @c1.dup.name, "dup")
     assert_equal(@c1.name, @c1.clone.name, "clone")
   end
-  def tear_down
+  def teardown
     @c1 = @c2 = nil
   end
 end

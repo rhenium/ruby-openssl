@@ -52,7 +52,7 @@ class TC_Revoked < Test::Unit::TestCase
     # extensions
     # 
   end
-  def tear_down
+  def teardown
     @rev = nil
   end
 end

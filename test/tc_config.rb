@@ -32,7 +32,7 @@ class TC_Config < Test::Unit::TestCase
     assert_equal(@c.value("HOME"), @c.value(nil, "HOME"), "value")
     assert_kind_of(Integer, @c.value("CA_default", "default_days").to_i, "value")
   end
-  def tear_down
+  def teardown
     @c = nil
   end
 end

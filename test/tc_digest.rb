@@ -58,7 +58,7 @@ class TC_Digest < Test::Unit::TestCase
     assert_equal(@d1.name, @d1.dup.name, "dup")
     assert_equal(@d1.name, @d1.clone.name, "clone")
   end
-  def tear_down
+  def teardown
     @d1 = @d2 = @md = nil
   end
 end

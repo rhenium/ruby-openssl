@@ -102,7 +102,7 @@ class TC_Request < Test::Unit::TestCase
     req = Request::new($req.to_pem)
     assert_equal(txt, req.to_text, "new instance from PEM")
   end
-  def tear_down
+  def teardown
     ##
     # NONE
     # 

@@ -50,7 +50,7 @@ class TC_Name < Test::Unit::TestCase
     # <=>
     # 
   end
-  def tear_down
+  def teardown
     ##
     # NONE
     # 

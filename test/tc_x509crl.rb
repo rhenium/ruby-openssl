@@ -128,7 +128,7 @@ class TC_CRL < Test::Unit::TestCase
     crl = CRL::new($crl.to_pem)
     assert_equal(txt, crl.to_text, "new instance from PEM")
   end
-  def tear_down
+  def teardown
     ##
     # NONE
     # 

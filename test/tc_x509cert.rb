@@ -144,7 +144,7 @@ class TC_Certificate < Test::Unit::TestCase
     assert_equal($x509.to_text, $x509.clone.to_text, "clone")
 ##    assert_nothing_raised(Certificate::new().dup, "OpenSSL doens't like duplicating not filled X509 *")
   end
-  def tear_down
+  def teardown
     ##
     # NONE
     # 

@@ -46,7 +46,7 @@ class TC_HMAC < Test::Unit::TestCase
     # TODO: Make some test case for
     # 
   end
-  def tear_down
+  def teardown
     ##
     # None
     # 
