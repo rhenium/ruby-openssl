@@ -103,16 +103,6 @@ require 'net/http'
 
 module Net
   class HTTP
-    def self.socket_type
-      SSLIO
-    end
-
-    attr_accessor :use_ssl
-    attr_writer :key, :cert, :key_file, :cert_file
-    attr_writer :ca_file, :ca_path, :timeout
-    attr_writer :verify_mode, :verify_callback, :verify_depth
-    attr_reader :peer_cert
-
     class Conn < HTTPRequest
       REQUEST_HAS_BODY=false
       RESPONSE_HAS_BODY=false
@@ -142,6 +132,17 @@ module Net
         end
       end
     end
+
+    def self.socket_type
+      SSLIO
+    end
+
+    attr_accessor :use_ssl
+    attr_writer :key, :cert
+    attr_writer :ca_file, :ca_path
+    attr_writer :verify_mode, :verify_callback, :verify_depth
+    attr_writer :cert_store, :timeout
+    attr_reader :peer_cert
 
     alias :default_initialize :initialize
 

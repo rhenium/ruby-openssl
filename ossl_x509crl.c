@@ -57,6 +57,19 @@ DupX509CRLPtr(VALUE obj)
     return crl;
 }
 
+VALUE
+ossl_x509crl_new(X509_CRL *crl)
+{
+    X509_CRL *tmp;
+    VALUE obj;
+
+    tmp = crl ? X509_CRL_dup(crl) : X509_CRL_new();
+    if(!tmp) ossl_raise(eX509CertError, "");
+    WrapX509CRL(cX509CRL, obj, tmp);
+        
+    return obj;
+}
+
 /*
  * PRIVATE
  */

@@ -355,7 +355,7 @@ ossl_ocspres_get_basic(VALUE self)
 
     GetOCSPRes(self, res);
     if(!(bs = OCSP_response_get1_basic(res)))
-	ossl_raise(eOCSPError, NULL);
+	return Qnil;
     WrapOCSPBasicRes(cOCSPBasicRes, ret, bs);
 
     return ret;

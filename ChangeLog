@@ -1,3 +1,13 @@
+Thu, 03 Jul 2003 12:04:33 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ocsp.c: OCSP::Respopnse#basic returns nil if no OCSP_BASICRESP given.
+	* ossl_x509name.c: X509::Name#eql?: should check type of other.
+	* ossl_x509crl.[ch]: add ossl_x509crl_new();
+	* ossl_x509store.c:
+	  - add X509::StoreContext#current_crl
+	  - del X509::StoreContext#add_crl_file (use #add_file instead.)
+	* lib/net/https.rb: fix attrs.
+	* examples/ossl_x509store.rb: revised.
+
 Thu, 03 Jul 2003 02:52:47 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: added ossl_sslctx_free() as a workaround.
 

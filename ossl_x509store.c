@@ -212,25 +212,6 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
 }
 
 static VALUE
-ossl_x509store_add_crl_file(VALUE self, VALUE file)
-{
-    X509_STORE *store;
-    X509_LOOKUP *lookup;
-
-    Check_SafeStr(file);
-    GetX509Store(self, store);
-    lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-    if(lookup == NULL){
-        ossl_raise(eX509StoreError, "");
-    }
-    if(X509_load_crl_file(lookup, RSTRING(file)->ptr,X509_FILETYPE_PEM) != 1){
-        ossl_raise(eX509StoreError, "");
-    }
-
-    return self;
-}
-
-static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)
 {
     X509_STORE *store;
@@ -449,6 +430,17 @@ ossl_x509stctx_get_curr_cert(VALUE self)
 }
 
 static VALUE
+ossl_x509stctx_get_curr_crl(VALUE self)
+{
+    X509_STORE_CTX *ctx;
+
+    GetX509StCtx(self, ctx);
+    if(!ctx->current_crl) return Qnil;
+
+    return ossl_x509crl_new(ctx->current_crl);
+}
+
+static VALUE
 ossl_x509stctx_cleanup(VALUE self)
 {
     X509_STORE_CTX *ctx;
@@ -485,7 +477,6 @@ Init_ossl_x509store()
     rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
     rb_define_method(cX509Store, "add_path",     ossl_x509store_add_path, 1);
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
-    rb_define_method(cX509Store, "add_crl_file", ossl_x509store_add_crl_file,1);
     rb_define_method(cX509Store, "add_cert",     ossl_x509store_add_cert, 1);
     rb_define_method(cX509Store, "add_crl",      ossl_x509store_add_crl, 1);
     rb_define_method(cX509Store, "verify",       ossl_x509store_verify, 1);
@@ -502,6 +493,7 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"error_string",ossl_x509stctx_get_err_string,0);
     rb_define_method(x509stctx,"error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
+    rb_define_method(x509stctx,"current_crl", ossl_x509stctx_get_curr_crl, 0);
     rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
 
 }

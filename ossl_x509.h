@@ -46,6 +46,7 @@ void Init_ossl_x509cert(void);
 extern VALUE cX509CRL;
 extern VALUE eX509CRLError;
 
+VALUE ossl_x509crl_new(X509_CRL *);
 X509_CRL *GetX509CRLPtr(VALUE);
 X509_CRL *DupX509CRLPtr(VALUE);
 void Init_ossl_x509crl(void);
