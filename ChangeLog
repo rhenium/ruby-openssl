@@ -9,6 +9,7 @@ Tue, 18 Jun 2002 22:43:23 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509crl.c: ditto.
 	* x509revoked.c: ditto.
 	* x509name.c: hash iterator cleanup
+	* tc_x509cert.rb: NEW (TestCase for X509::Certificate)
 
 Fri, 14 Jun 2002 10:32:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509cert.c: minor cleanups
