@@ -36,6 +36,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_mode(o,v) rb_iv_set((o),"@verify_mode",(v))
 #define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
+#define ossl_sslctx_set_options(o,v)     rb_iv_set((o),"@options",(v))
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
@@ -46,10 +47,11 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
+#define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
 
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "ca_cert", "ca_file", "ca_path",
-    "timeout", "verify_mode", "verify_depth", "verify_callback",
+    "timeout", "verify_mode", "verify_depth", "verify_callback", "options",
 }; 
 
 struct {
@@ -79,7 +81,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
-	ossl_raise(eSSLError, "SSL_CTX_new:");
+        ossl_raise(eSSLError, "SSL_CTX_new:");
     }
     return Data_Wrap_Struct(klass, 0, SSL_CTX_free, ctx);
 }
@@ -97,7 +99,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     Data_Get_Struct(self, SSL_CTX, ctx);
     
     if (rb_scan_args(argc, argv, "01", &ssl_method) == 0)
-	goto out;
+        goto out;
     
     s =  StringValuePtr(ssl_method);
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
@@ -107,10 +109,10 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
         }
     }
     if (!method) {
-	ossl_raise(rb_eArgError, "unknown SSL method `%s'.", s);
+        ossl_raise(rb_eArgError, "unknown SSL method `%s'.", s);
     }
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
-	ossl_raise(eSSLError, "SSL_CTX_set_ssl_version:");
+        ossl_raise(eSSLError, "SSL_CTX_set_ssl_version:");
     }
 out:
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
@@ -228,6 +230,9 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2LONG(val));
+
+    val = ossl_sslctx_get_options(self);
+    if(!NIL_P(val)) SSL_CTX_set_options(ctx, NUM2LONG(val));
     rb_obj_freeze(self);
 
     return Qtrue;
@@ -374,12 +379,12 @@ ossl_ssl_setup(VALUE self)
     if(!ssl){
         v_ctx = ossl_ssl_get_ctx(self);
         Data_Get_Struct(v_ctx, SSL_CTX, ctx);
-	
+
         ssl = SSL_new(ctx);
-	if (!ssl) {
+        if (!ssl) {
             ossl_raise(eSSLError, "SSL_new:");
-	}
-	DATA_PTR(self) = ssl;
+        }
+        DATA_PTR(self) = ssl;
 
         io = ossl_ssl_get_io(self);
         GetOpenFile(io, fptr);
@@ -441,7 +446,7 @@ ossl_ssl_read(VALUE self, VALUE len)
         nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
         if (nread < 0) {
             ossl_raise(eSSLError, "SSL_read:");
-	}
+        }
     }
     else {
         rb_warning("SSL session is not started yet.");
@@ -452,7 +457,7 @@ ossl_ssl_read(VALUE self, VALUE len)
         TRAP_END;
         if(nread < 0) {
             ossl_raise(eSSLError, "read:%s", strerror(errno));
-	}
+        }
     }
 
     if (nread == 0) {
@@ -481,7 +486,7 @@ ossl_ssl_write(VALUE self, VALUE str)
         nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
         if (nwrite <= 0) {
             ossl_raise(eSSLError, "SSL_write:");
-	}
+        }
     }
     else {
         rb_warning("SSL session is not started yet.");
@@ -491,7 +496,7 @@ ossl_ssl_write(VALUE self, VALUE str)
         nwrite = write(fileno(fp), RSTRING(str)->ptr, RSTRING(str)->len);
         if (nwrite < 0) {
             ossl_raise(eSSLError, "write:%s", strerror(errno));
-	}
+        }
     }
 
     return INT2NUM(nwrite);
@@ -635,4 +640,30 @@ Init_ossl_ssl()
     ossl_ssl_def_const(VERIFY_PEER);
     ossl_ssl_def_const(VERIFY_FAIL_IF_NO_PEER_CERT);
     ossl_ssl_def_const(VERIFY_CLIENT_ONCE);
+    /* Not introduce constants included in OP_ALL such as...
+     * ossl_ssl_def_const(OP_MICROSOFT_SESS_ID_BUG);
+     * ossl_ssl_def_const(OP_NETSCAPE_CHALLENGE_BUG);
+     * ossl_ssl_def_const(OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG);
+     * ossl_ssl_def_const(OP_SSLREF2_REUSE_CERT_TYPE_BUG);
+     * ossl_ssl_def_const(OP_MICROSOFT_BIG_SSLV3_BUFFER);
+     * ossl_ssl_def_const(OP_MSIE_SSLV2_RSA_PADDING);
+     * ossl_ssl_def_const(OP_SSLEAY_080_CLIENT_DH_BUG);
+     * ossl_ssl_def_const(OP_TLS_D5_BUG);
+     * ossl_ssl_def_const(OP_TLS_BLOCK_PADDING_BUG);
+     * ossl_ssl_def_const(OP_DONT_INSERT_EMPTY_FRAGMENTS);
+     */
+    ossl_ssl_def_const(OP_ALL);
+    ossl_ssl_def_const(OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+    /* ossl_ssl_def_const(OP_SINGLE_ECDH_USE); */
+    ossl_ssl_def_const(OP_SINGLE_DH_USE);
+    ossl_ssl_def_const(OP_EPHEMERAL_RSA);
+    ossl_ssl_def_const(OP_CIPHER_SERVER_PREFERENCE);
+    ossl_ssl_def_const(OP_TLS_ROLLBACK_BUG);
+    ossl_ssl_def_const(OP_NO_SSLv2);
+    ossl_ssl_def_const(OP_NO_SSLv3);
+    ossl_ssl_def_const(OP_NO_TLSv1);
+    ossl_ssl_def_const(OP_PKCS1_CHECK_1);
+    ossl_ssl_def_const(OP_PKCS1_CHECK_2);
+    ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);
+    ossl_ssl_def_const(OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
 }

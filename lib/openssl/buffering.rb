@@ -52,6 +52,7 @@ module Buffering
 
   def read(size=nil)
     fill_rbuff unless defined? @rbuffer
+    @eof ||= nil
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
@@ -62,6 +63,7 @@ module Buffering
   def gets(eol=$/)
     fill_rbuff unless defined? @rbuffer
     idx = @rbuffer.index(eol)
+    @eof ||= nil
     until @eof
       break if idx
       fill_rbuff
@@ -116,6 +118,7 @@ module Buffering
   end
 
   def eof?
+    @eof ||= nil
     @eof && @rbuffer.size == 0
   end
   alias eof eof?
@@ -128,6 +131,7 @@ module Buffering
   def do_write(s)
     @wbuffer = "" unless defined? @wbuffer
     @wbuffer << s
+    @sync ||= false
     if @sync or @wbuffer.size > BLOCK_SIZE or idx = @wbuffer.rindex($/)
       remain = idx ? idx + $/.size : @wbuffer.length
       nwritten = 0
