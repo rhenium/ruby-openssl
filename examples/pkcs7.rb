@@ -36,5 +36,4 @@ store.verify_callback = Proc.new {|ok, ctx|
 }
 
 p7 = PKCS7::PKCS7.new(str)
-p7.signer.each{|si| p si.signed_time }
 p7.verify([cert1], store, data)
