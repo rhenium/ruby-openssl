@@ -77,6 +77,25 @@ ossl_rand_bytes(VALUE self, VALUE len)
 }
 
 static VALUE
+ossl_rand_pseudo_bytes(VALUE self, VALUE len)
+{
+    unsigned char *buffer = NULL;
+    VALUE str;
+	
+    if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
+	ossl_raise(eRandomError, "");
+    }
+    if (!RAND_pseudo_bytes(buffer, FIX2INT(len))) {
+	OPENSSL_free(buffer);
+	ossl_raise(eRandomError, "");
+    }
+    str = rb_str_new(buffer, FIX2INT(len));
+    OPENSSL_free(buffer);
+
+    return str;
+}
+
+static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
@@ -98,6 +117,10 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
     return Qtrue;
 }
 
+#define DEFMETH(class, name, func, argc) \
+	rb_define_method(class, name, func, argc); \
+	rb_define_singleton_method(class, name, func, argc);
+
 /*
  * INIT
  */
@@ -108,11 +131,12 @@ Init_ossl_rand()
 	
     eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);
 	
-    rb_define_method(mRandom, "seed", ossl_rand_seed, 1);
-    rb_define_method(mRandom, "load_random_file", ossl_rand_load_file, 1);
-    rb_define_method(mRandom, "write_random_file", ossl_rand_write_file, 1);
-    rb_define_method(mRandom, "random_bytes", ossl_rand_bytes, 1);	
-    rb_define_method(mRandom, "egd", ossl_rand_egd, 1);
-    rb_define_method(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);	
+    DEFMETH(mRandom, "seed", ossl_rand_seed, 1);
+    DEFMETH(mRandom, "load_random_file", ossl_rand_load_file, 1);
+    DEFMETH(mRandom, "write_random_file", ossl_rand_write_file, 1);
+    DEFMETH(mRandom, "random_bytes", ossl_rand_bytes, 1);
+    DEFMETH(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
+    DEFMETH(mRandom, "egd", ossl_rand_egd, 1);
+    DEFMETH(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);	
 }
 
