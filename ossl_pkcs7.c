@@ -219,6 +219,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 
     }
     else ciph = GetCipherPtr(cipher); /* NO NEED TO DUP */
+    flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     in = ossl_obj2bio(data);
     x509s = ossl_protect_x509_ary2sk(certs, &status);
     if(status){
@@ -261,9 +262,8 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 
     if(rb_scan_args(argc, argv, "01", &s) == 0)
 	return self;
-    StringValue(s);
-    if (!(in = BIO_new_mem_buf(RSTRING(s)->ptr, RSTRING(s)->len)))
-	ossl_raise(ePKCS7Error, NULL);
+    in = ossl_obj2bio(s);
+
     if (!PEM_read_bio_PKCS7(in, (PKCS7 **)&DATA_PTR(self), NULL, NULL)) {
 	BIO_free(in);
 	ossl_raise(ePKCS7Error, NULL);

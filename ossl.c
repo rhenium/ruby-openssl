@@ -34,7 +34,7 @@ asn1time_to_time(ASN1_TIME *time)
     }
     memset(&tm, 0, sizeof(struct tm));
 	
-    switch(time->type) {
+    switch (time->type) {
     case V_ASN1_UTCTIME:
 	if (sscanf(time->data, "%2d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
     		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
@@ -115,7 +115,7 @@ asn1integer_to_num(ASN1_INTEGER *ai)
     return num;
 }
 
-#if 0
+#if DO_IT_VIA_RUBY
 ASN1_INTEGER *num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 {
     BIGNUM *bn = NULL;
@@ -188,17 +188,17 @@ ossl_obj2bio(VALUE obj)
 {
     BIO *bio;
 
-    if(TYPE(obj) == T_FILE){
+    if (TYPE(obj) == T_FILE) {
 	OpenFile *fptr;
 	GetOpenFile(obj, fptr);
 	rb_io_check_readable(fptr);
 	bio = BIO_new_fp(fptr->f, BIO_NOCLOSE);
     }       
-    else{
+    else {
 	StringValue(obj);
 	bio = BIO_new_mem_buf(RSTRING(obj)->ptr, RSTRING(obj)->len);
     }
-    if(!bio) ossl_raise(ePKCS7Error, NULL);
+    if (!bio) ossl_raise(eOSSLError, NULL);
 
     return bio;
 }
@@ -226,9 +226,7 @@ ossl_membio2str(BIO *bio)
 VALUE
 ossl_protect_membio2str(BIO *bio, int *status)
 {
-    VALUE ret;
-    ret = rb_protect((VALUE(*)())ossl_membio2str, (VALUE)bio, status);
-    return ret;
+    return rb_protect((VALUE(*)())ossl_membio2str, (VALUE)bio, status);
 }
 
 STACK_OF(X509) *
@@ -240,28 +238,56 @@ ossl_x509_ary2sk(VALUE ary)
     int i;
 
     Check_Type(ary, T_ARRAY);
-    if(!(sk = sk_X509_new_null())) 
-        ossl_raise(eOSSLError, NULL); 
-    for(i = 0; i < RARRAY(ary)->len; i++){
+    sk = sk_X509_new_null();
+    if (!sk) ossl_raise(eOSSLError, NULL); 
+
+    for (i = 0; i < RARRAY(ary)->len; i++){
         val = rb_ary_entry(ary, i);
-        if(!rb_obj_is_kind_of(val, cX509Cert)){
+        if (!rb_obj_is_kind_of(val, cX509Cert)) {
             sk_X509_pop_free(sk, X509_free);
             ossl_raise(eOSSLError, "object except X509 cert is in array"); 
         }
         x509 = DupX509CertPtr(val); /* NEED TO DUP */
         sk_X509_push(sk, x509);
     }
-    
     return sk;
 }
 
 STACK_OF(X509) *
 ossl_protect_x509_ary2sk(VALUE ary, int *status)
 {
-    STACK_OF(X509) *sk;
-    sk = (STACK_OF(X509)*)rb_protect((VALUE(*)())ossl_x509_ary2sk, ary, status);
-    return sk;
+    return (STACK_OF(X509)*)rb_protect((VALUE(*)())ossl_x509_ary2sk, ary, status);
 }
+
+#if 0
+#define OSSL_SK2ARY(name, type)			\
+VALUE						\
+ossl_##name##_sk2ary(STACK *sk)			\
+{						\
+    type *t;					\
+    int i, num;					\
+    VALUE ary;					\
+						\
+    if (!sk) {					\
+	OSSL_Debug("empty sk!");		\
+	return rb_ary_new();			\
+    }						\
+    num = sk_num(sk);				\
+    if (num < 0) {				\
+	OSSL_Debug("items in sk < -1???");	\
+	return rb_ary_new();			\
+    }						\
+    ary = rb_ary_new2(num);			\
+						\
+    for (i=0; i<num; i++) {			\
+	t = (type *)sk_value(sk, i);		\
+	rb_ary_push(ary, ossl_##name##_new(t));	\
+    }						\
+    return ary;					\
+}
+OSSL_SK2ARY(x509, X509)
+OSSL_SK2ARY(x509crl, X509_CRL)
+#endif
 
 /*
  * our default PEM callback

@@ -479,7 +479,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 
     if(!NIL_P(ext)){
 	X509_EXTENSION *x509ext;
-	sk_X509_pop_free(single->singleExtensions, X509_EXTENSION_free);
+	sk_X509_EXTENSION_pop_free(single->singleExtensions, X509_EXTENSION_free);
 	single->singleExtensions = NULL;
 	for(i = 0; i < RARRAY(ext)->len; i++){
 	    x509ext = DupX509ExtPtr(RARRAY(ext)->ptr[i]);
