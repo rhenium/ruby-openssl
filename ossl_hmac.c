@@ -12,10 +12,8 @@
 
 #include "ossl.h"
 
-#define MakeHMAC(obj, hmacp) {\
-	obj = Data_Make_Struct(cHMAC, ossl_hmac, 0, ossl_hmac_free, hmacp);\
-}
-#define GetHMAC(obj, hmacp) Data_Get_Struct(obj, ossl_hmac, hmacp)
+#define WrapHMAC(obj, ctx) obj = Data_Wrap_Struct(cHMAC, 0, CRYPTO_free, ctx)
+#define GetHMAC(obj, ctx) Data_Get_Struct(obj, HMAC_CTX, ctx)
 
 /*
  * Classes
@@ -24,36 +22,23 @@ VALUE cHMAC;
 VALUE eHMACError;
 
 /*
- * Struct
- */
-typedef struct ossl_hmac_st {
-	HMAC_CTX *hmac;
-} ossl_hmac;
-
-static void
-ossl_hmac_free(ossl_hmac *hmacp)
-{
-	if (hmacp) {
-		if (hmacp->hmac) OPENSSL_free(hmacp->hmac);
-		hmacp->hmac = NULL;
-		free(hmacp);
-	}
-}
-
-/*
- * PUBLIC
+ * Public
  */
 
 /*
- * PRIVATE
+ * Private
  */
 static VALUE
 ossl_hmac_s_new(int argc, VALUE *argv, VALUE klass)
 {
-	ossl_hmac *hmacp = NULL;
+	HMAC_CTX *ctx = NULL;
 	VALUE obj;
 
-	MakeHMAC(obj, hmacp);
+	if (!(ctx = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
+		OSSL_Raise(eHMACError, "");
+	}
+	WrapHMAC(obj, ctx);
+	
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -62,21 +47,18 @@ ossl_hmac_s_new(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 {
-	ossl_hmac *hmacp = NULL;
+	HMAC_CTX *ctx = NULL;
 	const EVP_MD *md = NULL;
 	VALUE key, digest;
 
-	GetHMAC(self, hmacp);
+	GetHMAC(self, ctx);
 
 	rb_scan_args(argc, argv, "20", &key, &digest);
 
 	key = rb_String(key);
 	md = ossl_digest_get_EVP_MD(digest);
 
-	if (!(hmacp->hmac = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
-		OSSL_Raise(eHMACError, "");
-	}
-	HMAC_Init(hmacp->hmac, RSTRING(key)->ptr, RSTRING(key)->len, md);
+	HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, md);
 
 	return self;
 }
@@ -84,13 +66,13 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
 {
-	ossl_hmac *hmacp = NULL;
+	HMAC_CTX *ctx = NULL;
 
-	GetHMAC(self, hmacp);
+	GetHMAC(self, ctx);
 
 	data = rb_String(data);
 
-	HMAC_Update(hmacp->hmac, RSTRING(data)->ptr, RSTRING(data)->len);
+	HMAC_Update(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 
 	return self;
 }
@@ -98,15 +80,14 @@ ossl_hmac_update(VALUE self, VALUE data)
 static VALUE
 ossl_hmac_hmac(VALUE self)
 {
-	ossl_hmac *hmacp = NULL;
+	HMAC_CTX *ctx = NULL, final;
 	char *buf = NULL;
 	int buf_len = 0;
-	HMAC_CTX final;
 	VALUE str;
 	
-	GetHMAC(self, hmacp);
+	GetHMAC(self, ctx);
 	
-	if (!HMAC_CTX_copy(&final, hmacp->hmac)) {
+	if (!HMAC_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eHMACError, "");
 	}
 	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {
@@ -123,16 +104,15 @@ ossl_hmac_hmac(VALUE self)
 static VALUE
 ossl_hmac_hexhmac(VALUE self)
 {
-	ossl_hmac *hmacp = NULL;
+	HMAC_CTX *ctx = NULL, final;
 	static const char hex[]="0123456789abcdef";
 	char *buf = NULL, *hexbuf = NULL;
 	int i,buf_len = 0;
-	HMAC_CTX final;
 	VALUE str;
 	
-	GetHMAC(self, hmacp);
+	GetHMAC(self, ctx);
 	
-	if (!HMAC_CTX_copy(&final, hmacp->hmac)) {
+	if (!HMAC_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eHMACError, "Cannot copy HMAC CTX");
 	}
 	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {

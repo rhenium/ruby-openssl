@@ -19,6 +19,7 @@
 /*
  * Classes
  */
+ID id_private_q;
 VALUE cPKey;
 VALUE ePKeyError;
 
@@ -56,18 +57,16 @@ ossl_pkey_new(EVP_PKEY *key)
 }
 
 VALUE
-ossl_pkey_new_from_file(VALUE path)
+ossl_pkey_new_from_file(VALUE filename)
 {
-	char *filename = NULL;
 	FILE *fp = NULL;
 	EVP_PKEY *pkey = NULL;
 	VALUE obj;
 
-	Check_SafeStr(path);
+	filename = rb_str_to_str(filename);
+	Check_SafeStr(filename);
 	
-	filename = RSTRING(path)->ptr;
-	
-	if ((fp = fopen(filename, "r")) == NULL)
+	if ((fp = fopen(RSTRING(filename)->ptr, "r")) == NULL)
 		rb_raise(ePKeyError, "%s", strerror(errno));
 
 	/*
@@ -97,6 +96,7 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 	ossl_pkey *pkeyp = NULL;
 	
 	OSSL_Check_Type(obj, cPKey);
+
 	GetPKey(obj, pkeyp);
 
 	return pkeyp->get_EVP_PKEY(obj);
@@ -120,6 +120,8 @@ ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 void
 Init_ossl_pkey(VALUE module)
 {
+	id_private_q = rb_intern("private?");
+	
 	ePKeyError = rb_define_class_under(module, "PKeyError", rb_eStandardError);
 
 	cPKey = rb_define_class_under(module, "ANY", rb_cObject);

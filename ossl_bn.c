@@ -11,21 +11,14 @@
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
-#define WrapBN(obj, bn) {\
-	if (!bn) rb_raise(eBNError, "not initialized!");\
-	obj = Data_Wrap_Struct(cBN, 0, BN_clear_free, bn);\
-}
-#define GetBN(obj, bn) {\
-	Data_Get_Struct(obj, BIGNUM, bn);\
-	if (!bn) rb_raise(eBNError, "not initialized!");\
-}
+#define WrapBN(obj, bn) obj = Data_Wrap_Struct(cBN, 0, BN_clear_free, bn)
+#define GetBN(obj, bn) Data_Get_Struct(obj, BIGNUM, bn)
 
 /*
  * Classes
  */
 VALUE cBN;
 VALUE eBNError;
-
 
 /*
  * Public
@@ -51,9 +44,10 @@ ossl_bn_new(BIGNUM *bn)
 BIGNUM *
 ossl_bn_get_BIGNUM(VALUE obj)
 {
-	BIGNUM *bn = NULL, *new = NULL;
+	BIGNUM *bn = NULL, *new;
 	
 	OSSL_Check_Type(obj, cBN);
+	
 	GetBN(obj, bn);
 
 	if (!(new = BN_dup(bn))) {
@@ -338,7 +332,7 @@ ossl_bn_mod_inverse(VALUE self, VALUE other)
 		OSSL_Raise(eBNError, "");
 	}
 	BN_CTX_init(&ctx);
-	if (BN_mod_inverse(result, bn1, bn2, &ctx) == NULL) {
+	if (!BN_mod_inverse(result, bn1, bn2, &ctx)) {
 		BN_free(result);
 		OSSL_Raise(eBNError, "");
 	}

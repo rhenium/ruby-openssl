@@ -10,38 +10,14 @@
  */
 #include "ossl.h"
 
-#define MakeConfig(obj, confp) {\
-	obj = Data_Make_Struct(cConfig, ossl_config, 0, ossl_config_free, confp);\
-}
-
-#define GetConfig_unsafe(obj, confp) Data_Get_Struct(obj, ossl_config, confp)
-#define GetConfig(obj, confp) {\
-	GetConfig_unsafe(obj, confp);\
-	if (!confp->config) rb_raise(eConfigError, "not initialized!");\
-}
+#define WrapConfig(obj, conf) obj = Data_Wrap_Struct(cConfig, 0, CONF_free, conf)
+#define GetConfig(obj, conf) Data_Get_Struct(obj, LHASH, conf)
 
 /*
  * Classes
  */
 VALUE cConfig;
 VALUE eConfigError;
-
-/*
- * Struct
- */
-typedef struct ossl_config_st {
-	LHASH *config;
-} ossl_config;
-
-static void
-ossl_config_free(ossl_config *confp)
-{
-	if (confp) {
-		if (confp->config) CONF_free(confp->config);
-		confp->config = NULL;
-		free(confp);
-	}
-}
 
 /* 
  * Public 
@@ -51,18 +27,18 @@ ossl_config_free(ossl_config *confp)
  * Private
  */
 static VALUE
-ossl_config_s_load(int argc, VALUE* argv, VALUE klass)
+ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 {
-	ossl_config *confp = NULL;
-	LHASH *config = NULL;
+	LHASH *conf = NULL;
 	long err_line = 0;
 	VALUE obj, path;
 	
 	rb_scan_args(argc, argv, "10", &path);
-	
+
+	path = rb_str_to_str(path);
 	Check_SafeStr(path);
 	
-	if (!(config = CONF_load(NULL, RSTRING(path)->ptr, &err_line))) {
+	if (!(conf = CONF_load(NULL, RSTRING(path)->ptr, &err_line))) {
 		if (err_line <= 0)
 			rb_raise(eConfigError, "wrong config file %s", RSTRING(path)->ptr);
 		else
@@ -70,8 +46,7 @@ ossl_config_s_load(int argc, VALUE* argv, VALUE klass)
 					err_line, RSTRING(path)->ptr);
 	}
 	
-	MakeConfig(obj, confp);
-	confp->config = config;
+	WrapConfig(obj, conf);
 
 	return obj;
 }
@@ -79,10 +54,10 @@ ossl_config_s_load(int argc, VALUE* argv, VALUE klass)
 static VALUE
 ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 {
-	ossl_config *confp = NULL;
+	LHASH *conf = NULL;
 	char *sect = NULL, *str = NULL;
 	
-	GetConfig(self, confp);
+	GetConfig(self, conf);
 	
 	if (!NIL_P(section)) {
 		section = rb_String(section);
@@ -90,28 +65,31 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 	}
 	item = rb_String(item);
 
-	if (!(str = CONF_get_string(confp->config, sect, RSTRING(item)->ptr))) {
+	if (!(str = CONF_get_string(conf, sect, RSTRING(item)->ptr))) {
 		OSSL_Raise(eConfigError, "");
 	}
 	return rb_str_new2(str);
 }
 
-/* long number = CONF_get_number(confp->config, sect, RSTRING(item)->ptr); */
+/*
+ * Get all numbers as strings - use str.to_i to convert
+ * long number = CONF_get_number(confp->config, sect, RSTRING(item)->ptr);
+ */
 
 static VALUE
 ossl_config_get_section(VALUE self, VALUE section)
 {
-	ossl_config *confp = NULL;
+	LHASH *conf = NULL;
 	STACK_OF(CONF_VALUE) *sk = NULL;
 	CONF_VALUE *entry = NULL;
 	int i, entries = 0;
 	VALUE hash;
 
-	GetConfig(self, confp);
+	GetConfig(self, conf);
 	
 	section = rb_String(section);
 	
-	if (!(sk = CONF_get_section(confp->config, RSTRING(section)->ptr))) {
+	if (!(sk = CONF_get_section(conf, RSTRING(section)->ptr))) {
 		OSSL_Raise(eConfigError, "");
 	}
 	

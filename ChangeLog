@@ -4,6 +4,10 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.35  2002/03/11 17:20:22  majkl
+	* Big internal cleanup (all structs with only 1 member rearranged)
+	* improved getting time_t from cTime
+
 Revision 1.34  2002/03/06 08:05:05  majkl
 	* build fix-ups
 

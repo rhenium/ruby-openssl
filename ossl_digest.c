@@ -10,10 +10,8 @@
  */
 #include "ossl.h"
 
-#define MakeDigest(klass, obj, digestp) {\
-	obj = Data_Make_Struct(klass, ossl_digest, 0, ossl_digest_free, digestp);\
-}
-#define GetDigest(obj, digestp) Data_Get_Struct(obj, ossl_digest, digestp)
+#define WrapDigest(klass, obj, ctx) obj = Data_Wrap_Struct(klass, 0, CRYPTO_free, ctx)
+#define GetDigest(obj, ctx) Data_Get_Struct(obj, EVP_MD_CTX, ctx)
 
 /*
  * Classes
@@ -23,60 +21,49 @@ VALUE eDigestError;
 VALUE cMD2, cMD4, cMD5, cMDC2, cRIPEMD160, cSHA, cSHA1, cDSS, cDSS1;
 
 /*
- * Struct
- */
-typedef struct ossl_digest_st {
-	EVP_MD_CTX *md;
-} ossl_digest;
-
-static void
-ossl_digest_free(ossl_digest *digestp)
-{
-	if (digestp) {
-		if (digestp->md) OPENSSL_free(digestp->md);
-		digestp->md = NULL;
-		free(digestp);
-	}
-}
-
-/*
- * PUBLIC
+ * Public
  */
 int
 ossl_digest_get_NID(VALUE obj)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL;
 	
 	OSSL_Check_Type(obj, cDigest);
-	GetDigest(obj, digestp);
 
-	return EVP_MD_CTX_type(digestp->md); /*== digestp->md->digest->type*/
+	GetDigest(obj, ctx);
+
+	return EVP_MD_CTX_type(ctx); /*== ctx->digest->type*/
 }
 
 const EVP_MD *
 ossl_digest_get_EVP_MD(VALUE obj)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL;
 
 	OSSL_Check_Type(obj, cDigest);
-	GetDigest(obj, digestp);
 
-	return EVP_MD_CTX_md(digestp->md); /*== digestp->md->digest*/
+	GetDigest(obj, ctx);
+
+	return EVP_MD_CTX_md(ctx); /*== ctx->digest*/
 }
 
 /*
- * PRIVATE
+ * Private
  */
 static VALUE
 ossl_digest_s_new(int argc, VALUE *argv, VALUE klass)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL;
 	VALUE obj;
 
 	if (klass == cDigest)
 		rb_raise(rb_eNotImpError, "cannot do Digest::ANY.new - it is an abstract class");
 
-	MakeDigest(klass, obj, digestp);
+	if (!(ctx = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
+		OSSL_Raise(eDigestError, "Cannot allocate memory for a digest's CTX");
+	}
+	WrapDigest(klass, obj, ctx);
+	
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -85,13 +72,13 @@ ossl_digest_s_new(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL;
 
-	GetDigest(self, digestp);
+	GetDigest(self, ctx);
 
 	data = rb_String(data);
 
-	EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
+	EVP_DigestUpdate(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 
 	return self;
 }
@@ -99,15 +86,14 @@ ossl_digest_update(VALUE self, VALUE data)
 static VALUE
 ossl_digest_digest(VALUE self)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL, final;
 	char *digest_txt = NULL;
 	int digest_len = 0;
-	EVP_MD_CTX final;
 	VALUE digest;
 	
-	GetDigest(self, digestp);
+	GetDigest(self, ctx);
 	
-	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
+	if (!EVP_MD_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eDigestError, "");
 	}
 	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
@@ -127,16 +113,15 @@ ossl_digest_digest(VALUE self)
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL, final;
 	static const char hex[]="0123456789abcdef";
 	char *digest_txt = NULL, *hexdigest_txt = NULL;
 	int i,digest_len = 0;
-	EVP_MD_CTX final;
 	VALUE hexdigest;
 	
-	GetDigest(self, digestp);
+	GetDigest(self, ctx);
 	
-	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
+	if (!EVP_MD_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eDigestError, "");
 	}
 	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
@@ -166,15 +151,14 @@ ossl_digest_hexdigest(VALUE self)
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
-	ossl_digest *digestp = NULL;
+	EVP_MD_CTX *ctx = NULL, final;
 	unsigned char *digest_txt = NULL, *hexdigest_txt = NULL;
 	int i,digest_len = 0;
-	EVP_MD_CTX final;
 	VALUE hexdigest;
 	
-	GetDigest(self, digestp);
+	GetDigest(self, ctx);
 	
-	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
+	if (!EVP_MD_CTX_copy(&final, ctx)) {
 		OSSL_Raise(eDigestError, "");
 	}
 
@@ -199,18 +183,16 @@ ossl_digest_hexdigest(VALUE self)
 	static VALUE										\
 	ossl_##dgst##_initialize(int argc, VALUE *argv, VALUE self)				\
 	{											\
-		ossl_digest *digestp = NULL;							\
+		EVP_MD_CTX *ctx = NULL;								\
 		VALUE data;									\
 												\
-		GetDigest(self, digestp);							\
-		if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {			\
-			OSSL_Raise(eDigestError, "Cannot allocate memory for a digest's CTX");	\
-		}										\
-		EVP_DigestInit(digestp->md, EVP_##dgst());					\
+		GetDigest(self, ctx);								\
+												\
+		EVP_DigestInit(ctx, EVP_##dgst());						\
 												\
 		if (rb_scan_args(argc, argv, "01", &data) == 1) {				\
 			data = rb_String(data);							\
-			EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);	\
+			EVP_DigestUpdate(ctx, RSTRING(data)->ptr, RSTRING(data)->len);		\
 		}										\
 		return self;									\
 	}

@@ -10,19 +10,11 @@
  */
 #include "ossl.h"
 
-#define MakeX509Ext(obj, extp) {\
-	obj = Data_Make_Struct(cX509Extension, ossl_x509ext, 0, ossl_x509ext_free, extp);\
-}
-#define GetX509Ext(obj, extp) {\
-	Data_Get_Struct(obj, ossl_x509ext, extp);\
-	if (!extp->extension) rb_raise(eX509ExtensionError, "not initialized!");\
-}
+#define WrapX509Ext(obj, ext) obj = Data_Wrap_Struct(cX509Extension, 0, X509_EXTENSION_free, ext)
+#define GetX509Ext(obj, ext) Data_Get_Struct(obj, X509_EXTENSION, ext)
 
-#define MakeX509ExtFactory(obj, extfactoryp) {\
-	obj = Data_Make_Struct(cX509ExtensionFactory, ossl_x509extfactory, 0, ossl_x509extfactory_free, extfactoryp);\
-}
-#define GetX509ExtFactory(obj, extfactoryp) \
-	Data_Get_Struct(obj, ossl_x509extfactory, extfactoryp)
+#define MakeX509ExtFactory(obj, extfactoryp) obj = Data_Make_Struct(cX509ExtensionFactory, ossl_x509extfactory, 0, ossl_x509extfactory_free, extfactoryp)
+#define GetX509ExtFactory(obj, extfactoryp) Data_Get_Struct(obj, ossl_x509extfactory, extfactoryp)
 
 /*
  * Classes
@@ -34,24 +26,10 @@ VALUE eX509ExtensionError;
 /*
  * Structs
  */
-typedef struct ossl_x509ext_st {
-	X509_EXTENSION *extension;
-} ossl_x509ext;
-
 typedef struct ossl_x509extfactory_st {
 	X509V3_CTX ctx;
 } ossl_x509extfactory;
 
-
-static void 
-ossl_x509ext_free(ossl_x509ext *extp)
-{
-	if (extp) {
-		if (extp->extension) X509_EXTENSION_free(extp->extension);
-		extp->extension = NULL;
-		free(extp);
-	}
-}
 
 static void 
 ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
@@ -67,7 +45,6 @@ ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
 VALUE 
 ossl_x509ext_new(X509_EXTENSION *ext)
 {
-	ossl_x509ext *extp = NULL;
 	X509_EXTENSION *new = NULL;
 	VALUE obj;
 
@@ -78,8 +55,7 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 	if (!new)
 		OSSL_Raise(eX509ExtensionError, "");
 		
-	MakeX509Ext(obj, extp);
-	extp->extension = new;
+	WrapX509Ext(obj, new);
 	
 	return obj;
 }
@@ -87,12 +63,17 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 X509_EXTENSION *
 ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 {
-	ossl_x509ext *extp = NULL;
+	X509_EXTENSION *ext = NULL, *new;
 
-	OSSL_Check_Type(obj, cX509Extension);	
-	GetX509Ext(obj, extp);
+	OSSL_Check_Type(obj, cX509Extension);
+	
+	GetX509Ext(obj, ext);
 
-	return X509_EXTENSION_dup(extp->extension);
+	if (!(new = X509_EXTENSION_dup(ext))) {
+		OSSL_Raise(eX509ExtensionError, "");
+	}
+	
+	return new;
 }
 
 /*
@@ -204,11 +185,10 @@ static VALUE
 ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
-	ossl_x509ext *extp = NULL;
 	X509_EXTENSION *ext = NULL;
 	int nid = NID_undef;
 	char *value = NULL;
-	VALUE item,obj;
+	VALUE item, obj;
 	
 	GetX509ExtFactory(self, extfactoryp);
 	
@@ -216,9 +196,6 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 
 	if ((RARRAY(ary)->len) < 2 || (RARRAY(ary)->len > 3)) { /*2 or 3 allowed*/
 		rb_raise(eX509ExtensionError, "unsupported structure");
-	}
-	if (!(ext = X509_EXTENSION_new())) {
-		OSSL_Raise(eX509ExtensionError, "");
 	}
 
 	/* key [0] */
@@ -249,8 +226,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	}
 	free(value);
 	
-	MakeX509Ext(obj, extp);
-	extp->extension = ext;
+	WrapX509Ext(obj, ext);
 
 	return obj;
 }
@@ -261,23 +237,23 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 static VALUE 
 ossl_x509ext_to_a(VALUE obj)
 {
-	ossl_x509ext *extp = NULL;
+	X509_EXTENSION *ext = NULL;
 	BIO *out = NULL;
 	BUF_MEM *buf = NULL;
 	int nid = NID_undef, critical;
 	VALUE ary, value;
 
-	GetX509Ext(obj, extp);
+	GetX509Ext(obj, ext);
 
 	ary = rb_ary_new2(3);
 
-	nid = OBJ_obj2nid(X509_EXTENSION_get_object(extp->extension));
+	nid = OBJ_obj2nid(X509_EXTENSION_get_object(ext));
 	rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
 		OSSL_Raise(eX509ExtensionError, "");
 	}
-	if (!X509V3_EXT_print(out, extp->extension, 0, 0)) {
+	if (!X509V3_EXT_print(out, ext, 0, 0)) {
 		BIO_free(out);
 		OSSL_Raise(eX509ExtensionError, "");
 	}
@@ -288,7 +264,7 @@ ossl_x509ext_to_a(VALUE obj)
 	rb_funcall(value, rb_intern("tr!"), 2, rb_str_new2("\n"), rb_str_new2(","));
 	rb_ary_push(ary, value);
 	
-	critical = X509_EXTENSION_get_critical(extp->extension);
+	critical = X509_EXTENSION_get_critical(ext);
 	rb_ary_push(ary, (critical) ? Qtrue : Qfalse);
 
 	return ary;

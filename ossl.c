@@ -69,6 +69,18 @@ asn1time_to_time(ASN1_UTCTIME *time)
 	return rb_time_new(mktime(&tm), 0); /* or this one? */
 }
 
+extern struct timeval rb_time_timeval(VALUE time);
+
+time_t
+time_to_time_t(VALUE time)
+{
+	struct timeval t;
+
+	t = rb_time_timeval(time);
+	
+	return t.tv_sec;
+}
+
 /*
  * Modules
  */

@@ -10,14 +10,8 @@
  */
 #include "ossl.h"
 
-#define MakeX509Attr(obj, attrp) {\
-	obj = Data_Make_Struct(cX509Attribute, ossl_x509attr, 0, ossl_x509attr_free, attrp);\
-}
-
-#define GetX509Attr(obj, attrp) {\
-	Data_Get_Struct(obj, ossl_x509attr, attrp);\
-	if (!attrp->attribute) rb_raise(eX509AttributeError, "not initialized!");\
-}
+#define WrapX509Attr(obj, attr) obj = Data_Wrap_Struct(cX509Attribute, 0, X509_ATTRIBUTE_free, attr)
+#define GetX509Attr(obj, attr) Data_Get_Struct(obj, X509_ATTRIBUTE, attr)
 
 /*
  * Classes
@@ -26,30 +20,11 @@ VALUE cX509Attribute;
 VALUE eX509AttributeError;
 
 /*
- * Struct
- */
-typedef struct ossl_x509attr_st {
-	X509_ATTRIBUTE *attribute;
-} ossl_x509attr;
-
-
-static void 
-ossl_x509attr_free(ossl_x509attr *attrp)
-{
-	if (attrp) {
-		if (attrp->attribute) X509_ATTRIBUTE_free(attrp->attribute);
-		attrp->attribute = NULL;
-		free(attrp);
-	}
-}
-
-/*
- * public
+ * Public
  */
 VALUE 
 ossl_x509attr_new(X509_ATTRIBUTE *attr)
 {
-	ossl_x509attr *attrp = NULL;
 	X509_ATTRIBUTE *new = NULL;
 	VALUE obj;
 
@@ -59,9 +34,8 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 
 	if (!new)
 		OSSL_Raise(eX509AttributeError, "");
-	
-	MakeX509Attr(obj, attrp);
-	attrp->attribute = new;
+
+	WrapX509Attr(obj, new);
 
 	return obj;
 }
@@ -69,25 +43,25 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 X509_ATTRIBUTE *
 ossl_x509attr_get_X509_ATTRIBUTE(VALUE obj)
 {
-	ossl_x509attr *attrp = NULL;
-	X509_ATTRIBUTE *attr = NULL;
+	X509_ATTRIBUTE *attr = NULL, *new;
 
-	OSSL_Check_Type(obj, cX509Attribute);	
-	GetX509Attr(obj, attrp);
+	OSSL_Check_Type(obj, cX509Attribute);
+	
+	GetX509Attr(obj, attr);
 
-	if (!(attr = X509_ATTRIBUTE_dup(attrp->attribute)))
+	if (!(new = X509_ATTRIBUTE_dup(attr))) {
 		OSSL_Raise(eX509AttributeError, "");
-
-	return attr;
+	}
+	
+	return new;
 }
 
 /*
- * private
+ * Private
  */
 static VALUE 
 ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 {
-	ossl_x509attr *attrp = NULL;
 	X509_ATTRIBUTE *attr = NULL;
 	int nid = NID_undef;
 	VALUE item, obj;
@@ -112,8 +86,7 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, RSTRING(item)->ptr)))
 		OSSL_Raise(eX509AttributeError, "");
 
-	MakeX509Attr(obj, attrp);
-	attrp->attribute = attr;
+	WrapX509Attr(obj, attr);
 
 	return obj;
 }

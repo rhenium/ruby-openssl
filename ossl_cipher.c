@@ -77,6 +77,7 @@ ossl_cipher_get_EVP_CIPHER(VALUE obj)
 	ossl_cipher *ciphp = NULL;
 
 	OSSL_Check_Type(obj, cCipher);
+	
 	GetCipher(obj, ciphp);
 
 	return EVP_get_cipherbynid(ciphp->nid); /*EVP_CIPHER_CTX_cipher(ciphp->ctx);*/

@@ -87,12 +87,15 @@ extern VALUE cDigest;
 extern VALUE eDigestError;
 extern VALUE cMD2, cMD4, cMD5, cMDC2, cRIPEMD160, cSHA, cSHA1, cDSS, cDSS1;
 /* PKey */
+extern ID id_private_q;
 extern VALUE cPKey;
 extern VALUE ePKeyError;
 extern VALUE cRSA;
 extern VALUE eRSAError;
 extern VALUE cDSA;
 extern VALUE eDSAError;
+extern VALUE cDH;
+extern VALUE eDHError;
 /* PKCS7 */
 extern VALUE cPKCS7;
 extern VALUE cPKCS7SignerInfo;
@@ -120,6 +123,7 @@ void ossl_check_instance(VALUE, VALUE);
  * DATE conversion
  */
 VALUE asn1time_to_time(ASN1_UTCTIME *);
+time_t time_to_time_t(VALUE);
 
 /*
  * ERRor messages
