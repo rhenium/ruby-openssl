@@ -177,14 +177,14 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
     }
     if(!(pkcs7 = PKCS7_sign(x509, pkey, x509s, in, flg))){
 	BIO_free(in);
-	sk_X509_free(x509s);
+	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
     }
     WrapPKCS7(cPKCS7, ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
     ossl_pkcs7_set_err_string(ret, Qnil);
     BIO_free(in);
-    sk_X509_free(x509s);
+    sk_X509_pop_free(x509s, X509_free);
 
     return ret;
 }
@@ -210,13 +210,13 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     }
     if(!(p7 = PKCS7_encrypt(x509s, in, ciph, flg))){
 	BIO_free(in);
-	sk_X509_free(x509s);
+	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
     }
     WrapPKCS7(cPKCS7, ret, p7);
     ossl_pkcs7_set_data(ret, data);
     BIO_free(in);
-    sk_X509_free(x509s);
+    sk_X509_pop_free(x509s, X509_free);
 
     return ret;
 }
@@ -515,7 +515,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     }
     if(!(out = BIO_new(BIO_s_mem()))){
 	BIO_free(in);
-	sk_X509_free(x509s);
+	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
     }
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
@@ -525,7 +525,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     ossl_pkcs7_set_data(self, data);
     BIO_free(in);
     BIO_free(out);
-    sk_X509_free(x509s);
+    sk_X509_pop_free(x509s, X509_free);
     if(status) rb_jump_tag(status);
 
     return (ok == 1) ? Qtrue : Qfalse;

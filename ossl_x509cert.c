@@ -152,7 +152,6 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     x509 = PEM_read_bio_X509(in, (X509 **)&DATA_PTR(self), NULL, NULL);
     if (!x509) {
 	BIO_reset(in);
-	
 	x509 = d2i_X509_bio(in, (X509 **)&DATA_PTR(self));
     }
     if (!x509) {
@@ -565,7 +564,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
     sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
     x509->cert_info->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {
-	ext = ossl_x509ext_get_X509_EXTENSION(RARRAY(ary)->ptr[i]);
+	ext = DupX509ExtPtr(RARRAY(ary)->ptr[i]);
 	
 	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
 	    X509_EXTENSION_free(ext);
@@ -584,7 +583,7 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
     X509_EXTENSION *ext;
 	
     GetX509(self, x509);
-    ext = ossl_x509ext_get_X509_EXTENSION(extension);
+    ext = DupX509ExtPtr(extension);
     if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
 	X509_EXTENSION_free(ext);
 	ossl_raise(eX509CertError, "");

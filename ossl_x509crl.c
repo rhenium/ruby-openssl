@@ -425,7 +425,7 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
     sk_X509_EXTENSION_pop_free(crl->crl->extensions, X509_EXTENSION_free);
     crl->crl->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {
-	ext = ossl_x509ext_get_X509_EXTENSION(RARRAY(ary)->ptr[i]);
+	ext = DupX509ExtPtr(RARRAY(ary)->ptr[i]);
 	if(!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
 	    X509_EXTENSION_free(ext);
 	    ossl_raise(eX509CRLError, "");
@@ -443,7 +443,7 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
     X509_EXTENSION *ext;
 
     GetX509CRL(self, crl);
-    ext = ossl_x509ext_get_X509_EXTENSION(extension);
+    ext = DupX509ExtPtr(extension);
     if (!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
 	X509_EXTENSION_free(ext);
 	ossl_raise(eX509CRLError, "");

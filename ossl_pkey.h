@@ -48,7 +48,7 @@ extern VALUE cRSA;
 extern VALUE eRSAError;
 
 VALUE ossl_rsa_new(EVP_PKEY *);
-void Init_ossl_rsa();
+void Init_ossl_rsa(void);
 
 /*
  * DSA
@@ -57,7 +57,7 @@ extern VALUE cDSA;
 extern VALUE eDSAError;
 
 VALUE ossl_dsa_new(EVP_PKEY *);
-void Init_ossl_dsa();
+void Init_ossl_dsa(void);
 
 /*
  * DH
@@ -66,7 +66,7 @@ extern VALUE cDH;
 extern VALUE eDHError;
 
 VALUE ossl_dh_new(EVP_PKEY *);
-void Init_ossl_dh();
+void Init_ossl_dh(void);
 
 #define OSSL_PKEY_BN(keytype, name)					\
 static VALUE ossl_##keytype##_get_##name(VALUE self)			\
@@ -109,4 +109,3 @@ do {										\
 } while (0)
 
 #endif /* _OSSL_PKEY_H_ */
-

@@ -184,7 +184,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
     rev->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {
 	item = RARRAY(ary)->ptr[i];
-	ext = ossl_x509ext_get_X509_EXTENSION(item);
+	ext = DupGetX509ExtPtr(item);
 	if(!X509_REVOKED_add_ext(rev, ext, -1)) {
 	    ossl_raise(eX509RevError, "");
 	}
@@ -199,7 +199,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
     X509_REVOKED *rev;
     
     GetX509Rev(self, rev);
-    if(!X509_REVOKED_add_ext(rev, ossl_x509ext_get_X509_EXTENSION(ext), -1)) {
+    if(!X509_REVOKED_add_ext(rev, DupGetX509ExtPtr(ext), -1)) {
 	ossl_raise(eX509RevError, "");
     }
 

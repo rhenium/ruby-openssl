@@ -204,7 +204,7 @@ ossl_obj2bio(VALUE obj)
 }
 
 BIO *
-ossl_protec_obj2bio(VALUE obj, int *status)
+ossl_protect_obj2bio(VALUE obj, int *status)
 {
      BIO *ret = NULL;
      ret = (BIO*)rb_protect((VALUE(*)())ossl_obj2bio, obj, status);
@@ -245,10 +245,10 @@ ossl_x509_ary2sk(VALUE ary)
     for(i = 0; i < RARRAY(ary)->len; i++){
         val = rb_ary_entry(ary, i);
         if(!rb_obj_is_kind_of(val, cX509Cert)){
-            sk_X509_free(sk);
+            sk_X509_pop_free(sk, X509_free);
             ossl_raise(eOSSLError, "object except X509 cert is in array"); 
         }
-        x509 = GetX509CertPtr(val); /* NEED TO DUP */
+        x509 = DupX509CertPtr(val); /* NEED TO DUP */
         sk_X509_push(sk, x509);
     }
     
