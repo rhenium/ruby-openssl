@@ -102,6 +102,11 @@ class TC_Request < Test::Unit::TestCase
     req = Request::new($req.to_pem)
     assert_equal(txt, req.to_text, "new instance from PEM")
   end
+  def test_08dup
+    assert_equal($req.to_text, $req.dup.to_text, "dup")
+    assert_equal($req.to_text, $req.clone.to_text, "clone")
+##    assert_nothing_raised(Request::new().dup, "OpenSSL doens't like duplicating not filled X509_REQ *")
+  end
   def teardown
     ##
     # NONE

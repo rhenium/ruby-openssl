@@ -111,6 +111,24 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_x509req_copy_object(VALUE self, VALUE other)
+{
+    X509_REQ *a, *b, *req;
+	
+    rb_check_frozen(self);
+    if (self == other) return self;
+    GetX509Req(self, a);
+    SafeGetX509Req(other, b);
+    if (!(req = X509_REQ_dup(b))) {
+	ossl_raise(eX509ReqError, "");
+    }
+    X509_REQ_free(a);
+    DATA_PTR(self) = req;
+
+    return self;
+}
+
 static VALUE 
 ossl_x509req_to_pem(VALUE self)
 {
@@ -376,6 +394,7 @@ Init_ossl_x509req()
 	
     rb_define_alloc_func(cX509Req, ossl_x509req_alloc);
     rb_define_method(cX509Req, "initialize", ossl_x509req_initialize, -1);
+    rb_define_method(cX509Req, "copy_object", ossl_x509req_copy_object, 1);
 	
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);
     rb_define_alias(cX509Req, "to_s", "to_pem");
