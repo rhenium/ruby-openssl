@@ -4,6 +4,10 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.24  2002/01/12 11:49:17  majkl
+	* fixed callbacks in ossl_(ssl|x509store).c
+	* added method X509::Store#verify_status=
+
 Revision 1.23  2002/01/10 19:32:23  majkl
 	* fixed and improved verify_callbacks in ossl_(ssl|x509store).c
 	* enhanced ossl_x509store.rb examples

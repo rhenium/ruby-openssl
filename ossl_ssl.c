@@ -152,10 +152,11 @@ ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 
 		if (ret == Qtrue) {
 			ok = 1;
-			ctx->error = X509_V_OK;
+			X509_STORE_CTX_set_error(ctx, X509_V_OK);
 		} else {
 			ok = 0;
-			ctx->error = X509_V_ERR_CERT_REJECTED;
+			if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+				X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
 		}
 	}
 

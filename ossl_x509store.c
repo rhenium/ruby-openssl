@@ -29,7 +29,7 @@ VALUE eX509StoreError;
 /*
  * General callback for OpenSSL verify
  */
-int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
+int MS_CALLBACK ossl_x509store_verify_cb(int, X509_STORE_CTX *);
 
 /*
  * Struct
@@ -305,10 +305,11 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 		
 		if (ret == Qtrue) {
 			ok = 1;
-			ctx->error = X509_V_OK;
+			X509_STORE_CTX_set_error(ctx, X509_V_OK);
 		} else {
 			ok = 0;
-			ctx->error = X509_V_ERR_CERT_REJECTED;
+			if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+				X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
 		}
 	}
 
@@ -343,6 +344,18 @@ ossl_x509store_get_verify_status(VALUE self)
 	GetX509Store(self, storep);
 
 	return INT2FIX(X509_STORE_CTX_get_error(storep->store));
+}
+
+static VALUE
+ossl_x509store_set_verify_status(VALUE self, VALUE err)
+{
+	ossl_x509strore *storep = NULL;
+
+	GetX509Store(self, storep);
+
+	X509_STORE_CTX_set_error(storep->store, FIX2INT(err));
+
+	return err;
 }
 
 static VALUE 
@@ -432,6 +445,18 @@ ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
 	return proc;
 }
 
+static VALUE
+ossl_x509store_cleanup(VALUE self)
+{
+	ossl_x509store *storep = NULL;
+
+	GetX509Store(self, storep);
+
+	X509_STORE_CTX_cleanup(storep->store); 
+	
+	return self;
+}
+
 /*
  * INIT
  */
@@ -457,6 +482,7 @@ Init_ossl_x509store(VALUE module)
 	
 	rb_define_method(cX509Store, "verify", ossl_x509store_verify, 1);
 	rb_define_method(cX509Store, "verify_status", ossl_x509store_get_verify_status, 0);
+	rb_define_method(cX509Store, "verify_status=", ossl_x509store_set_verify_status, 1);
 	rb_define_method(cX509Store, "verify_message", ossl_x509store_get_verify_message, 0);
 	rb_define_method(cX509Store, "verify_depth", ossl_x509store_get_verify_depth, 0);
 	rb_define_method(cX509Store, "chain", ossl_x509store_get_chain, 0);
@@ -464,6 +490,8 @@ Init_ossl_x509store(VALUE module)
 	rb_define_method(cX509Store, "protect", ossl_x509store_protect, 0);
 	rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);
 	rb_define_method(cX509Store, "load_locations", ossl_x509store_load_locations, 1);
+
+	rb_define_method(cX509Store, "cleanup!", ossl_x509store_cleanup, 0);
 	
 #define DefX509StoreConst(x) rb_define_const(cX509Store, #x, INT2FIX(X509_V_ERR_##x))
 
