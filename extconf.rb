@@ -20,7 +20,6 @@ end
 
 dir_config("openssl")
 
-have_func("strncasecmp", "string.h")
 have_func("strptime", "time.h")
 
 if with_config("debug") or enable_config("debug") # '--enable-debug' or '--with-debug=yes'

@@ -342,6 +342,9 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         }
                         if (c == 'Y')
                                 i -= 1900;
+			else if (c < 69) /*c=='y', 00-68 is for 20xx, the rest is for 19xx*/
+				i += 100;
+				
                         if (i < 0)
                                 return 0;
 

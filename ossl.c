@@ -10,15 +10,22 @@
  */
 #include "ossl.h"
 
+#ifdef WIN32
+#  define strncasecmp _strnicmp
+#endif
+
 /*
  * On Windows platform there is no strptime function
  * implementation in strptime.c
  */
 #ifndef HAVE_STRPTIME
-#  ifndef HAVE_STRNCASECMP
-#    include "./missing/strncasecmp.c"
-#  endif
 #  include "./missing/strptime.c"
+/*
+#else
+#  define _XOPEN_SOURCE * glibc2 needs this *
+#  include <features.h>
+#  include <time.h>
+ */
 #endif
 
 /*

@@ -349,7 +349,7 @@ ossl_x509store_get_verify_status(VALUE self)
 static VALUE
 ossl_x509store_set_verify_status(VALUE self, VALUE err)
 {
-	ossl_x509strore *storep = NULL;
+	ossl_x509store *storep = NULL;
 
 	GetX509Store(self, storep);
 

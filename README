@@ -10,8 +10,9 @@ GOTOU Yuuzou <gotoyuzo@notwork.org> - SSL Socket implementation
 Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate)
 
 [Contributors]
-UNKNOWN <oss-ruby@technorama.net>oss-ruby@technorama.net - BN implementation
- 
+UNKNOWN <oss-ruby@technorama.net>oss-ruby@technorama.net - BN implementation core
+Hynek Rostinsky <Hynek.Rostinsky@foresta.cz> - Windows platform fixes
+
 [Done] (but not fully tested)
 = PKey:: RSA,DSA keys - new, load, export
 = X509::Certificate - generating new certs, load, looking inside
@@ -65,6 +66,7 @@ UNKNOWN <oss-ruby@technorama.net>oss-ruby@technorama.net - BN implementation
 = Windows like systems:
 	add to %PATH%: c:\openssl\bin (where the dlls lays)
 	ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
+	(or ruby extconf.rb --with-openssl-dir=c:\openssl (NOT TESTED))
 	nmake
 	nmake install
 

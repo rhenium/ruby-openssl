@@ -262,14 +262,38 @@ end # defined? RSA
   end # X509
 
   class BN
-    def BN::new(arg)
-      BN::new_from_dec(arg.to_s)
+    def initialize(arg=nil, type="dec")
+    	return if arg.nil?
+	t = arg.class
+	while t
+	  t.name.downcase =~ /(\S*::)*(\S+)/
+	  method = "from_#{$2}".intern
+	  return send(method, arg, type) if respond_to?(method, true)
+	  t = t.superclass
+	end
+	raise "Don't how to init #{self.class.name} from #{arg.class}"
     end
+
+    def from_bn(arg, dummy=nil)
+      copy(arg)
+    end
+
+    def from_integer(arg, type="dec")
+      from_string(arg.to_s, type)
+    end
+
+    def from_string(arg, type="dec")
+      send("from_#{type.downcase}", arg)
+    end
+
+    private :from_bn, :from_integer, :from_string
     
-    alias :to_str :to_dec
+    def to_s(type="dec")
+      send("to_s_#{type.downcase}")
+    end
 
     def to_i
-      self.to_str.to_i
+      self.to_s.to_i
     end
   end # BN
 end # OpenSSL
