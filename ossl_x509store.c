@@ -266,7 +266,7 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 	/*
 	 * Check CRL
 	 */
-	X509_STORE_CTX_set_flags(storep->store, 0x4);
+	X509_STORE_CTX_set_flags(storep->store, X509_V_FLAG_CRL_CHECK);
 
 	return crlst;
 }
