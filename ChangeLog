@@ -3,8 +3,12 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Sun,  9 Jun 2002 22:17:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509store.c: really port to Ruby 1.8 interface :-)
+	* x509store.c: #protect method dropped (useless)
+
 Sat,  8 Jun 2002 14:07:27 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
-	* cipher.c: Fix GetCipher - condition (!ciphp || !ciphp->cipher) was too tight
+	* cipher.c: Fix GetCipher - condition (!ciphp || !ciphp->cipher) was too tight for initialize
 
 Sat,  8 Jun 2002 13:48:37 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509.h: dropped ossl_x509_get_X509(obj)

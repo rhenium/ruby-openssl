@@ -11,12 +11,13 @@
 #include "ossl.h"
 #include <rubysig.h>
 
-#define MakeX509Store(obj, storep) obj = Data_Make_Struct(cX509Store, ossl_x509store, 0, ossl_x509store_free, storep)
-#define GetX509Store_unsafe(obj, storep) Data_Get_Struct(obj, ossl_x509store, storep)
-#define GetX509Store(obj, storep) do {\
-	GetX509Store_unsafe(obj, storep);\
-	if (!storep->store) rb_raise(eX509StoreError, "not initialized!");\
-} while (0)
+#define MakeX509Store(klass, obj, storep) obj = Data_Make_Struct(klass, ossl_x509store, 0, ossl_x509store_free, storep)
+#define GetX509Store(obj, storep) do { \
+	Data_Get_Struct(obj, ossl_x509store, storep); \
+	if (!storep) { \
+		rb_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
+	} \
+} while (0);
 
 /*
  * Classes
@@ -33,7 +34,7 @@ int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
  * Struct
  */
 typedef struct ossl_x509store_st {
-	char protect;
+	int protect;
 	X509_STORE_CTX *store;
 } ossl_x509store;
 
@@ -41,7 +42,7 @@ static void
 ossl_x509store_free(ossl_x509store *storep)
 {
 	if (storep) {
-		if (storep->store && storep->protect == 0)
+		if (storep->store && storep->protect == Qfalse)
 			X509_STORE_CTX_free(storep->store);
 		
 		storep->store = NULL;
@@ -58,7 +59,7 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
 	ossl_x509store *storep = NULL;
 	VALUE obj;
 
-	MakeX509Store(obj, storep);
+	MakeX509Store(cX509Store, obj, storep);
 
 	/*
 	 * Is there any way to _dup X509_STORE_CTX?
@@ -70,7 +71,7 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
 	X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
 	*/
 	storep->store = ctx;
-	storep->protect = 1; /* we're using pointer without DUP - don't free this one */
+	storep->protect = Qtrue; /* we're using pointer without DUP - don't free this one */
 	
 	return obj;
 }
@@ -83,7 +84,7 @@ ossl_x509store_get_X509_STORE(VALUE obj)
 	OSSL_Check_Type(obj, cX509Store);
 	GetX509Store(obj, storep);
 	
-	storep->protect = 1; /* we gave out internal pointer without DUP - don't free this one */
+	storep->protect = Qtrue; /* we gave out internal pointer without DUP - don't free this one */
 	return storep->store->ctx;
 }
 
@@ -152,14 +153,12 @@ ossl_session_db_set(void *key, VALUE data)
  * Private functions
  */
 static VALUE 
-ossl_x509store_s_new(int argc, VALUE *argv, VALUE klass)
+ossl_x509store_s_allocate(VALUE klass)
 {
 	ossl_x509store *storep = NULL;
 	VALUE obj;
 
-	MakeX509Store(obj, storep);
-
-	rb_obj_call_init(obj, argc, argv);
+	MakeX509Store(klass, obj, storep);
 
 	return obj;
 }
@@ -170,7 +169,7 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 	ossl_x509store *storep = NULL;
 	X509_STORE *store = NULL;
 
-	GetX509Store_unsafe(self, storep);
+	GetX509Store(self, storep);
 
 	if (!(store = X509_STORE_new())) {
 		OSSL_Raise(eX509StoreError, "");
@@ -290,7 +289,6 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 	
 	if (!NIL_P(proc)) {
 		store_ctx = ossl_x509store_new(ctx);
-		/* rb_funcall(store_ctx, rb_intern("protect"), 0, NULL); -- called default by ossl_..new */
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, proc);
 		rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
@@ -380,17 +378,6 @@ ossl_x509store_get_cert(VALUE self)
 }
 
 static VALUE 
-ossl_x509store_protect(VALUE self)
-{
-	ossl_x509store *storep = NULL;
-
-	GetX509Store(self, storep);
-	storep->protect = 1;
-
-	return self;
-}
-
-static VALUE 
 ossl_x509store_set_default_paths(VALUE self)
 {
 	ossl_x509store *storep = NULL;
@@ -462,7 +449,8 @@ Init_ossl_x509store()
 	eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 
 	cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
-	rb_define_singleton_method(cX509Store, "new", ossl_x509store_s_new, -1);
+	
+	rb_define_singleton_method(cX509Store, "allocate", ossl_x509store_s_allocate, 0);
 	rb_define_method(cX509Store, "initialize", ossl_x509store_initialize, -1);
 
 	rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
@@ -478,7 +466,6 @@ Init_ossl_x509store()
 	rb_define_method(cX509Store, "verify_depth", ossl_x509store_get_verify_depth, 0);
 	rb_define_method(cX509Store, "chain", ossl_x509store_get_chain, 0);
 	rb_define_method(cX509Store, "cert", ossl_x509store_get_cert, 0);
-	rb_define_method(cX509Store, "protect", ossl_x509store_protect, 0);
 	rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);
 	rb_define_method(cX509Store, "load_locations", ossl_x509store_load_locations, 1);
 

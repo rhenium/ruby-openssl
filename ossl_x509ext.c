@@ -301,7 +301,7 @@ Init_ossl_x509ext()
 	cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
 	rb_undef_method(CLASS_OF(cX509Ext), "new");
 /*
-	rb_define_singleton_method(cX509Ext, "new", ossl_x509ext_s_new, -1);
+	rb_define_singleton_method(cX509Ext, "allocate", ossl_x509ext_s_allocate, 0);
 	rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
  */
 	rb_define_method(cX509Ext, "to_a", ossl_x509ext_to_a, 0);
