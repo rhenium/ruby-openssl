@@ -37,17 +37,6 @@ struct timeval {
 #  include <time.h>
 #endif
 
-#if defined(HAVE_SYS_TIME_H)
-#  include <time.h>
-#else
-#ifndef NT
-struct timeval {
-	long	tv_sec;		/* seconds */
-	long	tv_usec;	/* and microseconds */
-};
-#endif /* NT */
-#endif
-
 /*
  * Check Types
  */

@@ -203,14 +203,10 @@ static VALUE
 ossl_x509store_add_trusted(VALUE self, VALUE cert)
 {
 	ossl_x509store *storep;
-	X509 *x509;
 	
 	GetX509Store(self, storep);
 	
-	x509 = DupX509CertPtr(cert);
-
-	if (!X509_STORE_add_cert(storep->store->ctx, x509)) { /* DUP needed! */
-		X509_free(x509);
+	if (!X509_STORE_add_cert(storep->store->ctx, GetX509CertPtr(cert))) { /* NO DUP needed! */
 		ossl_raise(eX509StoreError, "");
 	}
 	return cert;

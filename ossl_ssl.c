@@ -20,7 +20,7 @@
 #define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
 
 #define GetSSLCTX(obj, ctx) do {  \
-    Check_Type(obj, cSSLContext); \
+    OSSL_Check_Kind(obj, cSSLContext); \
     ssl_ctx_setup(obj);           \
     Data_Get_Struct(obj, ssl_ctx_st, ctx); \
 } while (0)
@@ -104,7 +104,7 @@ ssl_ctx_free(ssl_ctx_st *p)
 }
 
 static VALUE
-ssl_ctx_s_alloc(int argc, VALUE *argv, VALUE klass)
+ssl_ctx_s_alloc(VALUE klass)
 {
     ssl_ctx_st *p;
     return Data_Make_Struct(klass, ssl_ctx_st, 0, ssl_ctx_free, p);
@@ -130,7 +130,7 @@ ssl_ctx_initialize(int argc, VALUE *argv, VALUE self)
 	}
     }
     if(p->method == NULL)
-        rb_raise(rb_eArgError, "unknow SSL method `%s'.", s);
+        rb_raise(rb_eArgError, "unknown SSL method `%s'.", s);
 
     return self;
 }
@@ -153,7 +153,6 @@ ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
     /* the callback is passed by ssl_connect() or ssl_accept() */
     if (rb_block_given_p()){
 	x509stc = ossl_x509store_new(ctx);
-	rb_funcall(x509stc, rb_intern("protect"), 0, NULL);
 	args = rb_ary_new2(2);
 	rb_ary_store(args, 0, ok ? Qtrue : Qfalse);
 	rb_ary_store(args, 2, x509stc);
@@ -216,9 +215,9 @@ ssl_ctx_setup(VALUE self)
     val = ssl_get_ca(self);
     ca = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED. */
     val = ssl_get_ca_file(self);
-    ca_file = NIL_P(val) ? NULL : RSTRING(val)->ptr;
+    ca_file = NIL_P(val) ? NULL : StringValuePtr(val);
     val = ssl_get_ca_path(self);
-    ca_path = NIL_P(val) ? NULL : RSTRING(val)->ptr;
+    ca_path = NIL_P(val) ? NULL : StringValuePtr(val);
 
     if (ca){
 	if (!SSL_CTX_add_client_CA(p->ctx, ca)){
@@ -267,7 +266,7 @@ ssl_ctx_get_ciphers(VALUE self)
     STACK_OF(SSL_CIPHER) *ciphers;
     SSL_CIPHER *cipher;
     VALUE ary;
-    int i;
+    int i, num;
 
     Data_Get_Struct(self, ssl_ctx_st, p);
     if(!p->ctx){
@@ -275,12 +274,15 @@ ssl_ctx_get_ciphers(VALUE self)
 	return Qnil;
     }
     ciphers = p->ctx->cipher_list;
-    ary = rb_ary_new();
-    if(ciphers){
-	for(i = 0; i < sk_num((STACK*)ciphers); i++){
-	    cipher = (SSL_CIPHER*)sk_value((STACK*)ciphers, i);
-	    rb_ary_push(ary, ssl_cipher_to_ary(cipher));
-	}
+
+    if (!ciphers)
+	return rb_ary_new();
+
+    num = sk_num((STACK*)ciphers);
+    ary = rb_ary_new(num);
+    for(i = 0; i < num; i++){
+	cipher = (SSL_CIPHER*)sk_value((STACK*)ciphers, i);
+	rb_ary_push(ary, ssl_cipher_to_ary(cipher));
     }
     return ary;
 }
@@ -307,7 +309,10 @@ ssl_ctx_set_ciphers(VALUE self, VALUE v)
 	    rb_str_append(str, elem);
 	    if (i < RARRAY(v)->len-1) rb_str_cat2(str, ":");
 	}
-    } else str = rb_String(v);
+    } else {
+	str = v;
+	StringValue(str);
+    }
 
     if (!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr)) {
 	ossl_raise(eSSLError, "SSL_CTX_set_ciphers:");
@@ -421,7 +426,7 @@ ssl_s_alloc(VALUE klass)
 static VALUE
 ssl_initialize(VALUE self, VALUE ctx)
 {
-    Check_Type(ctx, cSSLContext);
+    OSSL_Check_Kind(ctx, cSSLContext);
     ssl_ctx_set_context(self, ctx);
     return self;
 }
@@ -505,7 +510,7 @@ ssl_write(VALUE self, VALUE str)
     FILE *fp;
 
     Data_Get_Struct(self, ssl_st, p);
-    str = rb_String(str);
+    StringValue(str);
 
     if (p->ssl) {
 	nwrite = SSL_write(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
@@ -631,7 +636,7 @@ Init_ossl_ssl()
 
     /* class SSLContext */
     cSSLContext = rb_define_class_under(mSSL, "SSLContext", rb_cObject);
-    rb_define_singleton_method(cSSLContext, "allocate", ssl_ctx_s_alloc, -1);
+    rb_define_singleton_method(cSSLContext, "allocate", ssl_ctx_s_alloc, 0);
     for(i = 0; i < numberof(ssl_ctx_attrs); i++)
         rb_attr(cSSLContext, rb_intern(ssl_ctx_attrs[i]), 1, 1, Qfalse);
     rb_define_method(cSSLContext, "initialize",  ssl_ctx_initialize, -1);
@@ -645,7 +650,7 @@ Init_ossl_ssl()
 
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
-    rb_define_singleton_method(cSSLSocket, "allocate", ssl_s_alloc, -1);
+    rb_define_singleton_method(cSSLSocket, "allocate", ssl_s_alloc, 0);
     for(i = 0; i < numberof(ssl_attrs); i++)
         rb_attr(cSSLSocket, rb_intern(ssl_attrs[i]), 1, 1, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
