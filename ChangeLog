@@ -1,0 +1,105 @@
+$Id$
+'OpenSSL for Ruby' project
+Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+All rights reserved.
+
+2001/11/15
+	* PKCS7::Signer - introduced
+	* PKCS7 - yield Signer when verifiing data
+
+2001/11/14
+	* PKCS7 - sign is working, verify problem remains
+	* X509::Store - verify_callback implemented
+	* PKCS7 - verify is working!
+
+2001/11/13
+	* PKCS7 added (not fully tested, but it seems to be working)
+	* some additions to X509::Store
+
+2001/11/12
+	* added set_default_paths, load_locations(path) to X509::Store
+	* fixed StringValuePtr --> RSTRING()->ptr
+
+2001/11/06 (ossl-0.0.8)
+	* GOTOU Yuuzou: patches to lib/*.rb in order to mark his SSLlib as deprecated
+	* lib name is now 'openssl' (not 'OpenSSL' anymore - GOTOU Yuuzou's idea)
+
+2001/11/05
+	* openssl_missing.c dropped :-))
+	* PKeys reworked (Again? Am I mad???)
+	* sign/verify methods for RSA/DSA - compatibility tests needed!
+
+2001/11/02 (ossl-0.0.7)
+	* GOTOU Yuuzou: remove nasty warnings - make compilation clean (Thanks!)
+	* GOTOU Yuuzou: ossl_ssl.c cleanups, more error proof
+	* openssl_missing.c - for easy key _dups
+	* fixed completely dead ossl_pkey_new2, ossl_pkey_get_EVP_PKEY
+	* fixed ExtFactory's create_extension
+	* make test/ssl/svr.rb generate selfsigned cert (GOTOU Yuuzou's idea)
+
+2001/11/01
+	* Added 'protect' method to X509::Store that denies freeing internal X509_STORE_CTX
+	* changed all // comments to /* */ (Gotou requested)
+	* brought back .ca_file, .ca_path (Gotou requested)
+
+2001/10/31
+	* fixed serious BUG in PKey .encrypt, .decrypt
+	* disabled .enc/.dec for DSA since it's not supported from OpenSSL
+	* since I don't know how to _dup X509_STORE_CTX, free is disabled (SSLSocket is not segfaulting now)
+	* added lib/* from Yuuzou's project (nothing changed => TODO!)
+	* ported some SSL examples test/ssl/* (cli, svr, verify_cb, wget)
+
+2001/10/30
+	* fixed PKey .public?, .private?
+	* SSL project from GOTOU Yuuzou <gotoyuzo@notwork.org> merged in (not tested, waiting for responce from Yuuzou)
+	* API for PKey to README
+	* DSS digest added (SHA for DSA)
+	* some more API to README
+	* really add challenge to SPKI ;-)
+
+2001/10/29 (ossl-0.0.6)
+	* openssl_missing.h added
+	* PKey reworked (some methods deleted, keys made Abstract)
+	* DSA keys added
+	* DSS1 digest added (SHA1 for DSA)
+	* PKey sign and verify added (see test/ossl_pkey.rb)
+
+2001/10/28
+	* API doc for Cipers
+	* Random class and API for it to README
+
+2001/10/27
+	* Challenge added to SPKI
+	* Added ChangeLog
+	* Added OpenSSL module functions for RAND (seed, load_random_file, write_random_file)
+
+2001/10/26 (ossl-0.0.5)
+	* Ciphers reworked, more general approach (less classes)
+	* All OpenSSL ciphers added
+	* Added cipher option to RSA
+
+2001/10/25
+	* ExtensionMaker renamed to ExtensionFactory
+	* First Cipher class made (#of classes will be HUGE - is this good approach???)
+	* Whole project is now licenced under Ruby's licence
+
+2001/10/23
+	* OpenSSL::Netscape::SPKI added
+
+2001/10/20 (ossl-0.0.4)
+	* step ahead to merge with Gotou Yuuzou <gotoyuzo@notwork.org>'s ssl project
+	* (X509::Store reworked - behave like gotoyuzo's ssl version)
+	* make build on FreeBSD (remove strndup) - GOTOU Yuuzou <gotoyuzo@notwork.org> contributed
+
+2001/10/19
+	* add_extension methods added
+	* all (hopefully) setters to extension= frees old extensions mem.
+	* some changes to api (RSA mainly)
+	* openssl.cnf parser to be dropped???
+	* lib and main module renamed to OpenSSL
+	* full modularization introduced (will you hate it?)
+
+2001/10/13
+	* Extensions reworked (ExtensionMaker added)
+	* build fixed up (Robert Feldt <feldt@ce.chalmers.se>)
+

@@ -1,0 +1,175 @@
+$Id$
+'OpenSSL for Ruby' project
+Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+All rights reserved.
+
+This program is licenced under the same licence as Ruby.
+(See the file 'LICENCE'.)
+ 
+[Done] (but not fully tested)
+= OpenSSL config file parser (part) --- TO BE DROPPED? (any idea?)
+= PKey:: RSA,DSA keys - new, load, export
+= X509::Certificate - generating new certs, load, looking inside
+= X509::CRL - load, new, looking inside
+= X509::Name - new, export to_str, to_a, to_h (hash)
+= X509::Revoked - new, looking inside (on parameters)
+= X509::Store - new, import trusted certs and CRL, verifiing certs
+= Digest::... - various hashes
+= X509::Request - Cert requests
+= X509::Attribute - as X509Request extensions (not tested)
+= X509::Extension - to Certs, CRLs...
+= X509::ExtensionMaker - for easy creating new Extensions
+= Netscape::SPKI - for requests from NetscapeCommunicators
+= Cipher::... - various ciphers
+= basic PRNG functions (random generator) for OpenSSL module and class Random
+= SSLSocket (merged Gotou Yuuzou's SSLsocket-Ruby project)
+= PKCS7 (first try)
+
+[To-Do]
+= check for memory leaking :-))
+= cleaner code
+= examples
+= RubyUnit to be used!
+= API documentation
+= comments to sources!!!
+= further functionality to existing
+= Std. Extensions, Attributes to be made as Classes?
+= AttributeFactory?
+= add aliases to to_pem as s_dump s_load to support Marshal module
+= CipherFactory?
+= autogen random IVs for Ciphers
+= safe BigNums
+= PKCS12
+= PKCS8
+= HMAC
+= ASN.1 ???
+= BIO ???
+= compat tests for RSA/DSA sign/encrypt
+
+[Requirements]
+	Ruby	>= 1.6.4
+	OpenSSL >= 0.9.6b
+
+[Instalation]
+	ruby extconf.rb
+	make
+	su root -c make install
+
+[Documentation/API]
+	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_method :-))
+
+--------------------------------------------------
+OpenSSL::
+	.seed(String) => true|false
+	.load_random_file(Filename) => true|false
+	.write_random_file(Filename) => true|false
+
+	Random
+		.seed(String) => true|false
+		.load_random_file(Filename) => true|false
+		.write_random_file(Filename) => true|false
+		.random_bytes(size) => String
+
+	Cipher::
+		constants:	UNSPEC
+				ECB, CFB, OFB, CBC (modes)
+				EDE, EDE3, BIT40, BIT64 (types)
+
+		BlowFish (allowed: ECB, CFB, OFB, CBC)
+		Cast5 (ECB, CFB, OFB, CBC)
+		DES (ECB, EDE, EDE3, CFB, CFB:EDE, CFB:EDE3, OFB, OFB:EDE, OFB:EDE3, CBC, CBC:EDE, CBC:EDE3)
+		Idea (ECB, CFB, OFB, CBC)
+		RC2 (ECB, CBC, BIT40:CBC, BIT64:CBC, CFB, OFB)
+		RC4 (UNSPEC, BIT40)
+		RC5 (ECB, CFB, OFB, CBC)
+			.new([mode|type] [,type|mode]) => self
+			.encrypt(Password [, Init_Vect] [, Data]) => self or String
+			.decrypt(Password [, Init_Vect] [, Data]) => self or String
+			.update(String) => String
+			.<<(String) <=> .update
+			.cipher => String
+			
+	Digest::
+		MD2
+		MD5
+		MDC2
+		RIPEMD160
+		SHA
+		SHA1
+		DSS
+		DSS1
+			.new([String]) => self
+			.update(String) => self
+			.<<(String) <=> .update
+			.digest => String
+			.hexdigest => String
+			.inspect <=> .hexdigest
+			.to_str <=> .hexdigest
+		
+	Netscape::
+		SPKI
+			.new([String (PEM)]) => self
+			.to_pem => String (PEM)
+			.to_str => String
+			.public_key => PKey
+			.public_key=(PKey) => PKey
+			.sign(PKey, Digest) => self
+			.verify(PKey) => true|false
+			.challenge => String
+			.challenge(String) => String
+
+	PKey::
+		DSA
+			.new([keylen | String (PEM)]) => self
+			.public? => true|false
+			.private? => true|false
+			.to_str => String
+			.export([Cipher [, Password]]) => String (PEM)
+			.to_pem <=> .export
+			.public_key => pub.key from key
+			.to_der => String (DER)
+			.sign(Digest, String) => String
+			.sign_digest(String (dig)) => String
+			.verify(Digest, String (data), String (sig)) => true|false
+			.verify_digest(String (dig), String (sig)) => true|false
+			
+		RSA
+			.new([keylen | String (PEM)]) => self
+			.public? => true|false
+			.private? => true|false
+			.to_str => String
+			.export([Cipher [, Password]]) => String (PEM)
+			.to_pem <=> .export
+			.public_key => pub.key from key
+			.public_encrypt(String) => String
+			.public_decrypr(String) => String
+			.private_ecrypt(String) => String
+			.private_decrypt(String) => String
+			.to_der => String (DER)
+			.sign(Digest, String) => String
+			.verify(Digest, String (data), String (sig)) => true|false
+
+	X509::
+		Attribute
+		Certificate
+		CRL
+		Extension
+		ExtensionFactory
+		Name
+		Request
+		Revoked
+		Store
+--------------------------------------------------
+
+[Examples]
+	There are some braindead in 'test' directory
+
+[Note]
+	All code is under development - API/method names can change
+	All feedback, bug reports, requests are welcomed!
+
+
+	Enjoy!
+
+		Michal <m.rokos@sh.cvut.cz>
+
