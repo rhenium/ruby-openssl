@@ -84,6 +84,7 @@ VALUE mPKey;
 VALUE mNetscape;
 VALUE mSSL;
 VALUE mPKCS7;
+VALUE mRandom;
 
 /*
  * OSSL library init
@@ -112,6 +113,7 @@ Init_openssl()
 	mCipher = rb_define_module_under(mOSSL, "Cipher");
 	mSSL = rb_define_module_under(mOSSL, "SSL");
 	mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
+	mRandom = rb_define_module_under(mOSSL, "Random");
 	
 	/*
 	 * Constants
@@ -134,7 +136,7 @@ Init_openssl()
 	Init_ossl_x509attr(mX509);
 	Init_ossl_spki(mNetscape);
 	Init_ossl_cipher(mCipher);
-	Init_ossl_rand(mOSSL);
+	Init_ossl_rand(mRandom);
 	Init_ossl_pkey(mPKey);
 	Init_ssl(mSSL);
 	Init_pkcs7(mPKCS7);

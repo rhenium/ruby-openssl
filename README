@@ -74,7 +74,7 @@ Hynek Rostinsky <Hynek.Rostinsky@foresta.cz> - Windows platform fixes (strptime 
 	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_*method :-))
 
 --------------------------------------------------
--> XXX	- XXX is return value
+=> XXX	- XXX is return value
 A <=> B	- A is an alias to B
 [XXX]	- argument XXX is optional
 A|B	- argument can be A or B
@@ -83,19 +83,35 @@ cXXX	- XXX is defined as constant
 fXXX	- XXX is Fixnum
 hXXX	- XXX is Hash
 nXXX	- XXX is Number (Fixnum or Bignum)
-oXXX	- argument.kind_of?(XXX) -> true
+oXXX	- argument.kind_of?(XXX) => true
 sXXX	- XXX is String
 tXXX	- XXX is instance of Time
 --------------------------------------------------
 Integer
-	.to_bn() -> BN.new
+	.to_bn() => BN.new
 	
 OpenSSL::
-	.seed(sSeed) -> sSeed
-	.load_random_file(sFilename) -> bResult
-	.write_random_file(sFilename) -> bResult
+	.seed(sSeed) => sSeed
+	.load_random_file(sFilename) => bResult
+	.write_random_file(sFilename) => bResult
 
 	BN - Doc TODO!
+		::new(...)
+		--- PRIVATE ----------------------
+		.initialize(arg, type="dec")
+		.from_integer(arg, type="dec")
+		.from_string(arg, type="dec")
+		.from_bn(arg, dummy=nil)
+		.from_s_bin(sBIN)
+		.from_s_mpi(sMPI)
+		.from_s_dec(sDEC)
+		.from_s_hex(sHEX)
+		--- PUBLIC -----------------------
+		.to_s(type="dec") => sDEC
+		.to_s_bin => sBIN
+		.to_s_mpi => sMPI
+		.to_s_dec => sDEC
+		.to_s_hex => sHEX
 
 	BNError
 	
@@ -111,13 +127,13 @@ OpenSSL::
 		RC2 (ECB, CBC, BIT40:CBC, BIT64:CBC, CFB, OFB)
 		RC4 (nil, UNSPEC, BIT40)
 		RC5 (ECB, CFB, OFB, CBC)
-			.new([cMode|cType] [,cType|cMode])
+			::new([cMode|cType] [,cType|cMode])
 			----------------------------------
-			.encrypt(sPassword [, sInitVector]) -> self
-			.decrypt(sPassword [, sInitVector]) -> self
-			.update(sData) -> s(En|De)crypted
+			.encrypt(sPassword [, sInitVector]) => self
+			.decrypt(sPassword [, sInitVector]) => self
+			.update(sData) => s(En|De)crypted
 			.<< <=> .update
-			.cipher() -> s(En|De)cryptedFinal
+			.cipher() => s(En|De)cryptedFinal
 			
 		CipherError
 		
@@ -125,8 +141,8 @@ OpenSSL::
 		.new(sFilename) - dispatches .load
 		.load(sFilename)
 		----------------------------------
-		.get_value(sSection|nil, sKey) -> sValue
-		.get_section(sSection) -> hSection
+		.get_value(sSection|nil, sKey) => sValue
+		.get_section(sSection) => hSection
 		
 	ConfigError
 			
@@ -142,22 +158,22 @@ OpenSSL::
 		DSS1
 			.new([sData])
 			----------------------------------
-			.update(sData) -> self
+			.update(sData) => self
 			.<< <=> .update
-			.digest() -> sDigestFinal
-			.hexdigest() -> sHEXDigestFinal
+			.digest() => sDigestFinal
+			.hexdigest() => sHEXDigestFinal
 			.inspect <=> .hexdigest
 			.to_str <=> .hexdigest
 			
 		DigestError
 
 	HMAC
-		.new(sKey, oDigest::ANY) -> self
+		.new(sKey, oDigest::ANY) => self
 		----------------------------------
-		.update(sData) -> self
+		.update(sData) => self
 		.<< <=> .update
-		.hmac() -> sHMACFinal
-		.hexhmac() -> sHEXHMACFinal
+		.hmac() => sHMACFinal
+		.hexhmac() => sHEXHMACFinal
 		.inspect <=> .hexhmac
 		.to_str <=> .hexhmac
 		
@@ -167,14 +183,14 @@ OpenSSL::
 		SPKI
 			.new([sPEM])
 			----------------------------------
-			.to_pem() -> sPEM
-			.to_str() -> sHumanReadable
-			.public_key() -> oPKey::ANY
-			.public_key=(oPKey::ANY) -> oPKey::ANY
-			.sign(oPKey::ANY, oDigest::ANY) -> self
-			.verify(oPKey::ANY) -> bResult
-			.challenge() -> sChallenge
-			.challenge=(sChallenge) -> sChallenge
+			.to_pem() => sPEM
+			.to_str() => sHumanReadable
+			.public_key() => oPKey::ANY
+			.public_key=(oPKey::ANY) => oPKey::ANY
+			.sign(oPKey::ANY, oDigest::ANY) => self
+			.verify(oPKey::ANY) => bResult
+			.challenge() => sChallenge
+			.challenge=(sChallenge) => sChallenge
 			
 		SPKIError
 
@@ -185,23 +201,23 @@ OpenSSL::
 		PKCS7
 			.new(cType|sPEM)
 			----------------------------------
-			.cipher=(oCipher::ANY) -> oCipher::ANY
-			.add_signer(oPKCS7::Signer, oPKey::ANY) -> self
-			.signers() -> Array of PKCS7::Signer
-			.add_recipient(oX509::Certificate) -> self
-			.add_certificate(oX509::Certificate) -> self
-			.add_crl(oX509::CRL) -> self
-			.add_data(sData [, bDetached]) -> self
-			.verify_data(oX509::Store [, sDetachedData]) -> bResult, yields PKCS7::Signer
-			.decode_data(oPKey::ANY, oX509::Certificate) -> sData
-			.to_pem() -> sPEM
+			.cipher=(oCipher::ANY) => oCipher::ANY
+			.add_signer(oPKCS7::Signer, oPKey::ANY) => self
+			.signers() => Array of PKCS7::Signer
+			.add_recipient(oX509::Certificate) => self
+			.add_certificate(oX509::Certificate) => self
+			.add_crl(oX509::CRL) => self
+			.add_data(sData [, bDetached]) => self
+			.verify_data(oX509::Store [, sDetachedData]) => bResult, yields PKCS7::Signer
+			.decode_data(oPKey::ANY, oX509::Certificate) => sData
+			.to_pem() => sPEM
 
 		Signer
 			.new(oX509::Certificate, oPKey::ANY, oDigest::ANY)
 			----------------------------------
-			.name() -> X509::Name
-			.serial() -> fSerial
-			.signed_time() -> tTime
+			.name() => X509::Name
+			.serial() => fSerial
+			.signed_time() => tTime
 
 		PKCS7Error
 		
@@ -214,17 +230,17 @@ OpenSSL::
 			.generate(fKeyLen) - yields |p,n|
 			.new_from_fixnum <=> generate
 			----------------------------------
-			.public?() -> bResult
-			.private?() -> bResult
-			.to_str() -> sHumanReadable
-			.export([oCipher::ANY [, sPassword]]) -> sPEM
+			.public?() => bResult
+			.private?() => bResult
+			.to_str() => sHumanReadable
+			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
-			.public_key() -> oPKey::ANY
-			.to_der() -> sDER
-			.sign(oDigest::ANY, sData) -> sSig
-			.sign_digest(sDigest) -> sSig
-			.verify(oDigest::ANY, sData, sSig) -> bResult
-			.verify_digest(sDigest, sSig) -> bResult
+			.public_key() => oPKey::ANY
+			.to_der() => sDER
+			.sign(oDigest::ANY, sData) => sSig
+			.sign_digest(sDigest) => sSig
+			.verify(oDigest::ANY, sData, sSig) => bResult
+			.verify_digest(sDigest, sSig) => bResult
 
 		DSAError
 			
@@ -234,29 +250,29 @@ OpenSSL::
 			.generate(fKeyLen) - yields |p,n|
 			.new_from_fixnum <=> generate
 			----------------------------------
-			.public?() -> bResult
-			.private?() -> bResult
-			.to_str() -> sHumanReadable
-			.export([oCipher::ANY [, sPassword]]) -> sPEM
+			.public?() => bResult
+			.private?() => bResult
+			.to_str() => sHumanReadable
+			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
-			.public_key() -> oPKey::ANY
-			.public_encrypt(sData) -> sEnc
-			.public_decrypt(sEnrypted) -> sData
-			.private_encrypt(sData) -> sEnc
-			.private_decrypt(sEncrypted) -> sData
-			.to_der() -> sDER
-			.sign(oDigest::ANY, sData) -> sSig
-			.verify(oDigest::ANY, sData, sSig) -> bResult
+			.public_key() => oPKey::ANY
+			.public_encrypt(sData) => sEnc
+			.public_decrypt(sEnrypted) => sData
+			.private_encrypt(sData) => sEnc
+			.private_decrypt(sEncrypted) => sData
+			.to_der() => sDER
+			.sign(oDigest::ANY, sData) => sSig
+			.verify(oDigest::ANY, sData, sSig) => bResult
 
 		RSAError
 
 	Random
 		.new is default
 		----------------------------------
-		.seed(sSeed) -> sSeed
-		.load_random_file(sFilename) -> bResult
-		.write_random_file(sFilename) -> bResult
-		.random_bytes(fLen) -> sRandom
+		.seed(sSeed) => sSeed
+		.load_random_file(sFilename) => bResult
+		.write_random_file(sFilename) => bResult
+		.random_bytes(fLen) => sRandom
 	
 	RandomError
 	
@@ -285,29 +301,29 @@ OpenSSL::
 		Extension - Doc TODO!
 			.new is DISABLED!
 			----------------------------------
-			.to_str -> string as "oid = critical, value"
-			.to_a -> ary as ["oid", "value", critical], critical as bool
-			.to_h -> hash as {"oid"=>"oid", "value"=>"val", "critical"=>bool}
+			.to_str => string as "oid = critical, value"
+			.to_a => ary as ["oid", "value", critical], critical as bool
+			.to_h => hash as {"oid"=>"oid", "value"=>"val", "critical"=>bool}
 			
 		ExtensionFactory - Doc TODO!
 			.new(...)
 			----------------------------------
 			.create_extension(*arg)
 			.create_ext_from_string(str)
-			.create_ext_from_ary(ary) -> X509::Extension, ary as ["oid", "value", critical], critical as bool
+			.create_ext_from_ary(ary) => X509::Extension, ary as ["oid", "value", critical], critical as bool
 			.create_ext_from_hash(hash)
 			
 		ExtensionError
 		
 		Name - Doc TODO!
 			.new(arg) dispatches "new_from_#{arg.type.name.downcase}"
-			.new_from_string(str) -> self, str as "/A=B/C=D/E=F"
-			.new_from_array(ary) -> self, ary as [["A","B"],["C","D"],["E","F"]]
-			.new_from_hash(hash) -> self, hash as {"A"=>"B","C"=>"D","E"=>"F"}
+			.new_from_string(str) => self, str as "/A=B/C=D/E=F"
+			.new_from_array(ary) => self, ary as [["A","B"],["C","D"],["E","F"]]
+			.new_from_hash(hash) => self, hash as {"A"=>"B","C"=>"D","E"=>"F"}
 			----------------------------------
-			.to_str -> str as "/A=B/C=D/E=F"
-			.to_a -> ary as [["A","B"],["C","D"],["E","F"]]
-			.to_h -> hash as {"A"=>"B","C"=>"D","E"=>"F"}
+			.to_str => str as "/A=B/C=D/E=F"
+			.to_a => ary as [["A","B"],["C","D"],["E","F"]]
+			.to_h => hash as {"A"=>"B","C"=>"D","E"=>"F"}
 		
 		NameError
 		

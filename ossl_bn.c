@@ -678,10 +678,10 @@ Init_bn(VALUE module)
 
 	rb_define_singleton_method(cBN, "new", ossl_bn_s_new, -1);
 	
-	rb_define_private_method(cBN, "from_bin", ossl_bn_from_bin, 1);
-	rb_define_private_method(cBN, "from_mpi", ossl_bn_from_mpi, 1);
-	rb_define_private_method(cBN, "from_dec", ossl_bn_from_dec, 1);
-	rb_define_private_method(cBN, "from_hex", ossl_bn_from_hex, 1);
+	rb_define_private_method(cBN, "from_s_bin", ossl_bn_from_bin, 1);
+	rb_define_private_method(cBN, "from_s_mpi", ossl_bn_from_mpi, 1);
+	rb_define_private_method(cBN, "from_s_dec", ossl_bn_from_dec, 1);
+	rb_define_private_method(cBN, "from_s_hex", ossl_bn_from_hex, 1);
 	
 	rb_define_method(cBN, "to_s_bin", ossl_bn_to_bin, 0);
 	rb_define_method(cBN, "to_s_mpi", ossl_bn_to_mpi, 0);

@@ -266,8 +266,7 @@ end # defined? RSA
     	return if arg.nil?
 	t = arg.class
 	while t
-	  t.name.downcase =~ /(\S*::)*(\S+)/
-	  method = "from_#{$2}".intern
+	  method = "from_#{t.name.downcase.split("::").last}".intern
 	  return send(method, arg, type) if respond_to?(method, true)
 	  t = t.superclass
 	end
@@ -283,7 +282,7 @@ end # defined? RSA
     end
 
     def from_string(arg, type="dec")
-      send("from_#{type.downcase}", arg)
+      send("from_s_#{type.downcase}", arg)
     end
 
     private :from_bn, :from_integer, :from_string

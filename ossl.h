@@ -51,6 +51,7 @@ extern VALUE mNetscape;
 extern VALUE mCipher;
 extern VALUE mSSL;
 extern VALUE mPKCS7;
+extern VALUE mRandom;
 
 /*
  * Classes
@@ -74,7 +75,6 @@ extern VALUE cX509Store;
 extern VALUE eX509StoreError;
 extern VALUE cSPKI;
 extern VALUE eSPKIError;
-extern VALUE cRandom;
 extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
