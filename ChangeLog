@@ -1,3 +1,6 @@
+Sat, 14 Jun 2003 13:31:10 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: disable password callback.
+
 Sat, 14 Jun 2003 12:14:26 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509cert.c: X509::Certificate#inspect.
 

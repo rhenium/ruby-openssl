@@ -67,7 +67,9 @@ if scheme == "https"
 
   sock.connect             # start ssl session.
   STDERR.puts "SSLSocket connected."
-  STDERR.puts cert.to_str if cert = sock.peer_cert
+  if cert = sock.peer_cert
+    STDERR.puts cert.inspect
+  end
 end
 
 # I expect most servers accept the absoluteURI in requests.

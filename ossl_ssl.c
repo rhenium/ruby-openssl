@@ -36,7 +36,6 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_mode(o,v) rb_iv_set((o),"@verify_mode",(v))
 #define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
-#define ossl_sslctx_set_passwd_cb(o,v)   rb_iv_set((o),"@passwd_callback",(v))
 #define ossl_sslctx_set_options(o,v)     rb_iv_set((o),"@options",(v))
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
@@ -48,13 +47,12 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
-#define ossl_sslctx_get_passwd_cb(o)     rb_iv_get((o),"@passwd_callback")
 #define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
 
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "ca_cert", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
-    "verify_callback", "passwd_callback",  "options",
+    "verify_callback", "options",
 }; 
 
 struct {
@@ -177,6 +175,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     return preverify_ok;
 }
 
+#if 0 /* enable if use SSL_CTX_user_PrivateKey_file */
 static VALUE
 ossl_ssl_call_passwd_cb(VALUE cb)
 {
@@ -200,6 +199,7 @@ ossl_ssl_passwd_cb(char *buf, int size, int rwflag, void *cb)
     buf[size-1] = 0;
     return strlen(buf);
 }
+#endif
 
 static VALUE
 ossl_sslctx_setup(VALUE self)
@@ -214,11 +214,13 @@ ossl_sslctx_setup(VALUE self)
     if(OBJ_FROZEN(self)) return Qnil;
     Data_Get_Struct(self, SSL_CTX, ctx);
 
+#if 0 /* enable if use SSL_CTX_user_PrivateKey_file */
     val = ossl_sslctx_get_passwd_cb(self);
     if(!NIL_P(val)){
         SSL_CTX_set_default_passwd_cb_userdata(ctx, val);
         SSL_CTX_set_default_passwd_cb(ctx, ossl_ssl_passwd_cb);
     }
+#endif
 
     /* private key may be bundled in certificate file. */
     val = ossl_sslctx_get_cert(self);
