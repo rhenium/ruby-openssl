@@ -1,3 +1,6 @@
+Tue, 02 Jul 2003 00:37:58 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/c_rehash.rb: c_rehash written in pure ruby.
+
 Tue, 01 Jul 2003 17:28:29 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: PKCS7#singner renamed to PKCS7#signers.
 
