@@ -41,14 +41,14 @@ if defined? DSA
       unless private?
 	raise OpenSSL::PKey::DSAError, "Cannot sign with public key!"
       end
-      unless digest.kind_of? OpenSSL::Digest::ANY
+      unless digest.kind_of? OpenSSL::Digest::Digest
 	raise TypeError, "digest alg needed! (got #{digest.class})"
       end
       sign_digest digest.update(data.to_s).digest
     end # sign
       
     def verify(digest, signature, data)
-      unless digest.kind_of? OpenSSL::Digest::ANY
+      unless digest.kind_of? OpenSSL::Digest::Digest
 	raise TypeError, "digest alg needed! (got #{digest.class})"
       end
       unless signature.class == String
@@ -79,14 +79,14 @@ if defined? RSA
       unless self.private?
 	raise OpenSSL::PKey::RSAError, "Cannot sign with public key!"
       end
-      unless digest.kind_of? OpenSSL::Digest::ANY
+      unless digest.kind_of? OpenSSL::Digest::Digest
 	raise TypeError, "digest alg needed! (got #{digest.class})"
       end
       private_encrypt digest.update(data.to_s).digest
     end # sign
       
     def verify(digest, signature, data)
-      unless digest.kind_of? OpenSSL::Digest::ANY
+      unless digest.kind_of? OpenSSL::Digest::Digest
 	raise TypeError, "digest alg needed! (got #{digest.class})"
       end
       unless signature.class == String

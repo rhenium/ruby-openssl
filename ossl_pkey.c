@@ -109,7 +109,7 @@ static VALUE
 ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	if (klass == cPKey)
-		rb_raise(rb_eNotImpError, "cannot do PKey::ANY.new - it is an abstract class");
+		rb_raise(rb_eNotImpError, "cannot do PKey::PKey.new - it is an abstract class");
 	
 	return Qnil;
 }
@@ -124,7 +124,7 @@ Init_ossl_pkey(VALUE module)
 	
 	ePKeyError = rb_define_class_under(module, "PKeyError", eOSSLError);
 
-	cPKey = rb_define_class_under(module, "ANY", rb_cObject);
+	cPKey = rb_define_class_under(module, "PKey", rb_cObject);
 	rb_define_singleton_method(cPKey, "new", ossl_pkey_s_new, -1);
 	
 	/*

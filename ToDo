@@ -7,7 +7,7 @@ OpenSSL::
   * Implement Ruby 1.8 style of creating instances (see StringIO)
   * Detailed object inspection (ie. all params for RSA)
   * How to support HW crypto engines?
-  * Rename ANY classes to uniq ones
+  [DONE] Rename ANY classes to uniq ones
   * Support more detailed requies (like: require 'openssl/crypto', require 'openssl/ssl')?
   * WRITE TEST CASES!
   * Use RDoc and write documentation to sources?
@@ -21,6 +21,7 @@ OpenSSL::
     [DONE] Speed up math. ops by the Thread uniq BN_CTX [No - 1 global is OK (Ruby is not thread safe => Don't be afraid of this one)]
     [DONE] Convert BN#to_s to Ruby-like behaviour
     * introduce BN#pack for MPI, BIN (and call it from BN#to_s and BN#initialize)?
+    * DON'T FORGET TO ADD SUPPORT FOR BIN, AND MPI BACK!
     
   Cipher::
     * Use Factory (Cipher.new("DES_EDE3_CBC"))?
@@ -29,7 +30,7 @@ OpenSSL::
     * Port it to new (0.9.7) interface
     
   Digest::
-    * Use Factory (Digest.new("SHA1"))?
+    [DONE] Use Factory (Digest.new("SHA1"))? [Used exactly like this: OpenSSL::Digest::Digest.new("SHA1")]
     
   HMAC::
     * Move it to Digest module?
