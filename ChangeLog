@@ -3,7 +3,11 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
-Sun, 13 Oct 2002 01:46:20 -9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Tue, 15 Oct 2002 17:27:26 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: pass the verify callback Proc through the SSL
+	  extention data.
+
+Sun, 13 Oct 2002 01:46:20 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: fixed around verify callback invocation.
 	* net/protocols.rb: improved for new version.
 	* net/https.rb: ditto.

@@ -128,12 +128,7 @@ ssl_ctx_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-/* for rb_rescue in ssl_verify_callback. see below */
-static VALUE
-ssl_false(VALUE dummy)
-{
-    return Qfalse;
-}
+static int ssl_ex_cb_idx;
 
 static VALUE
 ssl_call_verify_cb(VALUE args)
@@ -146,32 +141,44 @@ ssl_call_verify_cb(VALUE args)
     return rb_funcall(cb, rb_intern("call"), 2, ok, store);
 }
 
-static VALUE ssl_curr_verify_cb = Qnil;
+static VALUE
+ssl_verify_failure(VALUE dummy)
+{
+    char *msg;
+
+    msg = StringValuePtr(ruby_errinfo);
+    rb_warn("verify callback error: %s", msg);
+
+    return Qfalse;
+}
 
 static int
-ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
+ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
-    VALUE args, cb;
+    int verify_ok = preverify_ok;
+    VALUE args, cb, result;
+    SSL *ssl;
 
-    /* the block is passed by ssl_connect() or ssl_accept() */
-    if (!NIL_P(cb = ssl_curr_verify_cb)){
-        ssl_curr_verify_cb = Qnil;
+    ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+    cb = SSL_get_ex_data(ssl, ssl_ex_cb_idx);
+    if(!NIL_P(cb)){
         args = rb_ary_new2(3);
         rb_ary_push(args, cb);
-        rb_ary_push(args, ok ? Qtrue : Qfalse);
+        rb_ary_push(args, preverify_ok ? Qtrue : Qfalse);
         rb_ary_push(args, ossl_x509store_new(ctx));
-        if(rb_rescue(ssl_call_verify_cb, args, ssl_false, Qnil) == Qtrue){
+	result = rb_rescue(ssl_call_verify_cb, args, ssl_verify_failure, Qnil);
+        if(result == Qtrue){
             X509_STORE_CTX_set_error(ctx, X509_V_OK);
-            ok = 1;
+            verify_ok = 1;
         }
         else{
             if(X509_STORE_CTX_get_error(ctx) == X509_V_OK)
                 X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-            ok = 0;
+            verify_ok = 0;
         }
     }
     
-    return ok;
+    return verify_ok;
 }
 
 static VALUE
@@ -429,8 +436,8 @@ ssl_setup(VALUE self)
 
         io = ssl_get_io(self);
         GetOpenFile(io, fptr);
-        /* rb_io_check_readable(fptr); */
-        /* rb_io_check_writable(fptr); */
+        rb_io_check_readable(fptr);
+        rb_io_check_writable(fptr);
         SSL_set_fd(p->ssl, fileno(fptr->f));
     }
 
@@ -441,10 +448,12 @@ static VALUE
 ssl_connect(VALUE self)
 {
     ssl_st *p;
+    VALUE cb;
 
     ssl_setup(self);
     Data_Get_Struct(self, ssl_st, p);
-    ssl_curr_verify_cb = ssl_ctx_get_verify_cb(ssl_get_ctx(self));
+    cb = ssl_ctx_get_verify_cb(ssl_get_ctx(self));
+    SSL_set_ex_data(p->ssl, ssl_ex_cb_idx, cb);
     if(SSL_connect(p->ssl) <= 0)
         ossl_raise(eSSLError, "SSL_connect:");
 
@@ -455,10 +464,12 @@ static VALUE
 ssl_accept(VALUE self)
 {
     ssl_st *p;
+    VALUE cb;
 
     ssl_setup(self);
     Data_Get_Struct(self, ssl_st, p);
-    ssl_curr_verify_cb = ssl_ctx_get_verify_cb(ssl_get_ctx(self));
+    cb = ssl_ctx_get_verify_cb(ssl_get_ctx(self));
+    SSL_set_ex_data(p->ssl, ssl_ex_cb_idx, cb);
     if(SSL_accept(p->ssl) <= 0)
         ossl_raise(eSSLError, "SSL_accept:");
 
@@ -631,9 +642,9 @@ Init_ossl_ssl()
 {
     int i;
 
-    mSSL = rb_define_module_under(mOSSL, "SSL");
+    ssl_ex_cb_idx = SSL_get_ex_new_index(0, "ssl_ex_cb_idx", NULL, NULL, NULL);
 
-    /* class SSLError */
+    mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
 
     /* class SSLContext */
