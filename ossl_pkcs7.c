@@ -299,7 +299,7 @@ ossl_pkcs7_copy(VALUE self, VALUE other)
 static int
 ossl_pkcs7_sym2typeid(VALUE sym)
 {
-    int i, ret;
+    int i, ret = Qnil;
     char *s;
 
     static struct {

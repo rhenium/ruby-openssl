@@ -25,7 +25,7 @@ extern VALUE cX509Attr;
 extern VALUE eX509AttrError;
 
 VALUE ossl_x509attr_new(X509_ATTRIBUTE *);
-X509_ATTRIBUTE *ossl_x509attr_get_X509_ATTRIBUTE(VALUE);
+X509_ATTRIBUTE *DupX509AttrPtr(VALUE);
 void Init_ossl_x509attr(void);
 
 /*
@@ -80,7 +80,7 @@ extern VALUE cX509Req;
 extern VALUE eX509ReqError;
 
 VALUE ossl_x509req_new(X509_REQ *);
-X509_REQ *ossl_x509req_get_X509_REQ(VALUE);
+X509_REQ *DupX509ReqPtr(VALUE);
 void Init_ossl_x509req(void);
 
 /*
@@ -90,7 +90,7 @@ extern VALUE cX509Rev;
 extern VALUE eX509RevError;
 
 VALUE ossl_x509revoked_new(X509_REVOKED *);
-X509_REVOKED *ossl_x509revoked_get_X509_REVOKED(VALUE);
+X509_REVOKED *DupX509RevokedPtr(VALUE);
 void Init_ossl_x509revoked(void);
 
 /*

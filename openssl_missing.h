@@ -19,39 +19,39 @@ extern "C" {
  * These functions are not included in headers of OPENSSL <= 0.9.6b
  */
 
-#if !defined(HAVE_PEM_READ_BIO_DSAPUBLICKEY)
+#if !defined(PEM_read_bio_DSAPublicKey)
 # define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
         (char *(*)())d2i_DSAPublicKey,PEM_STRING_DSA_PUBLIC,bp,(char **)x,cb,u)
 #endif
 
-#if !defined(HAVE_PEM_WRITE_BIO_DSAPUBLICKEY)
+#if !defined(PEM_write_bio_DSAPublicKey)
 # define PEM_write_bio_DSAPublicKey(bp,x) \
 	PEM_ASN1_write_bio((int (*)())i2d_DSAPublicKey,\
 		PEM_STRING_DSA_PUBLIC,\
 		bp,(char *)x, NULL, NULL, 0, NULL, NULL)
 #endif
 
-#if !defined(HAVE_DSAPRIVATEKEY_DUP)
+#if !defined(DSAPrivateKey_dup)
 # define DSAPrivateKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPrivateKey, \
 	(char *(*)())d2i_DSAPrivateKey,(char *)dsa)
 #endif
 
-#if !defined(HAVE_DSAPUBLICKEY_DUP)
+#if !defined(DSAPublicKey_dup)
 # define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPublicKey, \
 	(char *(*)())d2i_DSAPublicKey,(char *)dsa)
 #endif
 
-#if !defined(HAVE_X509_REVOKED_DUP)
+#if !defined(X509_REVOKED_dup)
 # define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((int (*)())i2d_X509_REVOKED, \
 	(char *(*)())d2i_X509_REVOKED, (char *)rev)
 #endif
 
-#if !defined(HAVE_PKCS7_SIGNER_INFO_DUP)
+#if !defined(PKCS7_SIGNER_INFO_dup)
 #  define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \
 	(char *(*)())d2i_PKCS7_SIGNER_INFO, (char *)si)
 #endif
 
-#if !defined(HAVE_PKCS7_RECIP_INFO_DUP)
+#if !defined(PKCS7_RECIP_INFO_dup)
 #  define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
 	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
 #endif
@@ -63,11 +63,11 @@ EVP_MD_CTX *EVP_MD_CTX_create(void);
 int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx);
 void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
 
-#if !defined(HAVE_EVP_CIPHER_NAME)
+#if !defined(EVP_CIPHER_name)
 #  define EVP_CIPHER_name(e) OBJ_nid2sn(EVP_CIPHER_nid(e))
 #endif
 
-#if !defined(HAVE_EVP_MD_NAME)
+#if !defined(EVP_MD_name)
 #  define EVP_MD_name(e) OBJ_nid2sn(EVP_MD_type(e))
 #endif
 
@@ -75,11 +75,11 @@ void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
 void HMAC_CTX_init(HMAC_CTX *ctx);
 void HMAC_CTX_cleanup(HMAC_CTX *ctx);
 
-#if !defined(HAVE_PKCS7_IS_DETACHED)
+#if !defined(PKCS7_is_detached)
 #  define PKCS7_is_detached(p7) (PKCS7_type_is_signed(p7) && PKCS7_get_detached(p7))
 #endif
 
-#if !defined(HAVE_PKCS7_TYPE_IS_ENCRYPTED)
+#if !defined(PKCS7_type_is_encrypted)
 #  define PKCS7_type_is_encrypted(a) (OBJ_obj2nid((a)->type) == NID_pkcs7_encrypted)
 #endif
 
@@ -92,29 +92,14 @@ int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_
 int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
 char *CONF_get1_default_config_file(void);
 
-#if !defined(HAVE_X509_V_FLAG_CRL_CHECK)
-#  define X509_V_FLAG_CRL_CHECK 0x4
-#endif
-
-#if !defined(HAVE_X509_V_FLAG_CRL_CHECK_ALL)
-#  define X509_V_FLAG_CRL_CHECK_ALL 0x8
-#endif
-
-#if !defined(HAVE_X509_PURPOSE_OCSP_HELPER)
-#  define X509_PURPOSE_OCSP_HELPER 8
-#endif
-
-#if !defined(HAVE_X509_TRUST_OCSP_SIGN)
-#  define X509_TRUST_OCSP_SIGN 6
-#endif
-
-#if !defined(TRUST_X509_OCSP_REQUEST)
-#  define X509_TRUST_OCSP_REQUEST 7
+#if !defined(HAVE_PEM_DEF_CALLBACK)
+int PEM_def_callback(char *buf, int num, int w, void *key);
 #endif
 
 #if defined(__cplusplus)
 }
 #endif
+
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
 

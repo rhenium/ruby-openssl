@@ -12,10 +12,12 @@
 #if !defined(_OSSL_OCSP_H_)
 #define _OSSL_OCSP_H_
 
+#ifdef USE_OCSP
 extern VALUE mOCSP;
 extern VALUE cOPCSReq;
 extern VALUE cOPCSRes;
 extern VALUE cOPCSBasicRes;
+#endif
 
 void Init_ossl_ocsp(void);
 

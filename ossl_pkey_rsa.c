@@ -423,6 +423,7 @@ ossl_rsa_to_public_key(VALUE self)
     return obj;
 }
 
+#if 0
 /*
  * TODO, FIXME
  * Find some good way how to specify type
@@ -461,7 +462,6 @@ ossl_rsa_sign(VALUE self, VALUE data)
     return str;
 }
 
-#if 0
 static VALUE
 ossl_rsa_verify(VALUE self, VALUE sig, VALUE data)
 {

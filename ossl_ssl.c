@@ -656,7 +656,7 @@ Init_ossl_ssl()
      * ossl_ssl_def_const(OP_DONT_INSERT_EMPTY_FRAGMENTS);
      */
     ossl_ssl_def_const(OP_ALL);
-#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+#if SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
     ossl_ssl_def_const(OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 #endif
 #ifdef SSL_OP_SINGLE_ECDH_USE
@@ -664,7 +664,7 @@ Init_ossl_ssl()
 #endif
     ossl_ssl_def_const(OP_SINGLE_DH_USE);
     ossl_ssl_def_const(OP_EPHEMERAL_RSA);
-#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+#if SSL_OP_CIPHER_SERVER_PREFERENCE
     ossl_ssl_def_const(OP_CIPHER_SERVER_PREFERENCE);
 #endif
     ossl_ssl_def_const(OP_TLS_ROLLBACK_BUG);

@@ -11,7 +11,7 @@
  */
 #include "ossl.h"
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+#ifdef USE_OCSP
 
 #define WrapOCSPReq(klass, obj, req) do { \
     if(!req) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \

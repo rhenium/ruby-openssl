@@ -47,35 +47,29 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
 	SafeStringValue(path);
-	filename = RSTRING(path)->ptr;
+	filename = BUF_strdup(RSTRING(path)->ptr);
     }
     else {
 	if (!(filename = CONF_get1_default_config_file())) {
 	    ossl_raise(eConfigError, NULL);
 	}
     }
-/*
- * FIXME
- * Does't work for Windows?
-#if defined(NT) || defined(_WIN32)
-	if (!(conf = NCONF_new(NCONF_WIN32()))){
-#else
-	if (!(conf = NCONF_new(NCONF_default()))){
-#endif
- */
     if (!(conf = NCONF_new(NULL))) {
+	OPENSSL_free(filename);
 	ossl_raise(eConfigError, NULL);
     }
     OSSL_Debug("Loading file: %s", filename);
 
     if (!NCONF_load(conf, filename, &err_line)) {
+	OPENSSL_free(filename);
 	if (err_line <= 0) {
 	    ossl_raise(eConfigError, "wrong config file (%s)", filename);
 	} else {
-	    ossl_raise(eConfigError, "error on line %ld in config file \"%s\"", \
+	    ossl_raise(eConfigError, "error on line %ld in config file \"%s\"",
 		       err_line, filename);
 	}
     }
+    OPENSSL_free(filename);
     WrapConfig(klass, obj, conf);
     
     return obj;

@@ -56,7 +56,7 @@ ossl_x509req_new(X509_REQ *req)
 }
 
 X509_REQ *
-ossl_x509req_get_X509_REQ(VALUE obj)
+DupX509ReqPtr(VALUE obj)
 {
     X509_REQ *req, *new;
 
@@ -395,7 +395,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     req->req_info->attributes = NULL;
     for (i=0;i<RARRAY(ary)->len; i++) {
 	item = RARRAY(ary)->ptr[i];
-	attr = ossl_x509attr_get_X509_ATTRIBUTE(item);
+	attr = DupX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
 	    ossl_raise(eX509ReqError, NULL);
 	}
@@ -409,7 +409,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
     X509_REQ *req;
 
     GetX509Req(self, req);
-    if (!X509_REQ_add1_attr(req, ossl_x509attr_get_X509_ATTRIBUTE(attr))) {
+    if (!X509_REQ_add1_attr(req, DupX509AttrPtr(attr))) {
 	ossl_raise(eX509ReqError, NULL);
     }
 

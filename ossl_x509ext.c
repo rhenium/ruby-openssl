@@ -146,7 +146,7 @@ ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
     X509V3_CTX *ctx;
 
     GetX509ExtFactory(self, ctx);
-    ctx->subject_req = ossl_x509req_get_X509_REQ(req);
+    ctx->subject_req = DupX509ReqPtr(req);
 
     return req;
 }

@@ -66,7 +66,7 @@ EVP_MD_CTX *EVP_MD_CTX_create(void)
 #if !defined(HAVE_EVP_MD_CTX_CLEANUP)
 int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
 {
-#warning FIXME!!!
+    /* FIXME!!! */
     memset(ctx, '\0', sizeof *ctx);
 
     return 1;
@@ -136,25 +136,25 @@ int X509_CRL_sort(X509_CRL *c)
     /* sort the data so it will be written in serial
      * number order */
     sk_X509_REVOKED_sort(c->crl->revoked);
-    for (i=0; i<sk_X509_REVOKED_num(c->crl->revoked); i++)
-	{
+    for (i=0; i<sk_X509_REVOKED_num(c->crl->revoked); i++){
 	r=sk_X509_REVOKED_value(c->crl->revoked,i);
 	r->sequence=i;
-	}
+    }
     return 1;
 }
 #endif
 
-#if !defined(X509_CRL_ADD0_REVOKED)
-static int OSSL_X509_REVOKED_cmp(const X509_REVOKED * const *a,
-	const X509_REVOKED * const *b)
+#if !defined(HAVE_X509_CRL_ADD0_REVOKED)
+static int
+OSSL_X509_REVOKED_cmp(const X509_REVOKED * const *a, const X509_REVOKED * const *b)
 {
     return(ASN1_STRING_cmp(
 		(ASN1_STRING *)(*a)->serialNumber,
 		(ASN1_STRING *)(*b)->serialNumber));
 }
 		    
-int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
+int
+X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
 {
     X509_CRL_INFO *inf;
     inf = crl->crl;
@@ -169,12 +169,13 @@ int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
 #endif
 
 #if !defined(HAVE_BN_MOD_SQR)
-int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx)
-    {
-    if (!BN_sqr(r, a, ctx)) return 0;
+int
+BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx)
+{
+    if (!BN_sqr(r, (BIGNUM*)a, ctx)) return 0;
     /* r->neg == 0,  thus we don't need BN_nnmod */
     return BN_mod(r, r, m, ctx);
-    }
+}
 #endif
 
 #if !defined(HAVE_BN_MOD_ADD) || !defined(HAVE_BN_MOD_SUB)
@@ -241,3 +242,36 @@ char *CONF_get1_default_config_file(void)
 }
 #endif
 
+#if !defined(HAVE_PEM_DEF_CALLBACK)
+#define OSSL_PASS_MIN_LENGTH 4
+int
+PEM_def_callback(char *buf, int num, int w, void *key)
+{
+    int i,j;
+    const char *prompt;
+    if(key){
+	i = strlen(key);
+	i = (i > num) ? num : i;
+	memcpy(buf, key, i);
+	return(i);
+    }
+
+    prompt = EVP_get_pw_prompt();
+    if (prompt == NULL) prompt= "Enter PEM pass phrase:";
+    for(;;){
+	i = EVP_read_pw_string(buf, num, prompt, w);
+	if(i != 0){
+	    memset(buf,0,(unsigned int)num);
+	    return(-1);
+	}
+	j = strlen(buf);
+	if(j < OSSL_PASS_MIN_LENGTH){
+	    fprintf(stderr,
+		    "phrase is too short, needs to be at least %d chars\n",
+		    OSSL_PASS_MIN_LENGTH);
+	}
+	else break;
+    }
+    return(j);
+}
+#endif

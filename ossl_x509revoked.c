@@ -56,7 +56,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
 }
 
 X509_REVOKED *
-ossl_x509revoked_get_X509_REVOKED(VALUE obj)
+DupX509RevokedPtr(VALUE obj)
 {
     X509_REVOKED *rev, *new;
 

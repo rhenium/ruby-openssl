@@ -56,7 +56,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 }
 
 X509_ATTRIBUTE *
-ossl_x509attr_get_X509_ATTRIBUTE(VALUE obj)
+DupX509AttrPtr(VALUE obj)
 {
     X509_ATTRIBUTE *attr, *new;
 

@@ -292,7 +292,6 @@ OSSL_SK2ARY(x509crl, X509_CRL)
 /*
  * our default PEM callback
  */
-#if defined(HAVE_PEM_DEF_CALLBACK)
 static VALUE
 ossl_pem_passwd_cb0(VALUE flag)
 {	
@@ -336,7 +335,6 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
     }
     return len;
 }
-#endif
 
 /*
  * Verify callback
@@ -518,6 +516,7 @@ Init_openssl()
      */
     rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
     rb_define_const(mOSSL, "OPENSSL_VERSION",rb_str_new2(OPENSSL_VERSION_TEXT));
+    rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER",INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
      * Generic error,
