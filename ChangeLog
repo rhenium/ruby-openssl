@@ -1,3 +1,6 @@
+Sun, 19 Jan 2003 16:48:48 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* extconf.rb: Use /usr/include by default when checking OpenSSL version
+	
 Mon, 06 Jan 2003 12:52:20 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509req.c: Port to Ruby1.8 object_copy framework
 

@@ -25,6 +25,7 @@ else
 end
 
 includes, = dir_config("openssl")
+includes ||= "/usr/include"
 
 message "=== OpenSSL for Ruby configurator ===\n"
 message "=== Checking for system dependent stuff... ===\n"
