@@ -362,7 +362,7 @@ ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
 	ossl_raise(ePKCS7Error, "Wrong content type - PKCS7 is not SIGNED");
     }
     rb_scan_args(argc, argv, "11", &x509store, &detached);
-    store = ossl_x509store_get_X509_STORE(x509store);
+    store = GetX509StorePtr(x509store);
     if (!NIL_P(detached)) {
 	StringValue(detached);
 	data = BIO_new_mem_buf(RSTRING(detached)->ptr, RSTRING(detached)->len);
