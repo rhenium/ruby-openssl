@@ -71,7 +71,7 @@ class TC_CRL < Test::Unit::TestCase
     # empty last_update throws "unknown time format"
     # 
     $crl.last_update = t
-    assert_equal(t.to_s, $crl.last_update.to_s, "last_update")
+    assert_equal(t.dup.utc.to_s, $crl.last_update.dup.utc.to_s, "last_update")
   end
   def test_04next_update
     t = Time.now + 24 * 60 * 60
@@ -81,7 +81,7 @@ class TC_CRL < Test::Unit::TestCase
     # empty next_update throws "unknown time format"
     # 
     $crl.next_update = t
-    assert_equal(t.to_s, $crl.next_update.to_s, "next_update")
+    assert_equal(t.dup.utc.to_s, $crl.next_update.dup.utc.to_s, "next_update")
   end
   def test_05revoked
     r1 = Revoked.new()

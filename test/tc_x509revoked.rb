@@ -40,7 +40,7 @@ class TC_Revoked < Test::Unit::TestCase
     t = Time.now
 
     @rev.time = t
-    assert_equal(t.to_s, @rev.time.to_s, "time")
+    assert_equal(t.dup.utc.to_s, @rev.time.dup.utc.to_s, "time")
   end
   def test_extensions
     ##
