@@ -181,6 +181,89 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 }
 
 /*
+ * Data Conversion
+ */
+BIO *
+ossl_obj2bio(VALUE obj)
+{
+    BIO *bio;
+
+    if(TYPE(obj) == T_FILE){
+	OpenFile *fptr;
+	GetOpenFile(obj, fptr);
+	rb_io_check_readable(fptr);
+	bio = BIO_new_fp(fptr->f, BIO_NOCLOSE);
+    }       
+    else{
+	StringValue(obj);
+	bio = BIO_new_mem_buf(RSTRING(obj)->ptr, RSTRING(obj)->len);
+    }
+    if(!bio) ossl_raise(ePKCS7Error, NULL);
+
+    return bio;
+}
+
+BIO *
+ossl_protec_obj2bio(VALUE obj, int *status)
+{
+     BIO *ret = NULL;
+     ret = (BIO*)rb_protect((VALUE(*)())ossl_obj2bio, obj, status);
+     return ret;
+}
+
+VALUE 
+ossl_membio2str(BIO *bio)
+{
+    VALUE ret;
+    BUF_MEM *buf;
+
+    BIO_get_mem_ptr(bio, &buf);
+    ret = rb_str_new(buf->data, buf->length);
+
+    return ret;
+}
+
+VALUE
+ossl_protect_membio2str(BIO *bio, int *status)
+{
+    VALUE ret;
+    ret = rb_protect((VALUE(*)())ossl_membio2str, (VALUE)bio, status);
+    return ret;
+}
+
+STACK_OF(X509) *
+ossl_x509_ary2sk(VALUE ary)  
+{
+    STACK_OF(X509) *sk;
+    VALUE val;
+    X509 *x509;
+    int i;
+
+    Check_Type(ary, T_ARRAY);
+    if(!(sk = sk_X509_new_null())) 
+        ossl_raise(eOSSLError, NULL); 
+    for(i = 0; i < RARRAY(ary)->len; i++){
+        val = rb_ary_entry(ary, i);
+        if(!rb_obj_is_kind_of(val, cX509Cert)){
+            sk_X509_free(sk);
+            ossl_raise(eOSSLError, "object except X509 cert is in array"); 
+        }
+        x509 = GetX509CertPtr(val); /* NEED TO DUP */
+        sk_X509_push(sk, x509);
+    }
+    
+    return sk;
+}
+
+STACK_OF(X509) *
+ossl_protect_x509_ary2sk(VALUE ary, int *status)
+{
+    STACK_OF(X509) *sk;
+    sk = (STACK_OF(X509)*)rb_protect((VALUE(*)())ossl_x509_ary2sk, ary, status);
+    return sk;
+}
+
+/*
  * our default PEM callback
  */
 static VALUE
@@ -228,44 +311,6 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 }
 
 /*
- * main module
- */
-VALUE mOSSL;
-
-/*
- * OpenSSLError < StandardError
- */
-VALUE eOSSLError;
-
-/*
- * Errors
- */
-void
-ossl_raise(VALUE exc, const char *fmt, ...)
-{
-    va_list args;
-    char buf[BUFSIZ];
-    int len;
-    long e = ERR_get_error();
-
-    va_start(args, fmt);
-    len = vsnprintf(buf, BUFSIZ, fmt, args);
-    va_end(args);
-	
-    if (e) {
-	if (dOSSL == Qtrue) { /* FULL INFO */
-	    len += snprintf(buf+len, BUFSIZ-len, "%s",
-			    ERR_error_string(e, NULL));
-	} else {
-	    len += snprintf(buf + len, BUFSIZ - len, "%s",
-			    ERR_reason_error_string(e));
-	}
-	ERR_clear_error();
-    }
-    rb_exc_raise(rb_exc_new(exc, buf, len));
-}
-
-/*
  * Verify callback
  */
 int ossl_verify_cb_idx;
@@ -275,7 +320,7 @@ ossl_call_verify_cb_proc(struct ossl_verify_cb_args *args)
 {   
     return rb_funcall(args->proc, rb_intern("call"), 2,
                       args->preverify_ok, args->store_ctx);
-}    
+}
  
 int 
 ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
@@ -285,6 +330,10 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
     int state;
 
     proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_verify_cb_idx);
+    if ((void*)proc == 0)
+	proc = (VALUE)X509_STORE_get_ex_data(ctx->ctx, ossl_verify_cb_idx);
+    if ((void*)proc == 0)
+	return ok;
     if (!NIL_P(proc)) {
 	rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new,
 			  (VALUE)ctx, &state);
@@ -309,6 +358,46 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
     }
 
     return ok;
+}
+
+/*
+ * main module
+ */
+VALUE mOSSL;
+
+/*
+ * OpenSSLError < StandardError
+ */
+VALUE eOSSLError;
+
+/*
+ * Errors
+ */
+void
+ossl_raise(VALUE exc, const char *fmt, ...)
+{
+    va_list args;
+    char buf[BUFSIZ];
+    const char *msg;
+    long e = ERR_get_error();
+    int len = 0;
+
+    if (fmt) {
+	va_start(args, fmt);
+	len = vsnprintf(buf, BUFSIZ, fmt, args);
+	va_end(args);
+	len += snprintf(buf+len, BUFSIZ-len, ": ");
+    }
+    if (e) {
+	if (dOSSL == Qtrue) /* FULL INFO */
+	    msg = ERR_error_string(e, NULL);
+	else
+	    msg = ERR_reason_error_string(e);
+	ERR_clear_error();
+	len += snprintf(buf+len, BUFSIZ-len, "%s", msg);
+    }
+
+    rb_exc_raise(rb_exc_new(exc, buf, len));
 }
 
 /*

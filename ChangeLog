@@ -1,3 +1,8 @@
+Thu, 26 Jun 2003 05:48:07 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* openssl_missing.c: addded X509_STORE_{set,get}_ex_data().
+	* ossl.h: added data conversion utilities.
+	* ossl.c: ditto.
+
 Thu, 19 Jun 2003 20:13:29 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* example/gen_*.rb: Store plain keys more secure (with 0600 (rw- --- ---))
 

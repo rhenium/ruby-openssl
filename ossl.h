@@ -49,6 +49,7 @@ extern "C" {
 #  undef RFILE
 #endif
 #include <ruby.h>
+#include <rubyio.h>
 
 /*
  * Common Module
@@ -99,6 +100,16 @@ ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
  * String to HEXString conversion
  */
 int string2hex(char *, int, char **, int *);
+
+/*
+ * Data Conversion
+ */
+BIO *ossl_obj2bio(VALUE);
+BIO *ossl_protect_obj2bio(VALUE,int*);
+VALUE ossl_membio2str(BIO*);
+VALUE ossl_protect_membio2str(BIO*,int*);
+STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
+STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 
 /*
  * our default PEM callback
