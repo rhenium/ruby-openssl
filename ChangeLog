@@ -1,6 +1,9 @@
+Thu, 10 Jul 2003 04:56:38 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_pkcs7.c: PKCS7#encrypt(): use EVP_rc2_40_cbc() by default.
+
 Wed, 09 Jul 2003 21:09:10 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
-	* ossl_pkcs7.c: write_smime(): should add PKCS7_DETACHED to flags
-	  if the PKCS7 is detached and @data is given.
+	* ossl_pkcs7.c: PKCS7#write_smime(): should add PKCS7_DETACHED to
+	  flags if the PKCS7 is detached and @data is given.
 
 Wed, 09 Jul 2003 12:41:14 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Start checking for OpenSSL' missing functions...

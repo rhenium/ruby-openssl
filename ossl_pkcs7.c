@@ -203,8 +203,22 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     VALUE ret;
     PKCS7 *p7;
 
-    rb_scan_args(argc, argv, "31", &certs, &data, &cipher, &flags);
-    ciph = GetCipherPtr(cipher); /* NO NEED TO DUP */
+    rb_scan_args(argc, argv, "22", &certs, &data, &cipher, &flags);
+    if(NIL_P(cipher)){
+#if !defined(OPENSSL_NO_RC2)
+	ciph = EVP_rc2_40_cbc();
+#elif !defined(OPENSSL_NO_DES)
+	ciph = EVP_des_ede3_cbc();
+#elif !defined(OPENSSL_NO_RC2)
+	ciph = EVP_rc2_40_cbc();
+#elif !defined(OPENSSL_NO_AES)
+	ciph = EVP_EVP_aes_128_cbc();
+#else
+	ossl_raise(ePKCS7Error, "Must specify cipher");
+#endif
+
+    }
+    else ciph = GetCipherPtr(cipher); /* NO NEED TO DUP */
     in = ossl_obj2bio(data);
     x509s = ossl_protect_x509_ary2sk(certs, &status);
     if(status){
