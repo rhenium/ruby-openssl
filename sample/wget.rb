@@ -2,9 +2,10 @@
 
 require 'net/https'
 require 'getopts'
-begin require 'verify_cb'; rescue LoadError; end
 
-getopts 'v'
+getopts nil, 'C:'
+
+ca_path = $OPT_C
 
 uri = URI.parse(ARGV[0])
 if proxy = ENV['HTTP_PROXY']
@@ -17,10 +18,16 @@ h = Net::HTTP.new(uri.host, uri.port, prx_host, prx_port)
 h.set_debug_output($stderr) if $DEBUG
 if uri.scheme == "https"
   h.use_ssl = true
-  h.verify_mode = SSL::VERIFY_PEER if $OPT_v
-  h.verify_callback = VerifyCallbackProc if defined? VerifyCallbackProc
+  if ca_path
+    h.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    h.ca_path = ca_path
+  else
+    $stderr.puts "!!! WARNING: PEER CERTIFICATE WON'T BE VERIFIED !!!"
+  end
 end
-h.get2(uri.path){|resp|
+
+path = uri.path.empty? ? "/" : uri.path
+h.get2(path){|resp|
   STDERR.puts h.peer_cert.inspect if h.peer_cert
   print resp.body
 }
