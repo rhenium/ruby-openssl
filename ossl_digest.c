@@ -159,7 +159,7 @@ ossl_digest_hexdigest(VALUE self)
 static VALUE
 ossl_digest_s_digest(VALUE klass, VALUE str, VALUE data)
 {
-	VALUE obj = rb_class_new_instance(1, &str, cDigest);
+	VALUE obj = rb_class_new_instance(1, &str, klass);
 
 	ossl_digest_update(obj, data);
 
@@ -169,7 +169,7 @@ ossl_digest_s_digest(VALUE klass, VALUE str, VALUE data)
 static VALUE
 ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
 {
-	VALUE obj = rb_class_new_instance(1, &str, cDigest);
+	VALUE obj = rb_class_new_instance(1, &str, klass);
 
 	ossl_digest_update(obj, data);
 

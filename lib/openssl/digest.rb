@@ -28,10 +28,10 @@ module Digest
         super(\"#{digest}\")
       end
       def #{digest}::digest(data)
-        super(\"#{digest}\", data)
+        Digest::digest(\"#{digest}\", data)
       end
       def #{digest}::hexdigest(data)
-        super(\"#{digest}\", data)
+        Digest::hexdigest(\"#{digest}\", data)
       end
     end
   EOD

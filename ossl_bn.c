@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001-2002  UNKNOWN <oss-ruby@technorama.net>
+ * Copyright (C) 2001-2002  Technorama team <oss-ruby@technorama.net>
  * All rights reserved.
  */
 /*
