@@ -69,13 +69,12 @@ ossl_x509crl_s_allocate(VALUE klass)
 static VALUE 
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
-	BIO *in = NULL;
+	BIO *in;
 	VALUE buffer;
 
 	if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 		return self;
-	}
-	
+	}	
 	if (!(in = BIO_new_mem_buf(StringValuePtr(buffer), -1))) {
 		ossl_raise(eX509CRLError, "");
 	}
@@ -103,7 +102,7 @@ ossl_x509crl_get_version(VALUE self)
 
 	ver = ASN1_INTEGER_get(crl->crl->version);
 
-	return INT2NUM(ver);
+	return LONG2NUM(ver);
 }
 
 static VALUE 
@@ -302,13 +301,14 @@ static VALUE
 ossl_x509crl_verify(VALUE self, VALUE key)
 {
 	X509_CRL *crl;
-	EVP_PKEY *pkey;
+	int ret;
 
 	GetX509CRL(self, crl);
 
-	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-
-	if (X509_CRL_verify(crl, pkey) == 1) {
+	if ((ret = X509_CRL_verify(crl, GetPKeyPtr(key))) < 0) {
+		ossl_raise(eX509CRLError, "");
+	}
+	if (ret == 1) {
 		return Qtrue;
 	}
 	return Qfalse;

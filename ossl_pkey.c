@@ -136,8 +136,8 @@ ossl_pkey_initialize(VALUE self)
 static VALUE
 ossl_pkey_to_der(VALUE self)
 {
-	EVP_PKEY *pkey = NULL;
-	X509_PUBKEY *key = NULL;
+	EVP_PKEY *pkey;
+	X509_PUBKEY *key;
 	VALUE str;
 	
 	GetPKey(self, pkey);

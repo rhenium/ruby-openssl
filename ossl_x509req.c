@@ -364,7 +364,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 static VALUE 
 ossl_x509req_add_attribute(VALUE self, VALUE attr)
 {
-	X509_REQ *req = NULL;
+	X509_REQ *req;
 
 	GetX509Req(self, req);
 

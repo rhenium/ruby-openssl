@@ -105,7 +105,7 @@ ossl_x509revoked_get_serial(VALUE self)
 static VALUE 
 ossl_x509revoked_set_serial(VALUE self, VALUE serial)
 {
-	X509_REVOKED *rev = NULL;
+	X509_REVOKED *rev;
 
 	GetX509Rev(self, rev);
 

@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Thu, 13 Jun 2002 00:05:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509crl.c: Fix check for X509_CRL_verify retval
+	* x509store.c: Fix mem leak in add_trusted, fix check for X509_verify_cert retval
+
 Wed, 12 Jun 2002 22:58:53 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509name.c: drop ossl_x509name_get_X509_NAME
 	* x509name.c: introduce GetX509NamePtr; and use it instead ossl_x509name_get_X509_NAME
