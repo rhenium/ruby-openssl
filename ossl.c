@@ -44,6 +44,13 @@ char *ossl_error(void)
 	return ERR_error_string(ERR_get_error(), NULL);
 }
 
+/*
+ * On Windows platform there is no strptime function
+ */
+#ifndef HAVE_STRPTIME
+char *strptime(char *buf, char *fmt, struct tm *tm);
+#endif
+
 VALUE asn1time_to_time(ASN1_UTCTIME *time)
 {
 	struct tm tm;

@@ -51,9 +51,16 @@ This program is licenced under the same licence as Ruby.
 	OpenSSL >= 0.9.6b
 
 [Instalation]
+= Unix like systems:
 	ruby extconf.rb
 	make
 	su root -c make install
+
+= Windows like systems:
+	add to %PATH%: c:\openssl\bin - where the dlls lays
+	ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
+	nmake
+	nmake install
 
 [Documentation/API]
 	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_method :-))

@@ -11,19 +11,25 @@
 #ifndef _OSSL_H_
 #define _OSSL_H_
 
+#if defined(NT)
+#  define OpenFile WINAPI_OpenFile
+#endif
 #include <errno.h>
 #include <openssl/asn1_mac.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-
-#include "openssl_missing.h"
-#include "ossl_version.h"
+#if defined(NT)
+#  undef OpenFile
+#endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
+
+#include "openssl_missing.h"
+#include "ossl_version.h"
 
 /*
  * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
@@ -36,73 +42,73 @@ extern "C" {
 /*
  * Modules
  */
-EXTERN VALUE mOSSL;
-EXTERN VALUE mX509;
-EXTERN VALUE mDigest;
-EXTERN VALUE mPKey;
-EXTERN VALUE mNetscape;
-EXTERN VALUE mCipher;
-EXTERN VALUE mSSL;
-EXTERN VALUE mPKCS7;
+extern VALUE mOSSL;
+extern VALUE mX509;
+extern VALUE mDigest;
+extern VALUE mPKey;
+extern VALUE mNetscape;
+extern VALUE mCipher;
+extern VALUE mSSL;
+extern VALUE mPKCS7;
 
 /*
  * Classes
  */
-EXTERN VALUE cX509Certificate;
-EXTERN VALUE eX509CertificateError;
-EXTERN VALUE cX509Attribute;
-EXTERN VALUE eX509AttributeError;
-EXTERN VALUE cX509CRL;
-EXTERN VALUE eX509CRLError;
-EXTERN VALUE cX509Extension;
-EXTERN VALUE cX509ExtensionFactory;
-EXTERN VALUE eX509ExtensionError;
-EXTERN VALUE cX509Name;
-EXTERN VALUE eX509NameError;
-EXTERN VALUE cX509Request;
-EXTERN VALUE eX509RequestError;
-EXTERN VALUE cX509Revoked;
-EXTERN VALUE eX509RevokedError;
-EXTERN VALUE cX509Store;
-EXTERN VALUE eX509StoreError;
-EXTERN VALUE cSPKI;
-EXTERN VALUE eSPKIError;
-EXTERN VALUE cCipher;
-EXTERN VALUE eCipherError;
-EXTERN VALUE cRandom;
-EXTERN VALUE eRandomError;
-EXTERN VALUE cSSLSocket;
-EXTERN VALUE eSSLError;
+extern VALUE cX509Certificate;
+extern VALUE eX509CertificateError;
+extern VALUE cX509Attribute;
+extern VALUE eX509AttributeError;
+extern VALUE cX509CRL;
+extern VALUE eX509CRLError;
+extern VALUE cX509Extension;
+extern VALUE cX509ExtensionFactory;
+extern VALUE eX509ExtensionError;
+extern VALUE cX509Name;
+extern VALUE eX509NameError;
+extern VALUE cX509Request;
+extern VALUE eX509RequestError;
+extern VALUE cX509Revoked;
+extern VALUE eX509RevokedError;
+extern VALUE cX509Store;
+extern VALUE eX509StoreError;
+extern VALUE cSPKI;
+extern VALUE eSPKIError;
+extern VALUE cCipher;
+extern VALUE eCipherError;
+extern VALUE cRandom;
+extern VALUE eRandomError;
+extern VALUE cSSLSocket;
+extern VALUE eSSLError;
 /* Digest */
-EXTERN VALUE cDigest;
-EXTERN VALUE eDigestError;
-EXTERN VALUE cMD2;
-EXTERN VALUE cMD5;
-EXTERN VALUE cMDC2;
-EXTERN VALUE cRIPEMD160;
-EXTERN VALUE cSHA;
-EXTERN VALUE cSHA1;
-EXTERN VALUE cDSS;
-EXTERN VALUE cDSS1;
+extern VALUE cDigest;
+extern VALUE eDigestError;
+extern VALUE cMD2;
+extern VALUE cMD5;
+extern VALUE cMDC2;
+extern VALUE cRIPEMD160;
+extern VALUE cSHA;
+extern VALUE cSHA1;
+extern VALUE cDSS;
+extern VALUE cDSS1;
 /* PKey */
-EXTERN VALUE cPKey;
-EXTERN VALUE ePKeyError;
-EXTERN VALUE cRSA;
-EXTERN VALUE eRSAError;
-EXTERN VALUE cDSA;
+extern VALUE cPKey;
+extern VALUE ePKeyError;
+extern VALUE cRSA;
+extern VALUE eRSAError;
+extern VALUE cDSA;
 /* PKCS7 */
-EXTERN VALUE cPKCS7;
-EXTERN VALUE cPKCS7SignerInfo;
-EXTERN VALUE ePKCS7Error;
+extern VALUE cPKCS7;
+extern VALUE cPKCS7SignerInfo;
+extern VALUE ePKCS7Error;
 /* HMAC */
-EXTERN VALUE cHMAC;
-EXTERN VALUE eHMACError;
+extern VALUE cHMAC;
+extern VALUE eHMACError;
 /* Conf */
-EXTERN VALUE cConfig;
-EXTERN VALUE eConfigError;
+extern VALUE cConfig;
+extern VALUE eConfigError;
 /* BN */
-EXTERN VALUE cBN;
-EXTERN VALUE eBNError;
+extern VALUE cBN;
+extern VALUE eBNError;
 
 /*
  * CheckTypes

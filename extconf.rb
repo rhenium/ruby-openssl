@@ -10,10 +10,18 @@ This program is licenced under the same licence as Ruby.
 
 require "mkmf"
 
-CRYPTOLIB="crypto"
-SSLLIB="ssl"
+if RUBY_PLATFORM =~ /mswin32/
+  CRYPTOLIB="libeay32"
+  SSLLIB="ssleay32"
+else
+  CRYPTOLIB="crypto"
+  SSLLIB="ssl"
+end
 
 dir_config("openssl")
+
+have_func("strncasecmp", "string.h")
+have_func("strptime", "time.h")
 
 if have_header("openssl/ssl.h")
 	if have_library(CRYPTOLIB, nil) and have_library(SSLLIB, nil) #"SSLv23_method")
