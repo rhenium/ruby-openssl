@@ -92,14 +92,19 @@ X509_REVOKED *ossl_x509revoked_get_X509_REVOKED(VALUE);
 void Init_ossl_x509revoked(void);
 
 /*
- * X509Store
+ * X509Store and X509StoreContext
  */
 extern VALUE cX509Store;
+extern VALUE cX509StoreContext;
 extern VALUE eX509StoreError;
 
-VALUE ossl_x509store_new(X509_STORE_CTX *);
-X509_STORE *ossl_x509store_get_X509_STORE(VALUE);
+VALUE ossl_x509store_new(X509_STORE *);
+X509_STORE *GetX509StorePtr(VALUE);
+
+VALUE ossl_x509stctx_new(X509_STORE_CTX *);
+VALUE ossl_x509stctx_clear_ptr(VALUE);
+X509_STORE_CTX *GetX509StCtxtPtr(VALUE);
+
 void Init_ossl_x509store(void);
 
 #endif /* _OSSL_X509_H_ */
-
