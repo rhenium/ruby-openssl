@@ -59,5 +59,5 @@ verify_with_store(store, certs)
 puts "========== Add CRL to the Store and Verify Certs =========="
 # CRL does NOT have affect on validity in current OpenSSL <= 0.9.6c !!!
 store.add_crl(crl)
-store.flags = X509::V_FLAG::CRL_CHECK|X509::V_FLAG::CRL_CHECK
+store.flags = X509::V_FLAG::CRL_CHECK|X509::V_FLAG::CRL_CHECK_ALL
 verify_with_store(store, certs)
