@@ -177,3 +177,67 @@ int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx)
     }
 #endif
 
+#if !defined(HAVE_BN_MOD_ADD) || !defined(HAVE_BN_MOD_SUB)
+int BN_nnmod(BIGNUM *r, const BIGNUM *m, const BIGNUM *d, BN_CTX *ctx)
+    {
+    /* like BN_mod, but returns non-negative remainder
+     * (i.e.,  0 <= r < |d|  always holds) */
+
+    if (!(BN_mod(r,m,d,ctx)))
+	return 0;
+    if (!r->neg)
+	return 1;
+    /* now   -|d| < r < 0,  so we have to set  r := r + |d| */
+    return (d->neg ? BN_sub : BN_add)(r, r, d);
+    }
+#endif
+
+#if !defined(HAVE_BN_MOD_ADD)
+int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
+    {
+    if (!BN_add(r, a, b)) return 0;
+    return BN_nnmod(r, r, m, ctx);
+    }
+#endif
+
+#if !defined(HAVE_BN_MOD_SUB)
+int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
+    {
+    if (!BN_sub(r, a, b)) return 0;
+    return BN_nnmod(r, r, m, ctx);
+    }
+#endif
+
+#if !defined(HAVE_CONF_GET1_DEFAULT_CONFIG_FILE)
+
+#define OPENSSL_CONF "openssl.cnf"
+
+char *CONF_get1_default_config_file(void)
+    {
+    char *file;
+    int len;
+
+    file = getenv("OPENSSL_CONF");
+    if (file)
+	return BUF_strdup(file);
+
+    len = strlen(X509_get_default_cert_area());
+#ifndef OPENSSL_SYS_VMS
+    len++;
+#endif
+    len += strlen(OPENSSL_CONF);
+
+    file = OPENSSL_malloc(len + 1);
+
+    if (!file)
+	return NULL;
+    strcpy(file,X509_get_default_cert_area());
+#ifndef OPENSSL_SYS_VMS
+    strcat(file,"/");
+#endif
+    strcat(file,OPENSSL_CONF);
+
+    return file;
+}
+#endif
+

@@ -1,3 +1,6 @@
+Mon, 21 Jul 2003 13:23:30 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* further OpenSSL 0.9.6 compatibility
+
 Mon, 21 Jul 2003 12:33:14 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* Added OpenSSL 0.9.6 compatibility
 

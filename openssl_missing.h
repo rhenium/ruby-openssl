@@ -88,6 +88,29 @@ int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name);
 int X509_CRL_sort(X509_CRL *c);
 int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev);
 int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
+int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+char *CONF_get1_default_config_file(void);
+
+#if !defined(HAVE_X509_V_FLAG_CRL_CHECK)
+#  define X509_V_FLAG_CRL_CHECK 0x4
+#endif
+
+#if !defined(HAVE_X509_V_FLAG_CRL_CHECK_ALL)
+#  define X509_V_FLAG_CRL_CHECK_ALL 0x8
+#endif
+
+#if !defined(HAVE_X509_PURPOSE_OCSP_HELPER)
+#  define X509_PURPOSE_OCSP_HELPER 8
+#endif
+
+#if !defined(HAVE_X509_TRUST_OCSP_SIGN)
+#  define X509_TRUST_OCSP_SIGN 6
+#endif
+
+#if !defined(TRUST_X509_OCSP_REQUEST)
+#  define X509_TRUST_OCSP_REQUEST 7
+#endif
 
 #if defined(__cplusplus)
 }

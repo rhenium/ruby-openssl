@@ -24,12 +24,6 @@ extern "C" {
 #include <version.h>
 #include <openssl/opensslv.h>
 
-/*
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-#  error ! This version of OSSL needs OpenSSL >= 0.9.7 for its run!
-#endif
- */
-
 #if defined(NT) || defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
 #endif
