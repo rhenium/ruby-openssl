@@ -111,10 +111,12 @@ void ossl_debug(const char *, ...);
 		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
 	} \
 } while (0)
+
 #  define OSSL_Warning(fmt, ...) do { \
 	OSSL_Debug(fmt, ##__VA_ARGS__); \
 	rb_warning(fmt, ##__VA_ARGS__); \
 } while (0)
+
 #  define OSSL_Warn(fmt, ...) do { \
 	OSSL_Debug(fmt, ##__VA_ARGS__); \
 	rb_warn(fmt, ##__VA_ARGS__); \

@@ -12,10 +12,10 @@
 #define _OSSL_SSL_H_
 
 extern VALUE mSSL;
-extern VALUE cSSLSocket;
 extern VALUE eSSLError;
+extern VALUE cSSLSocket;
+extern VALUE cSSLContext;
 
 void Init_ossl_ssl(void);
 
 #endif /* _OSSL_SSL_H_ */
-

@@ -3,6 +3,22 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+
+Mon, 29 Jul 2002 06:31:50 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* lib/openssl/buffering.rb: typo fixed (sent by Hiroshi Nakamura)
+	* lib/openssl/openssl.rb: fixed for new implementation.
+	* ossl_ssl.c: change the license (from BSDL to Ruby's).
+	* ossl_ssl.c: new class SSLContext:
+	    ciphers, cert, cert_file, key, key_file, ca_cert, ca_file,
+	    timeout, verify_mode, verify_depth and verify_callback
+	    were moved from SSLSocket.
+	* ossl_ssl.c: change the spec of arguments of SSLSocket.new.
+	  sample:
+	    ctx = SSL::SSLContext.new
+	    ssl = SSL::SSLSocket.new(ctx)
+	    ssl.io = TCPSocket.new(host, port)
+	    ...
+
 Wed, 24 Jul 2002 13:10:28 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: FIX that enables OSSL module compile on *BSD (sent by Akinori MUSHA)
 

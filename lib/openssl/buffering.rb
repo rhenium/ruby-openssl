@@ -112,7 +112,7 @@ module Buffering
   end
 
   def ungetc(c)
-    @buffer[0,0] = c.chr
+    @rbuffer[0,0] = c.chr
   end
 
   def eof?

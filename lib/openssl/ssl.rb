@@ -14,29 +14,13 @@
   $Id$
 =end
 
-##
-# Should we care what if somebody require this file directly?
-#require 'openssl'
-
 require 'openssl/buffering'
-require 'thread'
 
 module OpenSSL
-module SSL
-
-class SSLSocket
-  include Buffering
-  CallbackMutex = Mutex.new
-
-  def connect
-    CallbackMutex.synchronize{ __connect }
+  module SSL
+    class SSLSocket
+      include Buffering
+    end
   end
-      
-  def accept
-    CallbackMutex.synchronize{ __accept }
-  end
-end # SSLSocket
-
-end # SSL
-end # OpenSSL
+end
 
