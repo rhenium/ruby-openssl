@@ -56,10 +56,8 @@ ossl_pkey_new_from_file(VALUE filename)
     if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
 	ossl_raise(ePKeyError, "%s", strerror(errno));
     }
-    /*
-     * Will we handle user passwords?
-     */
-    pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+
+    pkey = PEM_read_PrivateKey(fp, NULL, ossl_pem_passwd_cb, NULL);
     fclose(fp);
     if (!pkey) {
 	ossl_raise(ePKeyError, "");

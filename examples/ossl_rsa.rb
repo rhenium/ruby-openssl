@@ -5,9 +5,12 @@ include OpenSSL
 include PKey
 include Cipher
 #p RSA.new(1024)
-p priv = RSA.new(File.open("./01key.pem").read, "pejs8nek")
+p priv = RSA.new(File.read("./0key.pem")) {
+  print "Enter password: "
+  gets.chop!
+}
 p priv.private?
-p pub = RSA.new(File.open("./01pub.pem").read)
+p pub = RSA.new(File.read("./0pub.pem"))
 p pub.private?
 puts exp = priv.export(DES.new(EDE3, CBC), "password")
 p priv2 = RSA.new(exp, "password")

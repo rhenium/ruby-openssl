@@ -15,6 +15,13 @@ Sat, 14 Jun 2003 02:11:13 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	  - new module X509::V_ERR and X509::V_FLAG
 	* examples/ossl_x509store.c: improved.
 
+Fri, 13 Jun 2003 21:13:42 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* examples/gen_*.rb: Cleaned a bit a adapt to a new callbacks
+
+Fri, 13 Jun 2003 21:12:47 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.c: Added OSSL's default PEM callback.
+	* ossl_pkey_*.c: Use this callback
+
 Tue, 10 Jun 2003 19:59:01 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* examples/gen_crl.rb: added example (based on NaHi's)
 

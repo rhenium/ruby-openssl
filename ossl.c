@@ -181,6 +181,29 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 }
 
 /*
+ * our default PEM callback
+ */
+int
+ossl_pem_passwd_cb(char *buf, int max_len, int verify, void *pwd)
+{
+    int len;
+    VALUE ver;
+    
+    if (pwd || !rb_block_given_p()) return PEM_def_callback(buf, max_len, verify, pwd);
+
+    ver = verify ? Qtrue : Qfalse;
+    while (1) {
+	VALUE pass = rb_yield(ver);
+	SafeStringValue(pass);
+	len = RSTRING(pass)->len;
+	if (len < 4 || len>max_len) continue; /* 4 is OpenSSL hardcoded limit */
+	memcpy(buf, RSTRING(pass)->ptr, len);
+	break;
+    }
+    return len;
+}
+
+/*
  * main module
  */
 VALUE mOSSL;

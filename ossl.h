@@ -101,6 +101,11 @@ ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
 int string2hex(char *, int, char **, int *);
 
 /*
+ * our default PEM callback
+ */
+int ossl_pem_passwd_cb(char *, int, int, void *);
+
+/*
  * ERRor messages
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())

@@ -155,7 +155,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eDSAError, "");
 	}
 
-	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, NULL, passwd);
+	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!dsa) {
 	    BIO_reset(in);
 
@@ -227,7 +227,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     }
     if (DSA_PRIVATE(pkey->pkey.dsa)) {
 	if (!PEM_write_bio_DSAPrivateKey(out, pkey->pkey.dsa, ciph,
-					 NULL, 0, NULL, passwd)){
+					 NULL, 0, ossl_pem_passwd_cb, passwd)){
 	    BIO_free(out);
 	    ossl_raise(eDSAError, "");
 	}

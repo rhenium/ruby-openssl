@@ -149,7 +149,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eRSAError, "");
 	}
 
-	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, NULL, passwd);
+	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!rsa) {
 	    BIO_reset(in);
 
@@ -222,7 +222,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     }
     if (RSA_PRIVATE(pkey->pkey.rsa)) {
 	if (!PEM_write_bio_RSAPrivateKey(out, pkey->pkey.rsa, ciph,
-					 NULL, 0, NULL, passwd)) {
+					 NULL, 0, ossl_pem_passwd_cb, passwd)) {
 	    BIO_free(out);
 	    ossl_raise(eRSAError, "");
 	}

@@ -5,35 +5,45 @@ include OpenSSL
 include X509
 include PKey
 
-ca = Certificate.new(File.open("0cert.pem").read)
-ca_key = RSA.new(File.open("0key.pem").read)
+ca_file = "./0cert.pem"
+puts "Reading CA cert (from #{ca_file})"
+ca = Certificate.new(File.read(ca_file))
+
+ca_key_file = "./0key.pem"
+puts "Reading CA key (from #{ca_key_file})"
+ca_key = RSA.new(File.read(ca_key_file))
 
 crl = CRL.new
 crl.issuer = ca.issuer
 crl.last_update = Time.now
-crl.next_update = Time.now + 14 * 60 * 60 * 24
+crl.next_update = Time.now + 14 * 24 * 60 * 60
 
 usage = "#{$0} Cert_to_revoke1.pem*"
-ARGV.each do |filename|
-  cert = OpenSSL::X509::Certificate.new(File.open(filename).read)
+ARGV.each do |file|
+  cert = OpenSSL::X509::Certificate.new(File.read(file))
   re = OpenSSL::X509::Revoked.new
   re.serial = cert.serial
-  re.time = Time.now - 7
+  re.time = Time.now
   crl.add_revoked(re)
+  puts "+ Serial ##{re.serial} - revoked at #{re.time}"
 end
 
 crl.sign(ca_key, Digest::MD5.new)
 
-File.open("0crl.pem", "w") do |w|
-  w << crl.to_pem
+crl_file = "./#{ca.serial}crl.pem"
+puts "Writing #{crl_file}."
+File.open(crl_file, "w") do |f|
+  f << crl.to_pem
 end
 
-crl = CRL.new(File.open("0crl.pem").read)
-crl.revoked.each_with_index do |revoked, i|
-  puts "--- Revoked ##{i} ---"
-  p revoked.time
-  p revoked.serial
-  puts "--- Revoked ##{i} ---"
+=begin
+crl = CRL.new(File.read(crl_file))
+crl.revoked.each do |revoked|
+  puts "> Serial ##{revoked.serial} - revoked at #{revoked.time}"
 end
 
 p crl.issuer
+=end
+
+puts "DONE."
+

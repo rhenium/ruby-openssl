@@ -29,7 +29,6 @@ end
 puts "========== Load CA Cert =========="
 ca = Certificate.new(File.read("./0cert.pem"))
 puts "CA = #{ca.subject}, serial = #{ca.serial}"
-cakey = ca.public_key
 
 puts "========== Load EE Certs =========="
 certfiles = ARGV
@@ -41,7 +40,7 @@ certs.each{|cert|
 }
 
 puts "========== Load CRL =========="
-crl = CRL.new(File.read("./0crl.pem"))
+crl = CRL.new(File.read("./#{ca.serial}crl.pem"))
 puts "CA = \"#{ca.issuer}\", CRL = \"#{crl.issuer}\""
 print "Is CRL signed by CA?..."
 puts crl.verify(cakey) ? "Yes" : "No"
@@ -61,3 +60,4 @@ puts "========== Add CRL to the Store and Verify Certs =========="
 store.add_crl(crl)
 store.flags = X509::V_FLAG::CRL_CHECK|X509::V_FLAG::CRL_CHECK_ALL
 verify_with_store(store, certs)
+

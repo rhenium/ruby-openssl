@@ -49,8 +49,8 @@ OpenSSL::
     * Factory? RSA#initialize -> PKey.new("RSA")?
 
   SSL::
-    * Support more conns via 1 SSL_CTX?
+    [DONE] Support more conns via 1 SSL_CTX?
 
   X509::
     * Rethink X509::Attribute, and X509::Extension
-    
+

@@ -3,7 +3,7 @@
 require 'openssl'
 include OpenSSL
 
-x509 = X509::Certificate.new(File.open("./01cert.pem").read)
+x509 = X509::Certificate.new(File.read("./0cert.pem"))
 key = x509.public_key
 p d = Digest::SHA1.new
 p d << key.to_der
