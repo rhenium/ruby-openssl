@@ -25,10 +25,6 @@ include X509
 # OpenSSL::debug = true
 #
 
-##
-# NOTE
-# tests are numbered, because we depend on their exec. order
-#
 class TC_Revoked < Test::Unit::TestCase
   def set_up
     @rev = Revoked::new()
