@@ -213,6 +213,26 @@ ossl_digest_equal(VALUE self, VALUE other)
 	return Qfalse;
 }
 
+static VALUE
+ossl_digest_name(VALUE self)
+{
+	EVP_MD_CTX *ctx;
+
+	GetDigest(self, ctx);
+
+	return rb_str_new2(EVP_MD_name(EVP_MD_CTX_md(ctx)));
+}
+
+static VALUE
+ossl_digest_size(VALUE self)
+{
+	EVP_MD_CTX *ctx;
+
+	GetDigest(self, ctx);
+
+	return INT2NUM(EVP_MD_CTX_size(ctx));
+}
+
 /*
  * INIT
  */
@@ -242,6 +262,9 @@ Init_ossl_digest()
 	rb_define_alias(cDigest, "<<", "update");
 	
 	rb_define_method(cDigest, "==", ossl_digest_equal, 1);
+
+	rb_define_method(cDigest, "name", ossl_digest_name, 0);
+	rb_define_method(cDigest, "size", ossl_digest_size, 0);
 
 } /* Init_ossl_digest */
 

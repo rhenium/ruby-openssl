@@ -243,6 +243,29 @@ ossl_cipher_final(VALUE self)
 	return str;
 }
 
+static VALUE
+ossl_cipher_name(VALUE self)
+{
+	ossl_cipher *ciphp;
+	
+	GetCipher(self, ciphp);
+
+	return rb_str_new2(EVP_CIPHER_name(ciphp->cipher));
+}
+
+#define CIPHER_0ARG_INT(func)						\
+	static VALUE							\
+	ossl_cipher_##func(VALUE self)					\
+	{								\
+		ossl_cipher *ciphp;					\
+									\
+		GetCipher(self, ciphp);					\
+									\
+		return INT2NUM(EVP_CIPHER_##func(ciphp->cipher));	\
+	}
+CIPHER_0ARG_INT(key_length)
+CIPHER_0ARG_INT(iv_length)
+
 /*
  * INIT
  */
@@ -263,6 +286,14 @@ Init_ossl_cipher(void)
 	rb_define_method(cCipher, "update", ossl_cipher_update, 1);
 	rb_define_alias(cCipher, "<<", "update");
 	rb_define_method(cCipher, "final", ossl_cipher_final, 0);
+
+	rb_define_method(cCipher, "name", ossl_cipher_name, 0);
+	rb_define_method(cCipher, "key_len", ossl_cipher_key_length, 0);
+/*
+ * TODO
+ * int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *x, int keylen);
+ */
+	rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
 
 } /* Init_ossl_cipher */
 

@@ -54,6 +54,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
 	StringValue(key);
 
+	HMAC_CTX_init(ctx);
 	HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, ossl_digest_get_EVP_MD(digest));
 
 	return self;
@@ -128,6 +129,41 @@ ossl_hmac_hexdigest(VALUE self)
 	return hexdigest;
 }
 
+static VALUE
+ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
+{
+	char *buf;
+	int buf_len;
+	
+	StringValue(key);
+	StringValue(data);
+	
+	buf = HMAC(ossl_digest_get_EVP_MD(digest), RSTRING(key)->ptr, RSTRING(key)->len, RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+
+	return rb_str_new(buf, buf_len);
+}
+
+static VALUE
+ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
+{
+	char *buf, *hexbuf;
+	int buf_len;
+	VALUE hexdigest;
+	
+	StringValue(key);
+	StringValue(data);
+	
+	buf = HMAC(ossl_digest_get_EVP_MD(digest), RSTRING(key)->ptr, RSTRING(key)->len, RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+
+	if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+		ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
+	}
+	hexdigest = rb_str_new(hexbuf, 2 * buf_len);
+	OPENSSL_free(hexbuf);
+	
+	return hexdigest;
+}
+
 /*
  * INIT
  */
@@ -138,8 +174,11 @@ Init_ossl_hmac()
 	
 	cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
 	
+	rb_define_singleton_method(cHMAC, "digest", ossl_hmac_s_digest, 3);
+	rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
 	rb_define_singleton_method(cHMAC, "allocate", ossl_hmac_s_allocate, 0);
 	rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
+	
 	
 	rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
 	rb_define_alias(cHMAC, "<<", "update");
