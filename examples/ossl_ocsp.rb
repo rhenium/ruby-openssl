@@ -116,5 +116,4 @@ if res.status ==  OCSP::RESPONSE_STATUS_SUCCESSFUL
       p [ :revtime, revtime ]
     end
   }
-  end
 end
