@@ -27,16 +27,6 @@ VALUE eDigestError;
 /*
  * Public
  */
-int
-ossl_digest_get_NID(VALUE obj)
-{
-	EVP_MD_CTX *ctx = NULL;
-	
-	OSSLGetDigest(obj, ctx);
-
-	return EVP_MD_CTX_type(ctx); /*== ctx->digest->type*/
-}
-
 const EVP_MD *
 ossl_digest_get_EVP_MD(VALUE obj)
 {

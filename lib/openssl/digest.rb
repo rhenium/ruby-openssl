@@ -21,7 +21,17 @@
 module OpenSSL
 module Digest
 
-["DSS", "DSS1", "MD2", "MD4", "MD5", "MDC2", "RIPEMD160", "SHA", "SHA1"].each do |digest|
+[
+  "DSS",
+  "DSS1",
+  "MD2",
+  "MD4",
+  "MD5",
+  "MDC2",
+  "RIPEMD160",
+  "SHA",
+  "SHA1"
+].each do |digest|
   eval(<<-EOD)
     class #{digest} < Digest
       def initialize()

@@ -32,7 +32,6 @@ extern VALUE eDigestError;
 
 #define OSSLDigestValue(obj) OSSL_Check_Instance((obj), cDigest)
 
-int ossl_digest_get_NID(VALUE);
 const EVP_MD *ossl_digest_get_EVP_MD(VALUE);
 void Init_ossl_digest(void);
 

@@ -14,12 +14,10 @@
 extern VALUE mCipher;
 extern VALUE cCipher;
 extern VALUE eCipherError;
-extern VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5, cAES;
 
 #define OSSLCipherValue(obj) OSSL_Check_Instance((obj), cCipher)
 #define OSSLCipherValuePtr(obj) ossl_cipher_get_EVP_CIPHER((obj))
 
-int ossl_cipher_get_NID(VALUE);
 const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE);
 void Init_ossl_cipher(void);
 

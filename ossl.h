@@ -18,7 +18,7 @@ extern "C" {
 /*
  * Check the Ruby version and OpenSSL
  * The only supported are:
- * 	Ruby >= 1.7
+ * 	Ruby >= 1.7.2
  * 	OpenSSL >= 0.9.7
  */
 #include <version.h>

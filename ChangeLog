@@ -3,6 +3,14 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue,  4 Jun 2002 20:10:00 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* cipher.c: HACK not to coredump when calling #update without preceding #(en|de)crypt
+
+Tue,  4 Jun 2002 19:17:55 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* cipher.c: use factory style (as for Digest), adapted to Ruby 1.8 interface
+	* cipher.c: Method name 'cipher' changed to 'final'
+	* cipher.rb: added predefined Cipher classes there
+
 Tue,  4 Jun 2002 17:00:36 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* README: Make a note that it's not up-to-date
 	* ossl.h: Corrected order of headers to detect Ruby < 1.7.2 and OpenSSL < 0.9.7 correctly
