@@ -351,6 +351,7 @@ Init_ossl_dsa()
     rb_define_method(cDSA, "to_text", ossl_dsa_to_text, 0);
     rb_define_method(cDSA, "export", ossl_dsa_export, -1);
     rb_define_alias(cDSA, "to_pem", "export");
+    rb_define_alias(cDSA, "to_s", "export");
     rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
     rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
     rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);

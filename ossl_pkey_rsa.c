@@ -485,6 +485,7 @@ Init_ossl_rsa()
     rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);
     rb_define_method(cRSA, "export", ossl_rsa_export, -1);
     rb_define_alias(cRSA, "to_pem", "export");
+    rb_define_alias(cRSA, "to_s", "export");
     rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);
     rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, 1);
     rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, 1);

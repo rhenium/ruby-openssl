@@ -280,6 +280,7 @@ Init_ossl_dh()
     rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);
     rb_define_method(cDH, "export", ossl_dh_export, 0);
     rb_define_alias(cDH, "to_pem", "export");
+    rb_define_alias(cDH, "to_s", "export");
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
 }
 

@@ -27,11 +27,8 @@ VALUE cSSLSocket;
 /*
  * SSLContext class
  */
-#define ossl_sslctx_set_method(o,v)      rb_iv_set((o),"@ssl_method",(v))
 #define ossl_sslctx_set_cert(o,v)        rb_iv_set((o),"@cert",(v))
-#define ossl_sslctx_set_cert_file(o,v)   rb_iv_set((o),"@cert_file",(v))
 #define ossl_sslctx_set_key(o,v)         rb_iv_set((o),"@key",(v))
-#define ossl_sslctx_set_key_file(o,v)    rb_iv_set((o),"@key_file",(v))
 #define ossl_sslctx_set_ca_cert(o,v)     rb_iv_set((o),"@ca_cert",(v))
 #define ossl_sslctx_set_ca_file(o,v)     rb_iv_set((o),"@ca_file",(v))
 #define ossl_sslctx_set_ca_path(o,v)     rb_iv_set((o),"@ca_path",(v))
@@ -39,13 +36,9 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_mode(o,v) rb_iv_set((o),"@verify_mode",(v))
 #define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
-#define ossl_sslctx_set_fixed(o,v)       rb_iv_set((o),"@fixed",(v))
 
-#define ossl_sslctx_get_method(o,v)      rb_iv_get((o),"@ssl_method",(v))
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
-#define ossl_sslctx_get_cert_file(o)     rb_iv_get((o),"@cert_file")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
-#define ossl_sslctx_get_key_file(o)      rb_iv_get((o),"@key_file")
 #define ossl_sslctx_get_ca_cert(o)       rb_iv_get((o),"@ca_cert")
 #define ossl_sslctx_get_ca_file(o)       rb_iv_get((o),"@ca_file")
 #define ossl_sslctx_get_ca_path(o)       rb_iv_get((o),"@ca_path")
@@ -53,30 +46,21 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
-#define ossl_sslctx_get_fixed(o)         rb_iv_get((o),"@fixed")
-
-static VALUE ossl_sslctx_set_cert2(VALUE, VALUE);
-static VALUE ossl_sslctx_set_cert_file2(VALUE, VALUE);
-static VALUE ossl_sslctx_set_key2(VALUE, VALUE);
-static VALUE ossl_sslctx_set_key_file2(VALUE, VALUE);
 
 typedef struct ossl_sslctx_st_t {
-    SSL_METHOD *method;
     SSL_CTX *ctx;
 } ossl_sslctx_st;
 
 static char *ossl_sslctx_attrs[] = {
-    "cert", "cert_file", "key", "key_file", "ca_cert", "ca_file", "ca_path",
-    "timeout", "verify_mode", "verify_depth", "verify_callback", "ssl_method",
-    "fixed",
+    "cert", "key", "ca_cert", "ca_file", "ca_path",
+    "timeout", "verify_mode", "verify_depth", "verify_callback",
 }; 
-
-#define OSSL_SSL_METHOD_ENTRY(name) { #name, name##_method }
 
 struct {
     const char *name;
-    SSL_METHOD *(*f)(void);
+    SSL_METHOD *(*func)(void);
 } ossl_ssl_method_tab[] = {
+#define OSSL_SSL_METHOD_ENTRY(name) { #name, name##_method }
     OSSL_SSL_METHOD_ENTRY(TLSv1),
     OSSL_SSL_METHOD_ENTRY(TLSv1_server),
     OSSL_SSL_METHOD_ENTRY(TLSv1_client),
@@ -89,6 +73,7 @@ struct {
     OSSL_SSL_METHOD_ENTRY(SSLv23),
     OSSL_SSL_METHOD_ENTRY(SSLv23_server),
     OSSL_SSL_METHOD_ENTRY(SSLv23_client),
+#undef OSSL_SSL_METHOD_ENTRY
 };
 
 static void
@@ -110,26 +95,27 @@ static VALUE
 ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE ssl_method;
+    SSL_METHOD *method = NULL;
     ossl_sslctx_st *p;
     int i;
     char *s;
 
     rb_scan_args(argc, argv, "01", &ssl_method);
     Data_Get_Struct(self, ossl_sslctx_st, p);
-    s = NIL_P(ssl_method) ? "SSLv23" : StringValuePtr(ssl_method);
-    for(i = 0; i < numberof(ossl_ssl_method_tab); i++){
-        if(strcmp(ossl_ssl_method_tab[i].name, s) == 0){
-            p->method = ossl_ssl_method_tab[i].f();
-            ossl_sslctx_set_method(self, ssl_method);
-            break;
+    if(NIL_P(ssl_method)) method = SSLv23_method();
+    else{
+        s =  StringValuePtr(ssl_method);
+        for(i = 0; i < numberof(ossl_ssl_method_tab); i++){
+            if(strcmp(ossl_ssl_method_tab[i].name, s) == 0){
+                method = ossl_ssl_method_tab[i].func();
+                break;
+            }
         }
     }
-    if(p->method == NULL)
-        rb_raise(rb_eArgError, "unknown SSL method `%s'.", s);
-    if((p->ctx = SSL_CTX_new(p->method)) == NULL)
+    if(!method) rb_raise(rb_eArgError, "unknown SSL method `%s'.", s);
+    if((p->ctx = SSL_CTX_new(method)) == NULL)
         ossl_raise(eSSLError, "SSL_CTX_new:");
     SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
-    ossl_sslctx_set_fixed(self, Qfalse);
 
     return self;
 }
@@ -196,8 +182,7 @@ ossl_sslctx_setup(VALUE self)
     int verify_mode;
     VALUE val;
 
-    if(ossl_sslctx_get_fixed(self)) return Qfalse;
-
+    if(OBJ_FROZEN(self)) return Qnil;
     Data_Get_Struct(self, ossl_sslctx_st, p);
     /* private key may be bundled in certificate file. */
     val = ossl_sslctx_get_cert(self);
@@ -245,8 +230,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(p->ctx, NUM2LONG(val));
-
-    ossl_sslctx_set_fixed(self, Qtrue);
+    rb_obj_freeze(self);
 
     return Qtrue;
 }
@@ -302,6 +286,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     VALUE str, elem;
     int i;
 
+    rb_check_frozen(self);
     Data_Get_Struct(self, ossl_sslctx_st, p);
     if(!p->ctx){
         ossl_raise(eSSLError, "SSL_CTX is not initialized.");
@@ -328,44 +313,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     return Qnil;
 }
 
-static VALUE
-ossl_sslctx_set_cert2(VALUE self, VALUE v)
-{
-    if(!NIL_P(v)) OSSL_Check_Kind(v, cX509Cert);
-    ossl_sslctx_set_cert(self, v);
-    ossl_sslctx_set_cert_file(self, Qnil);
-    return v;
-}
-
-static VALUE
-ossl_sslctx_set_cert_file2(VALUE self, VALUE v)
-{
-    VALUE cert;
-    cert = NIL_P(v) ? Qnil : ossl_x509_new_from_file(v);
-    ossl_sslctx_set_cert(self, cert);
-    ossl_sslctx_set_cert_file(self, v);
-    return v;
-}
-
-static VALUE
-ossl_sslctx_set_key2(VALUE self, VALUE v)
-{
-    if(!NIL_P(v)) OSSL_Check_Kind(v, cPKey);
-    ossl_sslctx_set_key(self, v);
-    ossl_sslctx_set_key_file(self, Qnil);
-    return v;
-}
-
-static VALUE
-ossl_sslctx_set_key_file2(VALUE self, VALUE v)
-{
-    VALUE key;
-    key = NIL_P(v) ? Qnil : ossl_pkey_new_from_file(v);
-    ossl_sslctx_set_key(self, key);
-    ossl_sslctx_set_key_file(self, v);
-    return v;
-}
-
 /*
  * SSLSocket class
  */
@@ -379,7 +326,7 @@ typedef struct ossl_ssl_st_t{
     SSL *ssl;
 } ossl_ssl_st;
 
-static char *ossl_ssl_attrs[] = { "io" };
+static char *ossl_ssl_attrs[] = { "io", "context", };
 
 static void
 ossl_ssl_shutdown(ossl_ssl_st *p)
@@ -413,8 +360,8 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     if(rb_scan_args(argc, argv, "11", &io, &ctx) == 1)
         ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
-    Check_Type(io, T_FILE);
     OSSL_Check_Kind(ctx, cSSLContext);
+    Check_Type(io, T_FILE);
     ossl_ssl_set_io(self, io);
     ossl_ssl_set_ctx(self, ctx);
     ossl_sslctx_setup(ctx);
@@ -659,17 +606,12 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
-    rb_define_method(cSSLContext, "cert=",       ossl_sslctx_set_cert2, 1);
-    rb_define_method(cSSLContext, "cert_file=",  ossl_sslctx_set_cert_file2, 1);
-    rb_define_method(cSSLContext, "key=",        ossl_sslctx_set_key2, 1);
-    rb_define_method(cSSLContext, "key_file=",   ossl_sslctx_set_key_file2, 1);
-    rb_define_method(cSSLContext, "setup",       ossl_sslctx_setup, 0);
 
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_singleton_method(cSSLSocket, "allocate", ossl_ssl_s_alloc, 0);
     for(i = 0; i < numberof(ossl_ssl_attrs); i++)
-        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 1, Qfalse);
+        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 0, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);

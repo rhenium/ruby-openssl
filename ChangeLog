@@ -1,3 +1,11 @@
+Mon, 23 Dec 08:30:52 2002 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* pkey_*.c: make alias to_s to export.
+	* ssl.c: the following methods are deprecated:
+	    SSLContext#cert_file=/cert_file, SSLContext#key_file=/key_file
+	    SSLContext#ssl_method=/ssl_method, SSLContext#setup
+	* ssl.c: the underlying SSLContext is frozen in SSLSocket#initialize.
+	* example/ssl/{svr.rb,cli.rb}: improved.
+
 Mon, 23 Dec 2002 05:35:41 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl.c: add SSL_load_error_strings().
 
