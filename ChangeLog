@@ -3,7 +3,7 @@ $Id$
 Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
-2001/11/16
+2001/11/17
 	* ossl_version.h - new file
 	* SSL::VERSION and SSL::OPENSSL_VERSION went under OpenSSL
 	* SSLSocket - connect and accept were reworked; use Mutex to protect verify_callback_proc from race condition
