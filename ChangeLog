@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 12 Jun 2002 00:45:17 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: Fixed buf in #to_s (problem with \0 in bin repr.)
+	* tc_bn.rb: NEW (TestCase for BN)
+
 Tue, 11 Jun 2002 16:56:40 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* hmac.c: Fixed bug in #initialize that caused wrong results
 

@@ -150,9 +150,9 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	
 	if (e) {
 		if (dOSSL == Qtrue) { /* FULL INFO */
-			len += snprintf(buf + len, BUFSIZ - len, ":%s", ERR_error_string(e, NULL));
+			len += snprintf(buf + len, BUFSIZ - len, "%s", ERR_error_string(e, NULL));
 		} else {
-			len += snprintf(buf + len, BUFSIZ - len, ":%s", ERR_reason_error_string(e));
+			len += snprintf(buf + len, BUFSIZ - len, "%s", ERR_reason_error_string(e));
 		}
 	}
 	rb_exc_raise(rb_exc_new(exc, buf, len));
