@@ -35,8 +35,10 @@ extern ID id_private_q;
 
 VALUE ossl_pkey_new(EVP_PKEY *);
 VALUE ossl_pkey_new_from_file(VALUE);
-EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE);
-EVP_PKEY *ossl_pkey_get_private_EVP_PKEY(VALUE);
+EVP_PKEY *GetPKeyPtr(VALUE);
+/*EVP_PKEY *DupPKeyPtr(VALUE);*/
+EVP_PKEY *GetPrivPKeyPtr(VALUE);
+EVP_PKEY *DupPrivPKeyPtr(VALUE);
 void Init_ossl_pkey(void);
 
 /*

@@ -123,11 +123,10 @@ ossl_spki_get_public_key(VALUE self)
 
 	GetSPKI(self, spki);
 	
-	if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) {
+	if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) { /* adds an reference */
 		OSSL_Raise(eSPKIError, "");
 	}
-
-	return ossl_pkey_new(pkey);
+	return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
 static VALUE
@@ -138,13 +137,11 @@ ossl_spki_set_public_key(VALUE self, VALUE key)
 
 	GetSPKI(self, spki);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
 	if (!NETSCAPE_SPKI_set_pubkey(spki, pkey)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eSPKIError, "");
 	}
-
 	return key;
 }
 
@@ -187,13 +184,11 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 	GetSPKI(self, spki);
 	
 	md = ossl_digest_get_EVP_MD(digest);
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 
 	if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eSPKIError, "");
 	}
-
 	return self;
 }
 
@@ -209,14 +204,14 @@ ossl_spki_verify(VALUE self, VALUE key)
 
 	GetSPKI(self, spki);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
 	result = NETSCAPE_SPKI_verify(spki, pkey);
-	EVP_PKEY_free(pkey);
 	
 	if (result < 0) {
 		OSSL_Raise(eSPKIError, "");
-	} else if (result > 0) {
+	}
+	if (result > 0) {
 		return Qtrue;
 	}
 	return Qfalse;

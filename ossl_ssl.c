@@ -181,22 +181,19 @@ ssl_ctx_setup(VALUE self)
     val = ssl_get_cert(self);
     cert = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
     val = ssl_get_key(self);
-    key = NIL_P(val) ? NULL : ossl_pkey_get_EVP_PKEY(val);
+    key = NIL_P(val) ? NULL : GetPKeyPtr(val); /* NO NEED TO DUP */
 
     	if (cert && key) {
 		if (!SSL_CTX_use_certificate(p->ctx, cert)) { /* Adds a ref => Safe to FREE */
 			X509_free(cert);
-			EVP_PKEY_free(key);
 			OSSL_Raise(eSSLError, "SSL_CTX_use_certificate:");
 		}
 		if (!SSL_CTX_use_PrivateKey(p->ctx, key)) { /* Adds a ref => Safe to FREE */
 			X509_free(cert);
-			EVP_PKEY_free(key);
 			OSSL_Raise(eSSLError, "SSL_CTX_use_PrivateKey:");
 		}
 		if (!SSL_CTX_check_private_key(p->ctx)) {
 			X509_free(cert);
-			EVP_PKEY_free(key);
 			OSSL_Raise(eSSLError, "SSL_CTX_check_private_key:");
 		}
 	}
@@ -205,7 +202,6 @@ ssl_ctx_setup(VALUE self)
 	 * Free cert, key (Used => Safe to FREE || Not used => Not needed)
 	 */
 	if (cert) X509_free(cert);
-	if (key) EVP_PKEY_free(key);
 
 	val = ssl_get_ca(self);
 	ca = NIL_P(val) ? NULL : ossl_x509_get_X509(val);

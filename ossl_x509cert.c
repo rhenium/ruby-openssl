@@ -428,17 +428,13 @@ ossl_x509_get_public_key(VALUE self)
 {
 	X509 *x509;
 	EVP_PKEY *pkey;
-	VALUE key;
 
 	GetX509(self, x509);
 	
-	if (!(pkey = X509_get_pubkey(x509))) { /* adds an reference - safe to FREE */
+	if (!(pkey = X509_get_pubkey(x509))) { /* adds an reference */
 		OSSL_Raise(eX509CertError, "");
 	}
-	key = ossl_pkey_new(pkey);
-	EVP_PKEY_free(pkey);
-
-	return key;
+	return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
 static VALUE 
@@ -449,14 +445,11 @@ ossl_x509_set_public_key(VALUE self, VALUE key)
 
 	GetX509(self, x509);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP! */
 	
 	if (!X509_set_pubkey(x509, pkey)) { /* DUPs pkey - FREE it */
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eX509CertError, "");
 	}
-	EVP_PKEY_free(pkey);
-
 	return key;
 }
 
@@ -470,14 +463,11 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 	GetX509(self, x509);
 	
 	md = ossl_digest_get_EVP_MD(digest);
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	
 	if (!X509_sign(x509, pkey, md)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eX509CertError, "");
 	}
-	EVP_PKEY_free(pkey);
-
 	return self;
 }
 
@@ -493,14 +483,12 @@ ossl_x509_verify(VALUE self, VALUE key)
 
 	GetX509(self, x509);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 	
-	i = X509_verify(x509, pkey);
-	EVP_PKEY_free(pkey);
-
-	if (i < 0) {
+	if ((i = X509_verify(x509, pkey)) < 0) {
 		OSSL_Raise(eX509CertError, "");
-	} else if (i > 0) {
+	} 
+	if (i > 0) {
 		return Qtrue;
 	}
 	return Qfalse;
@@ -514,21 +502,17 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
 {
 	X509 *x509;
 	EVP_PKEY *pkey;
-	VALUE result;
 	
 	GetX509(self, x509);
 	
-	pkey = ossl_pkey_get_private_EVP_PKEY(key); /* not needed private key, but should be */
+	/* not needed private key, but should be */
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	
 	if (!X509_check_private_key(x509, pkey)) {
 		OSSL_Warning("Check private key:");
-		result = Qfalse;
-	} else {
-		result = Qtrue;
+		return Qfalse;
 	}
-	EVP_PKEY_free(pkey);
-
-	return result;
+	return Qtrue;
 }
 
 /*

@@ -109,23 +109,19 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	VALUE obj;
 	
 	StringValue(data);
-	OSSL_Check_Type(cert, X509Cert);
 
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
+	pkey = GetPrivPKeyPtr(key); * NO NEED TO DUP *
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(bio = BIO_new_mem_buf(RSTRING(data)->ptr, RSTRING(data)->len))) {
-		EVP_PKEY_free(pkey);
 		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
 	if (!(pkcs7 = PKCS7_sign(x509, pkey, NULL, bio, 0))) {
-		EVP_PKEY_free(pkey);
 		X509_free(x509);
 		BIO_free(bio);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	EVP_PKEY_free(pkey);
 	X509_free(x509);
 	BIO_free(bio);
 	
@@ -194,23 +190,23 @@ static VALUE
 ossl_pkcs7_add_signer(VALUE self, VALUE signer, VALUE key)
 {
 	PKCS7 *pkcs7;
-	PKCS7_SIGNER_INFO *si;
+	PKCS7_SIGNER_INFO *p7si;
 	EVP_PKEY *pkey;
 	
 	GetPKCS7(self, pkcs7);
 
 	OSSL_Check_Type(signer, cPKCS7SignerInfo);
 	
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
-	si = ossl_pkcs7si_get_PKCS7_SIGNER_INFO(signer);
-	si->pkey = pkey;
+	pkey = DupPrivPKeyPtr(key);
+	p7si = ossl_pkcs7si_get_PKCS7_SIGNER_INFO(signer); /* DUP needed to make PKCS7_add_signer GCsafe */
+	p7si->pkey = pkey;
 	
-	if (!PKCS7_add_signer(pkcs7, si)) {
-		PKCS7_SIGNER_INFO_free(si);
+	if (!PKCS7_add_signer(pkcs7, p7si)) {
+		PKCS7_SIGNER_INFO_free(p7si);
 		OSSL_Raise(ePKCS7Error, "Could not add signer.");
 	}
 	if (PKCS7_type_is_signed(pkcs7)) {
-		PKCS7_add_signed_attribute(si, NID_pkcs9_contentType, V_ASN1_OBJECT, OBJ_nid2obj(NID_pkcs7_data));
+		PKCS7_add_signed_attribute(p7si, NID_pkcs9_contentType, V_ASN1_OBJECT, OBJ_nid2obj(NID_pkcs7_data));
 	}
 	return self;
 }
@@ -432,15 +428,13 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 	}
 	OSSL_Check_Type(cert, cX509Cert);
 
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(bio = PKCS7_dataDecode(pkcs7, pkey, NULL, x509))) {
-		EVP_PKEY_free(pkey);
 		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	EVP_PKEY_free(pkey);
 	X509_free(x509);
 	
 	BIO_get_mem_ptr(bio, &buf);
@@ -501,18 +495,14 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 
 	GetPKCS7si(self, p7si);
 
-	OSSL_Check_Type(cert, cX509Cert);
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	md = ossl_digest_get_EVP_MD(digest);
-
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {
-		EVP_PKEY_free(pkey);
 		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	EVP_PKEY_free(pkey);
 	X509_free(x509);
 	
 	return self;

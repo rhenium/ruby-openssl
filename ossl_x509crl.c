@@ -295,15 +295,12 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 
 	GetX509CRL(self, crl);
 
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	md = ossl_digest_get_EVP_MD(digest);
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 	
 	if (!X509_CRL_sign(crl, pkey, md)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eX509CRLError, "");
 	}
-	EVP_PKEY_free(pkey);
-
 	return self;
 }
 
@@ -312,16 +309,12 @@ ossl_x509crl_verify(VALUE self, VALUE key)
 {
 	X509_CRL *crl;
 	EVP_PKEY *pkey;
-	int result;
 
 	GetX509CRL(self, crl);
 
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
-	result = X509_CRL_verify(crl, pkey);
-	EVP_PKEY_free(pkey);
-
-	if (result == 1) {
+	if (X509_CRL_verify(crl, pkey) == 1) {
 		return Qtrue;
 	}
 	return Qfalse;

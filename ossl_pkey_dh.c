@@ -54,22 +54,17 @@ dh_instance(VALUE klass, DH *dh)
 VALUE
 ossl_dh_new(EVP_PKEY *pkey)
 {
-	DH *dh = NULL;
 	VALUE obj;
 
-	if (pkey && EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
-		rb_raise(rb_eTypeError, "Not a DH key!");
-	}
-	if (!pkey) { /* all errs handled by dh_instance */
-		dh = DH_new();
+	if (!pkey) {
+		obj = dh_instance(cDH, DH_new());
 	} else {
-		dh = DHparams_dup(dh);
+		if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
+			rb_raise(rb_eTypeError, "Not a DH key!");
+		}
+		WrapPKey(cDH, obj, pkey);
 	}
-
-	obj = dh_instance(cDH, dh);
-	
 	if (obj == Qfalse) {
-		DH_free(dh);
 		OSSL_Raise(eDHError, "");
 	}
 	return obj;

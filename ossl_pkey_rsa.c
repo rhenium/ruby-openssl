@@ -54,22 +54,17 @@ rsa_instance(VALUE klass, RSA *rsa)
 VALUE
 ossl_rsa_new(EVP_PKEY *pkey)
 {
-	RSA *rsa;
 	VALUE obj;
 
-	if (pkey && EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) {
-		rb_raise(rb_eTypeError, "Not a RSA key!");
-	}
-	if (!pkey) { /* all errs handled by rsa_instance */
-		rsa = RSA_new();
+	if (!pkey) {
+		obj = rsa_instance(cRSA, RSA_new());
 	} else {
-		rsa = (RSA_PRIVATE(pkey->pkey.rsa)) ? RSAPrivateKey_dup(pkey->pkey.rsa) : RSAPublicKey_dup(pkey->pkey.rsa);
+		if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) {
+			rb_raise(rb_eTypeError, "Not a RSA key!");
+		}
+		WrapPKey(cRSA, obj, pkey);
 	}
-	
-	obj = rsa_instance(cRSA, rsa);
-	
 	if (obj == Qfalse) {
-		RSA_free(rsa);
 		OSSL_Raise(eRSAError, "");
 	}
 	return obj;

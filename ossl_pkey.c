@@ -74,29 +74,41 @@ ossl_pkey_new_from_file(VALUE filename)
 }
 
 EVP_PKEY *
-ossl_pkey_get_EVP_PKEY(VALUE obj)
+GetPKeyPtr(VALUE obj)
 {
 	EVP_PKEY *pkey;
 	
 	SafeGetPKey(obj, pkey);
 
-	obj = ossl_pkey_new(pkey);
-	
-	GetPKey(obj, pkey);
-	DATA_PTR(obj) = NULL; /* Don't let GC to discard pkey! */
-	
 	return pkey;
 }
 
 EVP_PKEY *
-ossl_pkey_get_private_EVP_PKEY(VALUE obj)
+GetPrivPKeyPtr(VALUE obj)
 {
-	EVP_PKEY *pkey = ossl_pkey_get_EVP_PKEY(obj);
+	EVP_PKEY *pkey;
+	
+	SafeGetPKey(obj, pkey);
 
 	if (RTEST(rb_funcall(obj, id_private_q, 0, NULL))) { /* returns Qtrue */
 		return pkey;
 	}
-	EVP_PKEY_free(pkey);
+	rb_raise(rb_eArgError, "Private key is needed.");
+
+	return 0; /* unreachable */
+}
+
+EVP_PKEY *
+DupPrivPKeyPtr(VALUE obj)
+{
+	EVP_PKEY *pkey;
+	
+	SafeGetPKey(obj, pkey);
+
+	if (RTEST(rb_funcall(obj, id_private_q, 0, NULL))) { /* returns Qtrue */
+		CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+		return pkey;
+	}
 	rb_raise(rb_eArgError, "Private key is needed.");
 
 	return 0; /* unreachable */

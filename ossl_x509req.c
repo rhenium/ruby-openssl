@@ -248,17 +248,13 @@ ossl_x509req_get_public_key(VALUE self)
 {
 	X509_REQ *req;
 	EVP_PKEY *pkey;
-	VALUE key;
 
 	GetX509Req(self, req);
 	
-	if (!(pkey = X509_REQ_get_pubkey(req))) {
+	if (!(pkey = X509_REQ_get_pubkey(req))) { /* adds reference */
 		OSSL_Raise(eX509ReqError, "");
 	}
-	key = ossl_pkey_new(pkey);
-	EVP_PKEY_free(pkey);
-
-	return key;
+	return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
 static VALUE 
@@ -269,14 +265,11 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
 
 	GetX509Req(self, req);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
 	if (!X509_REQ_set_pubkey(req, pkey)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eX509ReqError, "");
 	}
-	EVP_PKEY_free(pkey);
-
 	return key;
 }
 
@@ -289,15 +282,12 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 
 	GetX509Req(self, req);
 	
+	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	md = ossl_digest_get_EVP_MD(digest);
-	pkey = ossl_pkey_get_private_EVP_PKEY(key);
 
 	if (!X509_REQ_sign(req, pkey, md)) {
-		EVP_PKEY_free(pkey);
 		OSSL_Raise(eX509ReqError, "");
 	}
-	EVP_PKEY_free(pkey);
-
 	return self;
 }
 
@@ -313,14 +303,12 @@ ossl_x509req_verify(VALUE self, VALUE key)
 
 	GetX509Req(self, req);
 	
-	pkey = ossl_pkey_get_EVP_PKEY(key);
+	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 	
-	i = X509_REQ_verify(req, pkey);
-	EVP_PKEY_free(pkey);
-
-	if (i < 0) {
+	if ((i = X509_REQ_verify(req, pkey)) < 0) {
 		OSSL_Raise(eX509ReqError, "");
-	} else if (i > 0) {
+	}
+	if (i > 0) {
 		return Qtrue;
 	}
 	return Qfalse;

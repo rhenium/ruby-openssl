@@ -3,6 +3,23 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Sat,  8 Jun 2002 11:54:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.h: dropped ossl_pkey_get_EVP_PKEY, ossl_pkey_get_private_EVP_PKEY
+	* pkey.h: added GetPKeyPtr, GetPrivPKeyPtr, DupPrivPKeyPtr
+		GetPKeyPtr(obj) - gives directly EVP_PKEY* from obj (Doesn't dup it!)
+		GetPrivPKeyPtr(obj) - checkes if obj is is private the rest is the same as for GetPKeyPtr
+		DupPrivPKeyPtr(obj) - like GetPrivPKeyPtr, and adds an reference to make it GCsafe
+	* pkey.c: ossl_pkey_new(EVP_PKEY*) doesn't dup EVP_PKEY* any more, because nobody needed it
+	* pkey_dh.c: ossl_dh_new(EVP_PKEY*) doesn't dup EVP_PKEY*
+	* pkey_dsa.c: ossl_dsa_new(EVP_PKEY*) doesn't dup EVP_PKEY*
+	* pkey_rsa.c: ossl_rsa_new(EVP_PKEY*) doesn't dup EVP_PKEY*
+	* ns_spki.c: move to these new funcs. The benefit is: no malloc and free cycles.
+	* pkcs7.c: ditto.
+	* ssl.c: ditto.
+	* x509cert.c: ditto.
+	* x509crl.c: ditto.
+	* x509req.c: ditto.
+
 Fri,  7 Jun 2002 16:59:10 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* pkey.c: new helper func: ossl_pkey_get_private_EVP_PKEY
 	* ns_spki.c: use new helper func

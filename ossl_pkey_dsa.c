@@ -54,22 +54,17 @@ dsa_instance(VALUE klass, DSA *dsa)
 VALUE
 ossl_dsa_new(EVP_PKEY *pkey)
 {
-	DSA *dsa;
 	VALUE obj;
 
-	if (pkey && EVP_PKEY_type(pkey->type) != EVP_PKEY_DSA) {
-		rb_raise(rb_eTypeError, "Not a DSA key!");
-	}
 	if (!pkey) {
-		dsa = DSA_new();
+		obj = dsa_instance(cDSA, DSA_new());
 	} else {
-		dsa = (DSA_PRIVATE(pkey->pkey.dsa)) ? DSAPrivateKey_dup(pkey->pkey.dsa) : DSAPublicKey_dup(pkey->pkey.dsa);
+		if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DSA) {
+			rb_raise(rb_eTypeError, "Not a DSA key!");
+		}
+		WrapPKey(cDSA, obj, pkey);
 	}
-	
-	obj = dsa_instance(cDSA, dsa);
-	
 	if (obj == Qfalse) {
-		DSA_free(dsa);
 		OSSL_Raise(eDSAError, "");
 	}
 	return obj;
