@@ -100,33 +100,33 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 		if (!BN_copy(bn, other)) {
 			ossl_raise(eBNError, "");
 		}
-	} else {
-		StringValue(str);
+		return self;
+	}
+	StringValue(str);
 
-		switch (base) {
-			case 0:
-				if (!BN_mpi2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
-					ossl_raise(eBNError, "");
-				}
-				break;
-			case 2:
-				if (!BN_bin2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
-					ossl_raise(eBNError, "");
-				}
-				break;
-			case 10:
-				if (!BN_dec2bn(&bn, RSTRING(str)->ptr)) {
-					ossl_raise(eBNError, "");
-				}
-				break;
-			case 16:
-				if (!BN_hex2bn(&bn, RSTRING(str)->ptr)) {
-					ossl_raise(eBNError, "");
-				}
-				break;
-			default:
-				ossl_raise(rb_eArgError, "illegal radix %d", base);
-		}
+	switch (base) {
+		case 0:
+			if (!BN_mpi2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+				ossl_raise(eBNError, "");
+			}
+			break;
+		case 2:
+			if (!BN_bin2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+				ossl_raise(eBNError, "");
+			}
+			break;
+		case 10:
+			if (!BN_dec2bn(&bn, RSTRING(str)->ptr)) {
+				ossl_raise(eBNError, "");
+			}
+			break;
+		case 16:
+			if (!BN_hex2bn(&bn, RSTRING(str)->ptr)) {
+				ossl_raise(eBNError, "");
+			}
+			break;
+		default:
+			ossl_raise(rb_eArgError, "illegal radix %d", base);
 	}
 	return self;
 }
@@ -366,14 +366,17 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 	ossl_bn_##func(VALUE self, VALUE bits)						\
 	{										\
 		BIGNUM *bn, *result;							\
+		int b;									\
 		VALUE obj;								\
 											\
 		GetBN(self, bn);							\
 											\
+		b = NUM2INT(bits);							\
+											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
 		}									\
-		if (!BN_##func(result, bn, NUM2INT(bits))) {				\
+		if (!BN_##func(result, bn, b)) {					\
 			BN_free(result);						\
 			ossl_raise(eBNError, "");					\
 		}									\
@@ -389,7 +392,7 @@ BIGNUM_SHIFT(rshift);
 	ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)				\
 	{										\
 		BIGNUM *result;								\
-		int bottom = 0, top = 0;						\
+		int bottom = 0, top = 0, b;						\
 		VALUE bits, fill, odd, obj;						\
 											\
 		switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {		\
@@ -399,10 +402,12 @@ BIGNUM_SHIFT(rshift);
 			case 2:								\
 				top = FIX2INT(fill);					\
 		}									\
+		b = NUM2INT(bits);							\
+											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
 		}									\
-		if (!BN_##func(result, NUM2INT(bits), top, bottom)) {			\
+		if (!BN_##func(result, b, top, bottom)) {				\
 			BN_free(result);						\
 			ossl_raise(eBNError, "");					\
 		}									\
@@ -440,10 +445,12 @@ static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 {
 	BIGNUM *add = NULL, *rem = NULL, *result;
-	int safe = 1;
+	int safe = 1, num;
 	VALUE vnum, vsafe, vadd, vrem, obj;
 
 	rb_scan_args(argc, argv, "13", &vnum, &vsafe, &vadd, &vrem);
+	
+	num = NUM2INT(vnum);
 
 	if (vsafe == Qfalse) {
 		safe = 0;
@@ -458,7 +465,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	if (!(result = BN_new())) {
 		ossl_raise(eBNError, "");
 	}
-	if (!BN_generate_prime(result, NUM2INT(vnum), safe, add, rem, NULL, NULL)) {
+	if (!BN_generate_prime(result, num, safe, add, rem, NULL, NULL)) {
 		BN_free(result);
 		ossl_raise(eBNError, "");
 	}

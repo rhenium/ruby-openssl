@@ -36,7 +36,7 @@ VALUE eCipherError;
  * Struct
  */
 typedef struct ossl_cipher_st {
-	int init; /* HACK - not to coredump when calling 'update' without previous en/decrypt */
+	int init; /* HACK - not to coredump when calling #update or #final without previous en/decrypt */
 	const EVP_CIPHER *cipher;
 	EVP_CIPHER_CTX ctx;
 } ossl_cipher;
@@ -85,14 +85,14 @@ static VALUE
 ossl_cipher_initialize(VALUE self, VALUE str)
 {
 	ossl_cipher *ciphp;
-	char *c_name;
+	char *name;
 
 	GetCipher(self, ciphp);
 
-	c_name = StringValuePtr(str);
+	name = StringValuePtr(str);
 
-	if (!(ciphp->cipher = EVP_get_cipherbyname(c_name))) {
-		ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", c_name);
+	if (!(ciphp->cipher = EVP_get_cipherbyname(name))) {
+		ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", name);
 	}
 	return self;
 }

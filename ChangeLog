@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 23 Jul 2002 15:46:17 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	bn.c: FIX potencial mem leak when using NUM2INT
+
 Tue, 23 Jul 2002 15:10:46 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	x509name.c: FIX mem leak in #to_s
 

@@ -62,14 +62,14 @@ ossl_digest_initialize(VALUE self, VALUE str)
 {
 	EVP_MD_CTX *ctx;
 	const EVP_MD *md;
-	char *md_name;
+	char *name;
 	
 	GetDigest(self, ctx);
 	
-	md_name = StringValuePtr(str);
+	name = StringValuePtr(str);
 	
-	if (!(md = EVP_get_digestbyname(md_name))) {
-		ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", md_name);
+	if (!(md = EVP_get_digestbyname(name))) {
+		ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
 	}
 	EVP_DigestInit(ctx, md);
 
@@ -261,5 +261,5 @@ Init_ossl_digest()
 	rb_define_method(cDigest, "name", ossl_digest_name, 0);
 	rb_define_method(cDigest, "size", ossl_digest_size, 0);
 
-} /* Init_ossl_digest */
+}
 
