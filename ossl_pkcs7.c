@@ -28,7 +28,7 @@
 	if (!p7sip->signer) rb_raise(ePKCS7Error, "not initialized!");\
 }
 
-#define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2FIX(##x))
+#define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2FIX(x))
 
 /*
  * Constants

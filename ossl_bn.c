@@ -177,13 +177,13 @@ ossl_bn_to_i(VALUE self)
 
 #define BIGNUM_BOOL1(func)								\
 	static VALUE 									\
-	ossl_bn_##func##(VALUE self)							\
+	ossl_bn_##func(VALUE self)							\
 	{										\
 		ossl_bn *bnp = NULL;							\
 											\
 		GetBN(self, bnp);							\
 											\
-		if (BN_##func##(bnp->bignum) == 1)					\
+		if (BN_##func(bnp->bignum) == 1)					\
 			return Qtrue;							\
 											\
 		return Qfalse;								\
@@ -194,7 +194,7 @@ BIGNUM_BOOL1(is_odd);
 
 #define BIGNUM_1c(func)									\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self)							\
+	ossl_bn_##func(VALUE self)							\
 	{										\
 		ossl_bn *bnp = NULL;							\
 		BIGNUM *result = NULL;							\
@@ -207,7 +207,7 @@ BIGNUM_BOOL1(is_odd);
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		BN_CTX_init(&ctx);							\
-		if (BN_##func##(result, bnp->bignum, &ctx) != 1)			\
+		if (BN_##func(result, bnp->bignum, &ctx) != 1)			\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		obj = ossl_bn_new(result);						\
@@ -219,7 +219,7 @@ BIGNUM_1c(sqr);
 
 #define BIGNUM_2(func)									\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self, VALUE other)						\
+	ossl_bn_##func(VALUE self, VALUE other)						\
 	{										\
 		ossl_bn *bn1p = NULL;							\
 		ossl_bn *bn2p = NULL;							\
@@ -234,7 +234,7 @@ BIGNUM_1c(sqr);
 		if (!(result = BN_new()))						\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
-		if (BN_##func##(result, bn1p->bignum, bn2p->bignum) != 1)			\
+		if (BN_##func(result, bn1p->bignum, bn2p->bignum) != 1)			\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		obj = ossl_bn_new(result);						\
@@ -247,7 +247,7 @@ BIGNUM_2(sub);
 
 #define BIGNUM_2c(func)									\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self, VALUE other)					\
+	ossl_bn_##func(VALUE self, VALUE other)					\
 	{										\
 		ossl_bn *bn1p = NULL, *bn2p = NULL;					\
 		BIGNUM *result = NULL;							\
@@ -263,7 +263,7 @@ BIGNUM_2(sub);
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		BN_CTX_init(&ctx);							\
-		if (BN_##func##(result, bn1p->bignum, bn2p->bignum, &ctx) != 1)		\
+		if (BN_##func(result, bn1p->bignum, bn2p->bignum, &ctx) != 1)		\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		obj = ossl_bn_new(result);						\
@@ -332,7 +332,7 @@ ossl_bn_mod_inverse(VALUE self, VALUE other)
 
 #define BIGNUM_3c(func)									\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self, VALUE other1, VALUE other2)			\
+	ossl_bn_##func(VALUE self, VALUE other1, VALUE other2)			\
 	{										\
 		ossl_bn *bn1p = NULL, *bn2p = NULL, *bn3p = NULL;			\
 		BIGNUM *result = NULL;							\
@@ -350,7 +350,7 @@ ossl_bn_mod_inverse(VALUE self, VALUE other)
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		BN_CTX_init(&ctx);							\
-		if (BN_##func##(result, bn1p->bignum, bn2p->bignum, bn3p->bignum, &ctx) != 1)	\
+		if (BN_##func(result, bn1p->bignum, bn2p->bignum, bn3p->bignum, &ctx) != 1)	\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		obj = ossl_bn_new(result);						\
@@ -363,13 +363,13 @@ BIGNUM_3c(mod_exp);
 
 #define BIGNUM_BIT_SETCLEAR(func)							\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self, VALUE bit)						\
+	ossl_bn_##func(VALUE self, VALUE bit)						\
 	{										\
 		ossl_bn *bnp = NULL;							\
 											\
 		GetBN(self, bnp);							\
 											\
-		if (BN_##func##(bnp->bignum, NUM2INT(bit)) != 1)				\
+		if (BN_##func(bnp->bignum, NUM2INT(bit)) != 1)				\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		return self;								\
@@ -405,7 +405,7 @@ ossl_bn_mask_bits(VALUE self, VALUE bit)
 
 #define BIGNUM_SHIFT(func)								\
 	static VALUE									\
-	ossl_bn_##func##(VALUE self, VALUE bits)					\
+	ossl_bn_##func(VALUE self, VALUE bits)					\
 	{										\
 		ossl_bn *bnp = NULL;							\
 		BIGNUM *result = NULL;							\
@@ -416,7 +416,7 @@ ossl_bn_mask_bits(VALUE self, VALUE bit)
 		if (!(result = BN_new()))						\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
-		if (BN_##func##(result, bnp->bignum, NUM2INT(bits)) != 1)		\
+		if (BN_##func(result, bnp->bignum, NUM2INT(bits)) != 1)		\
 			rb_raise(eBNError, "%s", ossl_error());				\
 											\
 		obj = ossl_bn_new(result);						\

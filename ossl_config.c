@@ -76,7 +76,7 @@ static VALUE
 ossl_config_initialize(int argc, VALUE* argv, VALUE self)
 {
 	ossl_config *configp = NULL;
-	int err_line = 0;
+	long err_line = 0;
 	VALUE path;
 	
 	GetConfig(self, configp);

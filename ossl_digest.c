@@ -203,7 +203,7 @@ ossl_digest_hexdigest(VALUE self)
 		if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {			\
 			rb_raise(eDigestError, "Cannot allocate memory for new digest");	\
 		}										\
-		EVP_DigestInit(digestp->md, EVP_##dgst##());					\
+		EVP_DigestInit(digestp->md, EVP_##dgst());					\
 												\
 		if (rb_scan_args(argc, argv, "01", &data) == 1) {				\
 			Check_Type(data, T_STRING);						\

@@ -540,7 +540,7 @@ Init_ossl_cipher(VALUE module)
 /*
  * Constants
  */
-#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(##x))
+#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(x))
 
 	DefCipherConst(ECB);
 	DefCipherConst(EDE);
@@ -555,8 +555,8 @@ Init_ossl_cipher(VALUE module)
  * automation for classes creation and initialize method binding
  */
 #define DefCipher(name, func) 								\
-	c##name## = rb_define_class_under(module, #name, cCipher);			\
-	rb_define_method(c##name##, "initialize", ossl_##func##_initialize, -1)
+	c##name = rb_define_class_under(module, #name, cCipher);			\
+	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*
  * create classes and bind initialize method
