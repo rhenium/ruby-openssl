@@ -20,17 +20,17 @@
  */
 /* BASIC TYPES */
 #define UNSPEC	0x0000
-#define ECB	0x0001
-#define CFB	0x0002
-#define OFB	0x0004
-#define CBC	0x0008
-#define EDE	0x0010
-#define EDE3	0x0020
-#define BIT40	0x0100
-#define BIT64	0x0200
-#define BIT128	0x0400
-#define BIT192	0x0800
-#define BIT256	0x0F00
+#define ECB	0x1000
+#define CFB	0x2000
+#define OFB	0x4000
+#define CBC	0x8000
+#define EDE	0x0001
+#define EDE3	0x0002
+#define BIT40	0x0028 /*40*/
+#define BIT64	0x0040 /*64*/
+#define BIT128	0x0080 /*128*/
+#define BIT192	0x00C0 /*192*/
+#define BIT256	0x0100 /*256*/
 
 /*
  * Classes
@@ -620,8 +620,8 @@ Init_ossl_cipher(VALUE module)
 /*
  * automation for classes creation and initialize method binding
  */
-#define DefCipher(name, func) 								\
-	c##name = rb_define_class_under(module, #name, cCipher);			\
+#define DefCipher(name, func) 							\
+	c##name = rb_define_class_under(module, #name, cCipher);		\
 	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*

@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.22  2002/01/10 17:33:16  majkl
+	* OpenSSL::Cipher::BITx constant == x (so BIT40 = 40,...)
+
 Revision 1.21  2002/01/10 13:46:09  majkl
 	* added OpenSSL-SNAPSHOT style NO_* (OPENSSL_NO_*)
 	* added AES cipher when compiled under OpenSSL-SNAPSHOT
