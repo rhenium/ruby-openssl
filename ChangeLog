@@ -4,7 +4,7 @@ Thu, 03 Jul 2003 12:04:33 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509crl.[ch]: add ossl_x509crl_new();
 	* ossl_x509store.c:
 	  - add X509::StoreContext#current_crl
-	  - del X509::StoreContext#add_crl_file (use #add_file instead.)
+	  - del X509::Store#add_crl_file (use #add_file instead.)
 	* lib/net/https.rb: fix attrs.
 	* examples/ossl_x509store.rb: revised.
 
