@@ -4,6 +4,16 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.37  2002/04/07 16:35:32  majkl
+	* Macros fixups
+	* X509ExtFactory cleanup
+	* fixed strptime warning on Linux
+	* X509::Certificate#version has been changed!
+	  !!! WARNING !!!
+		x509.version = 2 -> defines X509v3, (0 for v1, 1 for v2, ...)
+		p x509.version -> 2, means that it is X509v3
+	  !!! WARNING !!!
+
 Revision 1.36  2002/03/11 21:35:39  majkl
 	* Cipher IV fixup
 

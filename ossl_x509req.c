@@ -181,10 +181,10 @@ ossl_x509req_set_version(VALUE self, VALUE version)
 
 	GetX509Req(self, req);
 
-	if ((ver = NUM2INT(version)) <= 0) {
-		rb_raise(eX509RequestError, "version must be > 0!");
+	if ((ver = NUM2INT(version)) < 0) {
+		rb_raise(eX509RequestError, "version must be >= 0!");
 	}
-	if (!X509_REQ_set_version(req, version)) {
+	if (!X509_REQ_set_version(req, ver)) {
 		OSSL_Raise(eX509RequestError, "");
 	}
 

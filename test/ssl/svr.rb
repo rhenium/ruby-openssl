@@ -32,7 +32,7 @@ p [ $OPT_p, $OPT_k, $OPT_c ]
       p cert = X509::Certificate.new(File.open($OPT_c).read)
     else
       cert = X509::Certificate.new
-      cert.version = 3
+      cert.version = 2
       cert.serial = 0
       name = X509::Name.new([["C","CZ"],["O","Ruby"],["CN","Test"]])
       cert.subject = name

@@ -10,9 +10,7 @@
  */
 #include "ossl.h"
 
-#define MakeCipher(obj, klass, ciphp) {\
-	obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp);\
-}
+#define MakeCipher(obj, klass, ciphp) obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp)
 #define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
 
 /*
@@ -66,6 +64,7 @@ ossl_cipher_get_NID(VALUE obj)
 	ossl_cipher *ciphp = NULL;
 
 	OSSL_Check_Type(obj, cCipher);
+
 	GetCipher(obj, ciphp);
 
 	return ciphp->nid; /*EVP_CIPHER_CTX_nid(ciphp->ctx);*/
@@ -124,7 +123,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		 * TODO:
 		 * random IV generation!
 		 */ 
-		memcpy(iv, "OpenSSL for Ruby rulez!", EVP_MAX_IV_LENGTH);
+		memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
 		/*
 		RAND_add(data,i,0); where from take data?
 		if (RAND_pseudo_bytes(iv, 8) < 0) {
@@ -137,7 +136,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 			memset(iv, 0, EVP_MAX_IV_LENGTH);
 			memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
 		} else
-			memcpy(iv, RSTRING(init_v)->ptr, EVP_MAX_IV_LENGTH);
+			memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
 	}
 	EVP_CIPHER_CTX_init(ciphp->ctx);
 

@@ -11,14 +11,12 @@
 #include "ossl.h"
 #include <rubysig.h>
 
-#define MakeX509Store(obj, storep) {\
-	obj = Data_Make_Struct(cX509Store, ossl_x509store, 0, ossl_x509store_free, storep);\
-}
+#define MakeX509Store(obj, storep) obj = Data_Make_Struct(cX509Store, ossl_x509store, 0, ossl_x509store_free, storep)
 #define GetX509Store_unsafe(obj, storep) Data_Get_Struct(obj, ossl_x509store, storep)
-#define GetX509Store(obj, storep) {\
+#define GetX509Store(obj, storep) do {\
 	GetX509Store_unsafe(obj, storep);\
 	if (!storep->store) rb_raise(eX509StoreError, "not initialized!");\
-}
+} while (0)
 
 /*
  * Classes

@@ -133,13 +133,13 @@ time_t time_to_time_t(VALUE);
 
 #if defined(OSSL_DEBUG)
 #  define OSSL_Raise(klass,text) \
-	rb_raise(klass, "%s%s [in '%s', file: '%s', line: %d]", \
+	rb_raise(klass, "%s%s [in '%s', ('%s':%d)]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
 #  define OSSL_Warn(text) \
-	rb_warn("%s%s [in '%s', file: '%s', line: %d]", \
+	rb_warn("%s%s [in '%s', ('%s':%d)]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
 #  define OSSL_Warning(text) \
-	rb_warning("%s%s [in '%s', file: '%s', line: %d]", \
+	rb_warning("%s%s [in '%s', ('%s':%d)]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
 #else /*OSSL_DEBUG*/
 #  define OSSL_Raise(klass,text) \

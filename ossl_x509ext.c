@@ -10,11 +10,15 @@
  */
 #include "ossl.h"
 
-#define WrapX509Ext(obj, ext) obj = Data_Wrap_Struct(cX509Extension, 0, X509_EXTENSION_free, ext)
-#define GetX509Ext(obj, ext) Data_Get_Struct(obj, X509_EXTENSION, ext)
+#define WrapX509Ext(obj, ext) \
+	obj = Data_Wrap_Struct(cX509Extension, 0, X509_EXTENSION_free, ext)
+#define GetX509Ext(obj, ext) \
+	Data_Get_Struct(obj, X509_EXTENSION, ext)
 
-#define MakeX509ExtFactory(obj, extfactoryp) obj = Data_Make_Struct(cX509ExtensionFactory, ossl_x509extfactory, 0, ossl_x509extfactory_free, extfactoryp)
-#define GetX509ExtFactory(obj, extfactoryp) Data_Get_Struct(obj, ossl_x509extfactory, extfactoryp)
+#define MakeX509ExtFactory(obj, ctx) \
+	obj = Data_Make_Struct(cX509ExtensionFactory, X509V3_CTX, 0, CRYPTO_free, ctx)
+#define GetX509ExtFactory(obj, ctx) \
+	Data_Get_Struct(obj, X509V3_CTX, ctx)
 
 /*
  * Classes
@@ -22,22 +26,6 @@
 VALUE cX509Extension;
 VALUE cX509ExtensionFactory;
 VALUE eX509ExtensionError;
-
-/*
- * Structs
- */
-typedef struct ossl_x509extfactory_st {
-	X509V3_CTX ctx;
-} ossl_x509extfactory;
-
-
-static void 
-ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
-{
-	if (extfactoryp) {
-		free(extfactoryp);
-	}
-}
 
 /*
  * Public
@@ -85,10 +73,10 @@ ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 static VALUE 
 ossl_x509extfactory_s_new(int argc, VALUE *argv, VALUE klass)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 	VALUE obj;
 	
-	MakeX509ExtFactory(obj, extfactoryp);
+	MakeX509ExtFactory(obj, ctx);
 
 	rb_obj_call_init(obj, argc, argv);
 
@@ -98,12 +86,11 @@ ossl_x509extfactory_s_new(int argc, VALUE *argv, VALUE klass)
 static VALUE 
 ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 
-	GetX509ExtFactory(self, extfactoryp);
+	GetX509ExtFactory(self, ctx);
 
-	OSSL_Check_Type(cert, cX509Certificate);
-	(extfactoryp->ctx).issuer_cert = ossl_x509_get_X509(cert);
+	ctx->issuer_cert = ossl_x509_get_X509(cert);
 
 	return cert;
 }
@@ -111,12 +98,11 @@ ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 static VALUE 
 ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 
-	GetX509ExtFactory(self, extfactoryp);
+	GetX509ExtFactory(self, ctx);
 
-	OSSL_Check_Type(cert, cX509Certificate);
-	(extfactoryp->ctx).subject_cert = ossl_x509_get_X509(cert);
+	ctx->subject_cert = ossl_x509_get_X509(cert);
 
 	return cert;
 }
@@ -124,12 +110,11 @@ ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 static VALUE 
 ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 
-	GetX509ExtFactory(self, extfactoryp);
+	GetX509ExtFactory(self, ctx);
 
-	OSSL_Check_Type(req, cX509Request);
-	(extfactoryp->ctx).subject_req = ossl_x509req_get_X509_REQ(req);
+	ctx->subject_req = ossl_x509req_get_X509_REQ(req);
 
 	return req;
 }
@@ -137,12 +122,11 @@ ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 static VALUE 
 ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 
-	GetX509ExtFactory(self, extfactoryp);
+	GetX509ExtFactory(self, ctx);
 
-	OSSL_Check_Type(crl, cX509CRL);
-	(extfactoryp->ctx).crl = ossl_x509crl_get_X509_CRL(crl);
+	ctx->crl = ossl_x509crl_get_X509_CRL(crl);
 
 	return crl;
 }
@@ -150,10 +134,10 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 static VALUE 
 ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	/*X509V3_CTX *ctx = NULL;*/
 	VALUE issuer_cert, subject_cert, subject_req, crl;
 	
-	GetX509ExtFactory(self, extfactoryp);
+	/*GetX509ExtFactory(self, ctx);*/
 
 	rb_scan_args(argc, argv, "04", &issuer_cert, &subject_cert, &subject_req, &crl);
 
@@ -184,13 +168,13 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE 
 ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 {
-	ossl_x509extfactory *extfactoryp = NULL;
+	X509V3_CTX *ctx = NULL;
 	X509_EXTENSION *ext = NULL;
 	int nid = NID_undef;
 	char *value = NULL;
 	VALUE item, obj;
 	
-	GetX509ExtFactory(self, extfactoryp);
+	GetX509ExtFactory(self, ctx);
 	
 	Check_Type(ary, T_ARRAY);
 
@@ -220,7 +204,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	} else
 		value = strdup(RSTRING(item)->ptr);
 
-	if (!(ext = X509V3_EXT_conf_nid(NULL, &(extfactoryp->ctx), nid, value))) {
+	if (!(ext = X509V3_EXT_conf_nid(NULL, ctx, nid, value))) {
 		free(value);
 		OSSL_Raise(eX509ExtensionError, "");
 	}

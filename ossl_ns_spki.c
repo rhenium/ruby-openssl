@@ -10,7 +10,7 @@
  */
 #include "ossl.h"
 
-#define WrapSPKI(obj, spkip) obj = Data_Wrap_Struct(cSPKI, 0, NETSCAPE_SPKI_free, spki)
+#define WrapSPKI(obj, spki) obj = Data_Wrap_Struct(cSPKI, 0, NETSCAPE_SPKI_free, spki)
 #define GetSPKI(obj, spki) Data_Get_Struct(obj, NETSCAPE_SPKI, spki)
 
 /*
@@ -181,7 +181,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 	md = ossl_digest_get_EVP_MD(digest);
 	
 	if (rb_funcall(key, id_private_q, 0, NULL) == Qfalse) {
-		rb_raise(eSPKIError, "PRIVATE key needed to sign REQ!");
+		rb_raise(eSPKIError, "PRIVATE key needed to sign SPKI!");
 	}
 	pkey = ossl_pkey_get_EVP_PKEY(key);
 

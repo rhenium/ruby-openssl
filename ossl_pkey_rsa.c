@@ -13,15 +13,15 @@
 #include "ossl.h"
 #include "ossl_pkey.h"
 
-#define MakeRSA(obj, rsap) {\
+#define MakeRSA(obj, rsap) do {\
 	obj = Data_Make_Struct(cRSA, ossl_rsa, 0, ossl_rsa_free, rsap);\
 	rsap->pkey.get_EVP_PKEY = ossl_rsa_get_EVP_PKEY;\
-}
+} while (0)
 
-#define GetRSA(obj, rsap) {\
+#define GetRSA(obj, rsap) do {\
 	Data_Get_Struct(obj, ossl_rsa, rsap);\
 	if (!rsap->rsa) rb_raise(eRSAError, "not initialized!");\
-}
+} while (0)
 
 #define RSA_PRIVATE(rsa) ((rsa)->p && (rsa)->q)
 

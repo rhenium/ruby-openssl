@@ -215,13 +215,13 @@ static VALUE
 ossl_x509_get_version(VALUE self)
 {
 	X509 *x509 = NULL;
-	long version = 0;
+	long ver = 0;
 
 	GetX509(self, x509);
 	
-	version = X509_get_version(x509);
+	ver = X509_get_version(x509);
 
-	return INT2NUM(version+1);
+	return INT2NUM(ver);
 }
 
 static VALUE 
@@ -232,10 +232,10 @@ ossl_x509_set_version(VALUE self, VALUE version)
 
 	GetX509(self, x509);
 
-	if ((ver = FIX2LONG(version)) <= 0) {
-		rb_raise(eX509CertificateError, "version must be > 0!");
+	if ((ver = FIX2LONG(version)) < 0) {
+		rb_raise(eX509CertificateError, "version must be >= 0!");
 	}
-	if (!X509_set_version(x509, ver-1)) {
+	if (!X509_set_version(x509, ver)) {
 		OSSL_Raise(eX509CertificateError, "");
 	}
 

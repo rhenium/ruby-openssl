@@ -57,11 +57,6 @@ module SSL
       __initialize(arg)
     end
 
-    alias builtin_version version
-    def version
-      builtin_version - 1
-    end
-
     alias __verify verify
     def verify(arg)
       case arg

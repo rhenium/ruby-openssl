@@ -13,15 +13,15 @@
 #include "ossl.h"
 #include "ossl_pkey.h"
 
-#define MakeDSA(obj, dsap) {\
+#define MakeDSA(obj, dsap) do {\
 	obj = Data_Make_Struct(cDSA, ossl_dsa, 0, ossl_dsa_free, dsap);\
 	dsap->pkey.get_EVP_PKEY = ossl_dsa_get_EVP_PKEY;\
-}
+} while (0)
 
-#define GetDSA(obj, dsap) {\
+#define GetDSA(obj, dsap) do {\
 	Data_Get_Struct(obj, ossl_dsa, dsap);\
 	if (!dsap->dsa) rb_raise(eDSAError, "not initialized!");\
-}
+} while (0)
 
 #define DSA_PRIVATE(dsa) ((dsa)->priv_key)
 

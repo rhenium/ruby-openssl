@@ -20,4 +20,4 @@ p req.sign(pkey, Digest::MD5.new)
 p req.verify key
 p req.verify pkey
 p req.verify k2
-
+puts req.to_text

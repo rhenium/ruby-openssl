@@ -8,18 +8,22 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#include "ossl.h"
-
-#if defined(NT)
-#  define strncasecmp _strnicmp
+/*
+ * Surpress dumb warning about implicit declaration of strptime on Linux
+ */
+#if defined(__linux__) || defined(linux)
+#  define _GNU_SOURCE
 #endif
 
+#include "ossl.h"
 /*
  * On Windows platform there is no strptime function
  * implementation in strptime.c
  */
 #ifndef HAVE_STRPTIME
 #  include "./missing/strptime.c"
+#else
+#  include <time.h>
 #endif
 
 /*
@@ -69,6 +73,9 @@ asn1time_to_time(ASN1_UTCTIME *time)
 	return rb_time_new(mktime(&tm), 0); /* or this one? */
 }
 
+/*
+ * This function is not exported to ruby.h
+ */
 extern struct timeval rb_time_timeval(VALUE time);
 
 time_t

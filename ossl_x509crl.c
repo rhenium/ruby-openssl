@@ -99,13 +99,17 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
 {
 	X509_CRL *crl = NULL;
 	ASN1_INTEGER *asn1int = NULL;
+	long ver = 0;
 	
 	GetX509CRL(self, crl);
 
+	if ((ver = NUM2LONG(version)) < 0) {
+		rb_raise(eX509CRLError, "version must be >= 0!");
+	}
 	if (!(asn1int = ASN1_INTEGER_new())) {
 		OSSL_Raise(eX509CRLError, "");
 	}
-	if (!ASN1_INTEGER_set(asn1int, NUM2LONG(version))) {
+	if (!ASN1_INTEGER_set(asn1int, ver)) {
 		OSSL_Raise(eX509CRLError, "");
 	}
 	

@@ -13,15 +13,15 @@
 #include "ossl.h"
 #include "ossl_pkey.h"
 
-#define MakeDH(obj, dhp) {\
+#define MakeDH(obj, dhp) do {\
 	obj = Data_Make_Struct(cDH, ossl_dh, 0, ossl_dh_free, dhp);\
 	dhp->pkey.get_EVP_PKEY = ossl_dh_get_EVP_PKEY;\
-}
+} while (0)
 
-#define GetDH(obj, dhp) {\
+#define GetDH(obj, dhp) do {\
 	Data_Get_Struct(obj, ossl_dh, dhp);\
 	if (!dhp->dh) rb_raise(eDHError, "not initialized!");\
-}
+} while (0)
 
 #define DH_PRIVATE(dh) ((dh)->priv_key)
 
