@@ -22,6 +22,8 @@ OpenSSL::
     [DONE] Convert BN#to_s to Ruby-like behaviour
     * introduce BN#pack for MPI, BIN (and call it from BN#to_s and BN#initialize)?
     * DON'T FORGET TO ADD SUPPORT FOR BIN, AND MPI BACK!
+    * Merge #rand and #rand_range into #rand
+    * Merge #pseudo_rand and #pseudo_rand_range into #pseudo_rand
     
   Cipher::
     [DONE] Use Factory (Cipher.new("DES_EDE3_CBC"))?

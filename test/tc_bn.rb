@@ -17,6 +17,7 @@
 
 require 'test/unit'
 require 'openssl'
+
 include OpenSSL
 
 ##

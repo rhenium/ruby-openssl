@@ -3,6 +3,11 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 12 Jun 2002 14:12:36 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* tc_cipher.rb: NEW (TestCase for Cipher)
+	* tc_digest.rb: NEW (TestCase for Digest)
+	* digest.c: fix equal when comparing with other kind of Digest
+
 Wed, 12 Jun 2002 13:15:40 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.rb: included Comparable module
 	* bn.c: changed # of args for #rand, #pseudo_rand (some are default now)

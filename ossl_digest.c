@@ -192,7 +192,7 @@ ossl_digest_equal(VALUE self, VALUE other)
 
 	GetDigest(self, ctx);
 	
-	if (CLASS_OF(other) == CLASS_OF(self)) {
+	if (rb_obj_is_kind_of(other, cDigest) == Qtrue) {
 		str2 = ossl_digest_digest(other);
 	} else {
 		StringValue(other);
