@@ -99,7 +99,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     StringValue(buffer);
     
     in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
-    if (!in)
+    if (!in) {
 	ossl_raise(eX509ReqError, "");
     }
     /*
