@@ -90,12 +90,10 @@ GetPrivPKeyPtr(VALUE obj)
 	
 	SafeGetPKey(obj, pkey);
 
-	if (rb_funcall(obj, id_private_q, 0, NULL) == Qtrue) { /* returns Qtrue */
-		return pkey;
+	if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) { /* returns Qtrue */
+		ossl_raise(rb_eArgError, "Private key is needed.");
 	}
-	ossl_raise(rb_eArgError, "Private key is needed.");
-
-	return 0; /* unreachable */
+	return pkey;
 }
 
 EVP_PKEY *
@@ -105,13 +103,12 @@ DupPrivPKeyPtr(VALUE obj)
 	
 	SafeGetPKey(obj, pkey);
 
-	if (rb_funcall(obj, id_private_q, 0, NULL) == Qtrue) { /* returns Qtrue */
-		CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
-		return pkey;
+	if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) { /* returns Qtrue */
+		ossl_raise(rb_eArgError, "Private key is needed.");
 	}
-	ossl_raise(rb_eArgError, "Private key is needed.");
+	CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 
-	return 0; /* unreachable */
+	return pkey;
 }
 
 /*
@@ -156,7 +153,6 @@ ossl_pkey_to_der(VALUE self)
 		X509_PUBKEY_free(key);
 		ossl_raise(ePKeyError, "");
 	}
-
 	str = rb_str_new(key->public_key->data, key->public_key->length);
 	X509_PUBKEY_free(key);
 
@@ -172,12 +168,11 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 	int buf_len;
 	VALUE str;
 
+	GetPKey(self, pkey);
+	
 	if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
 		ossl_raise(rb_eArgError, "Private key is needed.");
 	}
-
-	GetPKey(self, pkey);
-
 	EVP_SignInit(&ctx, GetDigestPtr(digest));
 	
 	StringValue(data);
@@ -202,21 +197,18 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 {
 	EVP_PKEY *pkey;
 	EVP_MD_CTX ctx;
-	const EVP_MD *md;
 	int result;
 
 	GetPKey(self, pkey);
 
-	md = GetDigestPtr(digest);
+	EVP_VerifyInit(&ctx, GetDigestPtr(digest));
+	
 	StringValue(sig);
 	StringValue(data);
 	
-	EVP_VerifyInit(&ctx, md);
 	EVP_VerifyUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 	
-	result = EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey);
-
-	if (result < 0) {
+	if ((result = EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey)) < 0) {
 		ossl_raise(ePKeyError, "");
 	}
 	if (result == 1) {

@@ -45,8 +45,7 @@ ossl_spki_s_allocate(VALUE klass)
 	
 	if (!(spki = NETSCAPE_SPKI_new())) {
 		ossl_raise(eSPKIError, "");
-	}
-	
+	}	
 	WrapSPKI(klass, obj, spki);
 	
 	return obj;
@@ -61,11 +60,9 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 	if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 		return self;
 	}
-	
 	if (!(spki = NETSCAPE_SPKI_b64_decode(StringValuePtr(buffer), -1))) {
 		ossl_raise(eSPKIError, "");
 	}
-
 	NETSCAPE_SPKI_free(DATA_PTR(self));
 	DATA_PTR(self) = spki;
 
@@ -84,7 +81,6 @@ ossl_spki_to_pem(VALUE self)
 	if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
 		ossl_raise(eSPKIError, "");
 	}
-
 	str = rb_str_new2(data);
 	OPENSSL_free(data);
 
@@ -152,9 +148,9 @@ ossl_spki_get_challenge(VALUE self)
 
 	GetSPKI(self, spki);
 
-	if (spki->spkac->challenge->length > 0)
+	if (spki->spkac->challenge->length > 0) {
 		return rb_str_new(spki->spkac->challenge->data, spki->spkac->challenge->length);
-	
+	}
 	return rb_str_new2("");
 }
 
@@ -170,7 +166,6 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 	if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING(str)->ptr, RSTRING(str)->len)) {
 		ossl_raise(eSPKIError, "");
 	}
-
 	return str;
 }
 
@@ -206,9 +201,7 @@ ossl_spki_verify(VALUE self, VALUE key)
 	
 	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
-	result = NETSCAPE_SPKI_verify(spki, pkey);
-	
-	if (result < 0) {
+	if ((result = NETSCAPE_SPKI_verify(spki, pkey)) < 0) {
 		ossl_raise(eSPKIError, "");
 	}
 	if (result > 0) {

@@ -96,7 +96,6 @@ rsa_generate(int size)
 	if (rb_block_given_p()) {
 		cb = ossl_rsa_generate_cb;
 	}
-
 	return RSA_generate_key(size, RSA_F4, cb, NULL);
 }
 
@@ -284,8 +283,7 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 
 	if (!RSA_PRIVATE(pkey->pkey.rsa)) {
 		ossl_raise(eRSAError, "PRIVATE key needed for this operation!");
-	}
-	
+	}	
 	StringValue(buffer);
 	
 	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
@@ -314,7 +312,6 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 	if (!RSA_PRIVATE(pkey->pkey.rsa)) {
 		ossl_raise(eRSAError, "Private RSA key needed!");
 	}
-
 	StringValue(buffer);
 	
 	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
@@ -446,7 +443,7 @@ ossl_rsa_sign(VALUE self, VALUE data)
 }
 
 static VALUE
-ossl_rsa_verify(VALUE self, VALUE digest, VALUE sig)
+ossl_rsa_verify(VALUE self, VALUE sig, VALUE data)
 {
 	EVP_PKEY *pkey;
 	int ret;
