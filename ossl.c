@@ -128,7 +128,6 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 VALUE mOSSL;
 VALUE   mDigest;
 VALUE   mNetscape;
-VALUE   mPKCS7;
 VALUE   mPKey;
 VALUE   mRandom;
 VALUE   mSSL;
@@ -158,7 +157,6 @@ Init_openssl()
 	 * Universe of Modules
 	 */
 	mOSSL = rb_define_module("OpenSSL");
-	mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
 	mPKey = rb_define_module_under(mOSSL, "PKey");
 	mRandom = rb_define_module_under(mOSSL, "Random");
 	mSSL = rb_define_module_under(mOSSL, "SSL");
@@ -184,7 +182,7 @@ Init_openssl()
 	Init_ossl_digest();
 	Init_ossl_hmac();
 	Init_ossl_ns_spki();
-	Init_ossl_pkcs7(mPKCS7);
+	Init_ossl_pkcs7();
 	Init_ossl_pkey(mPKey);
 	Init_ossl_rand(mRandom);
 	Init_ossl_ssl(mSSL);

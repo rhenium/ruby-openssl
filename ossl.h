@@ -55,7 +55,6 @@ extern "C" {
  * Common Module
  */
 extern VALUE mOSSL;
-extern VALUE   mPKCS7;
 extern VALUE   mPKey;
 extern VALUE   mRandom;
 extern VALUE   mSSL;
@@ -81,10 +80,6 @@ extern VALUE cDSA;
 extern VALUE eDSAError;
 extern VALUE cDH;
 extern VALUE eDHError;
-/* PKCS7 */
-extern VALUE cPKCS7;
-extern VALUE cPKCS7SignerInfo;
-extern VALUE ePKCS7Error;
 
 /*
  * CheckTypes
@@ -130,11 +125,6 @@ int string2hex(char *, int, char **, int *);
 #  define OSSL_Warning(text) \
 	rb_warning("%s%s", text, OSSL_ErrMsg())
 #endif /* OSSL_DEBUG */
-
-/*
- * Netscape SPKI
- */
-void Init_ossl_spki(VALUE);
 
 /*
  * RAND - module methods only
@@ -184,17 +174,6 @@ void Init_ossl_dh(VALUE, VALUE, VALUE);
  */
 void Init_ossl_ssl(VALUE);
 
-/*
- * PKCS7
- */
-VALUE ossl_pkcs7si_new(PKCS7_SIGNER_INFO *);
-PKCS7_SIGNER_INFO *ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE);
-void Init_ossl_pkcs7(VALUE);
-
-/*
- * HMAC
- */
-
 #include "openssl_missing.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
@@ -202,9 +181,9 @@ void Init_ossl_pkcs7(VALUE);
 #include "ossl_digest.h"
 #include "ossl_hmac.h"
 #include "ossl_ns_spki.h"
+#include "ossl_pkcs7.h"
 /*
  * TODO
-#include "ossl_pkcs7.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
