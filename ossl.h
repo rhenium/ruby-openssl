@@ -77,7 +77,7 @@ void ossl_check_instance(VALUE, VALUE);
 /*
  * DATE conversion
  */
-VALUE asn1time_to_time(ASN1_UTCTIME *);
+VALUE asn1time_to_time(ASN1_TIME *);
 time_t time_to_time_t(VALUE);
 
 /*

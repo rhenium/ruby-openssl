@@ -165,7 +165,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!ASN1_UTCTIME_set(crl->crl->lastUpdate, sec)) {
+	if (!X509_time_adj(crl->crl->lastUpdate, 0, &sec)) {
 		ossl_raise(eX509CRLError, "");
 	}
 	return time;
@@ -191,7 +191,7 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!ASN1_UTCTIME_set(crl->crl->nextUpdate, sec)) {
+	if (!X509_time_adj(crl->crl->nextUpdate, 0, &sec)) {
 		ossl_raise(eX509CRLError, "");
 	}
 	return time;

@@ -3,6 +3,13 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 18 Jun 2002 22:43:23 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.c: fix UTC -> local time conversion
+	* x509cert.c: use X509_time_adj
+	* x509crl.c: ditto.
+	* x509revoked.c: ditto.
+	* x509name.c: hash iterator cleanup
+
 Fri, 14 Jun 2002 10:32:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509cert.c: minor cleanups
 	* x509revoked.c: ditto.

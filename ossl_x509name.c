@@ -69,26 +69,73 @@ GetX509NamePtr(VALUE obj)
 /*
  * Private
  */
+#if 0
+static VALUE
+ossl_x509name_s_allocate(VALUE klass)
+{
+	X509_NAME *name;
+	VALUE obj;
+	
+	if (!(name = X509_NAME_new())) {
+		ossl_raise(eX509NameError, "");
+	}
+	WrapX509Name(klass, obj, name);
+
+	return obj;
+}
+
+static VALUE
+ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
+{
+	X509_NAME *name;
+	int i, type;
+	VALUE arg, item, key, value;
+	
+	GetX509Name(self, name);
+	
+	if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+		return self;
+	}
+	Check_Type(arg, T_ARRAY);
+
+	for (i=0; i<RARRAY(arg)->len; i++) {
+		item = RARRAY(arg)->ptr[i];
+		
+		Check_Type(item, T_ARRAY);
+		
+		if (RARRAY(item)->len != 2) {
+			ossl_raise(rb_eArgError, "Unsupported structure.");
+		}
+		key = RARRAY(item)->ptr[0];
+		value = RARRAY(item)->ptr[1];
+		
+		StringValue(key);
+		StringValue(value);
+
+		type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
+		
+		if (!X509_NAME_add_entry_by_txt(name, RSTRING(key)->ptr, type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
+			ossl_raise(eX509NameError, "");
+		}
+	}
+	return self;
+}
+#endif
+
 /*
  * Iterator for ossl_x509name_new_from_hash
  */
 static int
 ossl_x509name_hash_i(VALUE key, VALUE value, X509_NAME *name)
 {
-	int id, type;
+	int type;
 	
-	key = rb_String(key);
-	value = rb_String(value);
+	StringValue(key);
+	StringValue(value);
 	
-	if (!(id = OBJ_ln2nid(RSTRING(key)->ptr))) {
-		if (!(id = OBJ_sn2nid(RSTRING(key)->ptr))) {
-			X509_NAME_free(name);
-			ossl_raise(eX509NameError, "OBJ_name2nid:");
-		}
-	}
-	type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
+	type = ASN1_PRINTABLE_type(StringValuePtr(value), -1);
 
-	if (!X509_NAME_add_entry_by_NID(name, id, type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
+	if (!X509_NAME_add_entry_by_txt(name, StringValuePtr(key), type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
 		X509_NAME_free(name);
 		ossl_raise(eX509NameError, "");
 	}

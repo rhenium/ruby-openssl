@@ -139,7 +139,7 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!ASN1_UTCTIME_set(rev->revocationDate, sec)) {
+	if (!X509_time_adj(rev->revocationDate, 0, &sec)) {
 		ossl_raise(eX509RevError, "");
 	}
 	return time;

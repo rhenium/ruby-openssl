@@ -51,10 +51,12 @@ ossl_check_instance(VALUE obj, VALUE klass)
  * DATE conversion
  */
 VALUE
-asn1time_to_time(ASN1_UTCTIME *time)
+asn1time_to_time(ASN1_TIME *time)
 {
 	struct tm tm;
 
+	memset(&tm, 0, sizeof(struct tm));
+	
 	switch(time->type) {
 		case V_ASN1_UTCTIME:
 			if (!strptime(time->data, "%y%m%d%H%M%SZ", &tm)) {
@@ -69,24 +71,19 @@ asn1time_to_time(ASN1_UTCTIME *time)
 		default:
 			ossl_raise(rb_eTypeError, "unknown time format");
 	}
-	/*
-	 * QUESTION:
-	 * return rb_time_new(mktime(gmtime(mktime(&tm))), 0);
-	 * Is this better than following?
-	 */
-	return rb_time_new(mktime(&tm), 0);
+	return rb_time_new(mktime(&tm) - timezone, 0);
 }
 
 /*
  * This function is not exported in Ruby's *.h
  */
-extern struct timeval rb_time_timeval(VALUE time);
+extern struct timeval rb_time_timeval(VALUE);
 
 time_t
 time_to_time_t(VALUE time)
 {
 	struct timeval t = rb_time_timeval(time);
-	
+
 	return t.tv_sec;
 }
 
@@ -207,6 +204,11 @@ ossl_debug_set(VALUE self, VALUE val)
 void
 Init_openssl()
 {
+	/*
+	 * Init timezone info
+	 */
+	tzset();
+	
 	/*
 	 * Init all digests, ciphers
 	 */

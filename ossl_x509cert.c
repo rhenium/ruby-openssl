@@ -372,7 +372,7 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!ASN1_UTCTIME_set(X509_get_notBefore(x509), sec)) {
+	if (!X509_time_adj(X509_get_notBefore(x509), 0, &sec)) {
 		ossl_raise(eX509CertError, "");
 	}
 	return time;
@@ -382,7 +382,7 @@ static VALUE
 ossl_x509_get_not_after(VALUE self)
 {
 	X509 *x509;
-	ASN1_UTCTIME *asn1time;
+	ASN1_TIME *asn1time;
 
 	GetX509(self, x509);
 
@@ -402,7 +402,7 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!ASN1_UTCTIME_set(X509_get_notAfter(x509), sec)) {
+	if (!X509_time_adj(X509_get_notAfter(x509), 0, &sec)) {
 		ossl_raise(eX509CertError, "");
 	}
 	return time;
