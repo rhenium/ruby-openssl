@@ -175,7 +175,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE pass, init_v;
 	
     GetCipher(self, ctx);
-    rb_scan_args(argc, argv, "11", &pass, &init_v);
+    rb_scan_args(argc, argv, "02", &pass, &init_v);
 
     if (NIL_P(init_v)) {
 	/*
