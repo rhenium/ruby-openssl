@@ -1,5 +1,6 @@
 Thu, 26 Jun 2003 06:20:58 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* examples/ossl_pkcs7.rb: follows new APIs.
+	* examples/pkcs7.rb: ditto.
 	* examples/cert_store.rb: cert-store browsing GUI (commited by NaHi)
 
 Thu, 26 Jun 2003 06:16:21 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>

@@ -8,28 +8,30 @@ verify_cb = lambda{|ok, ctx|
   puts
   puts "  ====begin Verify===="
   puts "  checking #{curr_cert.subject.to_s}, #{curr_cert.serial}"
-  puts "  OK = #{ok}: error = #{ctx.error} - \"#{ctx.error_string}\""
+  puts "  ok = #{ok}: depth = #{ctx.error_depth}"
+  puts "  error = #{ctx.error}: \"#{ctx.error_string}\""
   puts "  chain = #{ctx.chain.collect{|cert| cert.subject }.inspect}"
   puts "  ==== end Verify===="
   #raise "SOME ERROR!" # Cert will be rejected
   #false # Cert will be rejected
   #true  # Cert is OK
   ok    # just throw 'ok' through
+  true
 }
 
 def verify_with_store(store, certs, callback)
   certs.each{|cert|
     print "serial = #{cert.serial}: "
 
-    # verify with block
-    #result = store.verify(cert, &callback)
-    #print result ? "Yes " : "No "
+    # verify
+    #print store.verify(cert) ? "Yes " : "No "
     #if store.error != X509::V_OK
     #  puts store.error_string.inspect
     #end
 
-    # verify with callback
-    print store.verify(cert) ? "Yes " : "No "
+    # verify with block
+    result = store.verify(cert, &callback)
+    print result ? "Yes " : "No "
     if store.error != X509::V_OK
       puts store.error_string.inspect
     end

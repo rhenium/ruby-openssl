@@ -2,40 +2,39 @@
 require 'openssl'
 
 include OpenSSL
-include PKey
-include X509
-include PKCS7
 
-data = 'SOME DATA'
+data  = 'SOME DATA'
+cacert = X509::Certificate.new(File::read("0cert.pem"))
+crl    = X509::CRL.new(File::read("0crl.pem"))
+cert1  = X509::Certificate.new(File::read("1cert.pem"))
+key1   = PKey::RSA.new(File::read("1key-plain.pem"))
+cert2  = X509::Certificate.new(File::read("2cert.pem"))
+key2   = PKey::RSA.new(File::read("2key-plain.pem"))
+cert3  = X509::Certificate.new(File::read("3cert.pem"))
+key3   = PKey::RSA.new(File::read("3key-plain.pem"))
 
-cert = Certificate.new(File.read('./1cert.pem'))
-key = RSA.new(File.read('./1key.pem')) {
-  print "Enter password: "
-  gets.chop!
-}
-
-p7 = PKCS7.new(SIGNED)
-signer = Signer.new(cert, key, Digest::SHA1.new)
-p7.add_signer(signer, key)
-p7.add_certificate(cert)
-p7.add_data(data, true) #...(data, (detached=false))
+p7 = PKCS7::PKCS7.new
+p7.type = :signed
+p7.detached = true
+p7.add_certificate(cacert)
+p7.add_crl(crl)
+p7.add_certificate(cert1)
+p7.add_certificate(cert2)
+p7.add_certificate(cert3)
+p7.add_signer(PKCS7::Signer.new(cert1, key1, Digest::Digest.new("SHA1")))
+p7.add_signer(PKCS7::Signer.new(cert2, key2, Digest::Digest.new("SHA1")))
+p7.add_signer(PKCS7::Signer.new(cert3, key3, Digest::Digest.new("SHA1")))
+p7.add_data(data)
 puts (str = p7.to_pem)
 
-store = Store.new
-store.set_default_paths
-#p store.load_locations("../../certs")
-
-ver_cb = Proc.new {|ok, store|
-  puts "HERE!"
+store = X509::Store.new
+store.add_cert(cacert)
+store.add_crl(crl)
+store.verify_callback = Proc.new {|ok, ctx|
+  p [ ctx.current_cert.subject, ok, ctx.error_string ]
   true
 }
-store.verify_callback = ver_cb
 
-p7 = PKCS7.new(str)
-p p7.verify_data(store, data) {|signer|
-  puts "GOT IT!"
-  p signer.name.to_s
-  p signer.serial
-  p signer.signed_time
-}
-
+p7 = PKCS7::PKCS7.new(str)
+p7.signer.each{|si| p si.signed_time }
+p7.verify([cert1], store, data)
