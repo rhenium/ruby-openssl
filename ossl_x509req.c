@@ -90,12 +90,16 @@ static VALUE
 ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
+    X509_REQ *req;
     VALUE buffer;
 
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
     }
-    if (!(in = BIO_new_mem_buf(StringValuePtr(buffer), -1))) {
+    StringValue(buffer);
+    
+    in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
+    if (!in)
 	ossl_raise(eX509ReqError, "");
     }
     /*
@@ -103,7 +107,13 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
      * Check if we should
      X509_REQ_free(DATA_PTR(self));
     */
-    if (!PEM_read_bio_X509_REQ(in, (X509_REQ **)&DATA_PTR(self), NULL, NULL)) {
+    req = PEM_read_bio_X509_REQ(in, (X509_REQ **)&DATA_PTR(self), NULL, NULL);
+    if (!req) {
+	BIO_reset(in);
+
+	req = d2i_X509_REQ_bio(in, (X509_REQ **)&DATA_PTR(self));
+    }
+    if (!req) {
 	BIO_free(in);
 	ossl_raise(eX509ReqError, "");
     }

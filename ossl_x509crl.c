@@ -79,12 +79,16 @@ static VALUE
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
+    X509_CRL *crl;
     VALUE buffer;
 
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
-    }	
-    if (!(in = BIO_new_mem_buf(StringValuePtr(buffer), -1))) {
+    }
+    StringValue(buffer);
+    
+    in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
+    if (!in) {
 	ossl_raise(eX509CRLError, "");
     }
     /*
@@ -92,7 +96,13 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
      * Check if we should free CRL
      X509_CRL_free(DATA_PTR(self));
     */
-    if (!PEM_read_bio_X509_CRL(in, (X509_CRL **)&DATA_PTR(self), NULL, NULL)) {
+    crl = PEM_read_bio_X509_CRL(in, (X509_CRL **)&DATA_PTR(self), NULL, NULL);
+    if (!crl) {
+	BIO_reset(in);
+
+	crl = d2i_X509_CRL_bio(in, (X509_CRL **)&DATA_PTR(self));
+    }
+    if (!crl) {
 	BIO_free(in);
 	ossl_raise(eX509CRLError, "");
     }

@@ -129,7 +129,8 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     }
     StringValue(buffer);
 	
-    if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
+    in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
+    if (!in) {
 	ossl_raise(eX509CertError, "");
     }
 
@@ -149,6 +150,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	ossl_raise(eX509CertError, "");
     }
     BIO_free(in);
+    
     return self;
 }
 
