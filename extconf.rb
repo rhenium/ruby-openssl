@@ -51,14 +51,14 @@ if with_config("debug") or enable_config("debug")
 
   if CONFIG["CC"] =~ /gcc/
     srcs = []
-    for f in Dir[File.join(".", "*.c")]
+    for f in Dir[File.join($srcdir, "*.c")]
       srcs.push File.basename(f)
     end
     srcs = srcs.join(" ")
     
     $distcleanfiles << "dep" if defined? $distcleanfiles
     
-    File.open("depend", "w") {|f|
+    File.open(File.join($srcdir, "depend"), "w") {|f|
       f.print <<EOD
 SRCS = #{srcs}
 
@@ -96,6 +96,7 @@ result &= have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules")
 result &= have_library(SSLLIB, "SSL_library_init")
 result &= have_openssl_097(includes)
 
+have_func("rb_obj_init_copy", "ruby.h")
 have_func("HMAC_CTX_copy")
 have_func("X509_STORE_set_ex_data")
 

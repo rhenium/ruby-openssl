@@ -1,3 +1,11 @@
+Tue, 15 Jul 2003 05:27:57 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* extconf.rb: should make depend under $srcdir.
+	* ossl.h: ossl_raise is a NORETURN.
+	* ossl_ocsp.h: must use GetOCSPBasicRes (osssl_ocspbres_add_nonce).
+	* ruby_missing.h: should check HAVE_RB_OBJ_INIT_COPY.
+	(all of above changes were suggested by nobu. thanks.)
+	* ossl_x509store.c: refine ossl_x509stctx_free.
+
 Mon, 14 Jul 2003 18:56:06 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509store.c: add second argument of X509::Store#verify  
 	  to pass the untrusted certificate chain.

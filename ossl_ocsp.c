@@ -422,6 +422,7 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     VALUE val;
     int ret;
 
+    GetOCSPBasicRes(self, bs);
     rb_scan_args(argc, argv, "01", &val);
     if(NIL_P(val))
 	ret = OCSP_basic_add1_nonce(bs, NULL, -1);
@@ -519,29 +520,29 @@ ossl_ocspbres_get_status(VALUE self)
     count = OCSP_resp_count(bs);
     for(i = 0; i < count; i++){
 	single = OCSP_resp_get0(bs, i);
-	if(single){
-	    revtime = thisupd = nextupd = NULL;
-	    status = OCSP_single_get0_status(single, &reason, &revtime,
-					     &thisupd, &nextupd);
-	    if(status < 0) continue;
-	    if(!(cid = OCSP_CERTID_dup(single->certId)))
-		ossl_raise(eOCSPError, NULL);
-	    ary = rb_ary_new();
-	    rb_ary_push(ary, ossl_ocspcertid_new(cid));
-	    rb_ary_push(ary, INT2NUM(status));
-	    rb_ary_push(ary, INT2NUM(reason));
-	    rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
-	    rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
-	    rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
-	    ext = rb_ary_new();
-	    ext_count = OCSP_SINGLERESP_get_ext_count(single);
-	    for(j = 0; j < ext_count; j++){
-		x509ext = OCSP_SINGLERESP_get_ext(single, j);
-		rb_ary_push(ext, ossl_x509ext_new(x509ext));
-	    }
-	    rb_ary_push(ary, ext);
+	if(!single) continue;
+
+	revtime = thisupd = nextupd = NULL;
+	status = OCSP_single_get0_status(single, &reason, &revtime,
+					 &thisupd, &nextupd);
+	if(status < 0) continue;
+	if(!(cid = OCSP_CERTID_dup(single->certId)))
+	    ossl_raise(eOCSPError, NULL);
+	ary = rb_ary_new();
+	rb_ary_push(ary, ossl_ocspcertid_new(cid));
+	rb_ary_push(ary, INT2NUM(status));
+	rb_ary_push(ary, INT2NUM(reason));
+	rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
+	rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
+	rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
+	ext = rb_ary_new();
+	ext_count = OCSP_SINGLERESP_get_ext_count(single);
+	for(j = 0; j < ext_count; j++){
+	    x509ext = OCSP_SINGLERESP_get_ext(single, j);
+	    rb_ary_push(ext, ossl_x509ext_new(x509ext));
 	}
-        rb_ary_push(ret, ary);
+	rb_ary_push(ary, ext);
+	rb_ary_push(ret, ary);
     }
 
     return ret;

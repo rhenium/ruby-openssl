@@ -57,7 +57,7 @@
 #endif
 
 #if RUBY_VERSION_CODE >= 180
-#  if RUBY_RELEASE_CODE < 20030517
+#  if !defined(HAVE_RB_OBJ_INIT_COPY)
 #    define rb_define_copy_func(klass, func) \
 	rb_define_method(klass, "copy_object", func, 1)
 #  else

@@ -264,13 +264,7 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
 /*
  * Public Functions
  */
-static void
-ossl_x509stctx_free(X509_STORE_CTX *ctx)
-{
-    if(ctx->untrusted)
-	sk_X509_pop_free(ctx->untrusted, X509_free);
-    if(ctx->cert) ctx->cert;
-}
+static void ossl_x509stctx_free(X509_STORE_CTX*);
 
 VALUE
 ossl_x509stctx_new(X509_STORE_CTX *ctx)
@@ -294,6 +288,16 @@ ossl_x509stctx_clear_ptr(VALUE obj)
 /*
  * Private functions
  */
+static void
+ossl_x509stctx_free(X509_STORE_CTX *ctx)
+{
+    if(ctx->untrusted)
+	sk_X509_pop_free(ctx->untrusted, X509_free);
+    if(ctx->cert)
+	X509_free(ctx->cert);
+    X509_STORE_CTX_free(ctx);
+}
+
 static VALUE 
 ossl_x509stctx_alloc(VALUE klass)
 {
@@ -321,7 +325,7 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     GetX509StCtx(self, ctx);
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
     SafeGetX509Store(store, x509st);
-    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert);
+    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
     if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
     if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
         sk_X509_pop_free(x509s, X509_free);
