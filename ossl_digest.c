@@ -10,8 +10,6 @@
  */
 #include "ossl.h"
 
-#define MakeDigest(klass, obj, ctx) \
-    obj = Data_Make_Struct(klass, EVP_MD_CTX, 0, CRYPTO_free, ctx)
 #define GetDigest(obj, ctx) do { \
     Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
     if (!ctx) { \
@@ -52,7 +50,10 @@ ossl_digest_alloc(VALUE klass)
     EVP_MD_CTX *ctx;
     VALUE obj;
 
-    MakeDigest(klass, obj, ctx);
+    ctx = EVP_MD_CTX_create();
+    if (ctx == NULL)
+	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
+    obj = Data_Wrap_Struct(klass, 0, EVP_MD_CTX_destroy, ctx);
 	
     return obj;
 }
@@ -93,6 +94,17 @@ ossl_digest_copy_object(VALUE self, VALUE other)
 }
 
 static VALUE
+ossl_digest_reset(VALUE self)
+{
+	EVP_MD_CTX *ctx;
+
+	GetDigest(self, ctx);
+	EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx));
+
+	return self;
+}
+
+static VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
     EVP_MD_CTX *ctx;
@@ -116,6 +128,7 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
 	ossl_raise(eDigestError, "Cannot allocate mem for digest");
     }
     EVP_DigestFinal(&final, *buf, buf_len);
+    EVP_MD_CTX_cleanup(&final);
 }
 
 static VALUE
@@ -265,6 +278,7 @@ Init_ossl_digest()
 	
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, 1);
     rb_define_method(cDigest, "copy_object", ossl_digest_copy_object, 1);
+    rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     
     rb_define_method(cDigest, "clone",  ossl_digest_clone, 0);
     
