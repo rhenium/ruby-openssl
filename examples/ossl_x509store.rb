@@ -21,8 +21,7 @@ def verify_with_store(store, certs)
   certs.each{|cert|
     puts "serial = #{cert.serial}"
     print "verifying... "
-    print store.verify(cert) ? "Yes" : "No"
-    puts
+    puts store.verify(cert) ? "Yes" : "No"
   }
 end
 
@@ -36,14 +35,14 @@ certs = certfiles.collect{|file| Certificate.new(File.read(file)) }
 certs.each{|cert|
   puts "Cert = #{cert.subject}, serial = #{cert.serial}"
   print "Is Cert signed by CA?..."
-  puts cert.verify(cakey) ? "Yes" : "No"
+  puts cert.verify(ca.public_key) ? "Yes" : "No"
 }
 
 puts "========== Load CRL =========="
 crl = CRL.new(File.read("./#{ca.serial}crl.pem"))
 puts "CA = \"#{ca.issuer}\", CRL = \"#{crl.issuer}\""
-print "Is CRL signed by CA?..."
-puts crl.verify(cakey) ? "Yes" : "No"
+print "Is CRL signed by CA?... "
+puts crl.verify(ca.public_key) ? "Yes" : "No"
 puts "In CRL there are serials:"
 crl.revoked.each {|revoked|
   puts "> #{revoked.serial} - revoked at #{revoked.time}"

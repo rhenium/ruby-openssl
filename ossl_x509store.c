@@ -238,17 +238,24 @@ ossl_x509store_verify_false(VALUE dummy)
 int
 ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
-    VALUE proc, rctx, args, ret = Qnil;
+    VALUE proc, rctx, args, ret = Qundef;
 
-    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_x509store_vcb_idx);
-    if (!NIL_P(proc)) {
+    if (rb_block_given_p()) {
         rctx = ossl_x509stctx_new(ctx);
-	args = rb_ary_new2(3);
-	rb_ary_store(args, 0, proc);
-	rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
-	rb_ary_store(args, 2, rctx);
-	ret = rb_rescue(ossl_x509store_call_verify_cb_proc, args,
-			ossl_x509store_verify_false, Qnil);
+	ret = rb_yield_values(2, ok ? Qtrue : Qfalse, rctx);
+    } else {
+	proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_x509store_vcb_idx);
+	if (!NIL_P(proc)) {
+	    rctx = ossl_x509stctx_new(ctx);
+	    args = rb_ary_new2(3);
+	    rb_ary_store(args, 0, proc);
+	    rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
+	    rb_ary_store(args, 2, rctx);
+	    ret = rb_rescue(ossl_x509store_call_verify_cb_proc, args,
+			    ossl_x509store_verify_false, Qnil);
+	}
+    }
+    if (ret != Qundef) {
         ossl_x509stctx_clear_ptr(rctx);
 	if (ret == Qtrue) {
 	    ok = 1;
