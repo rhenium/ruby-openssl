@@ -107,7 +107,8 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
 	BIO_free(out);
 	ossl_raise(ePKCS7Error, NULL);
     }
-    data = ossl_protect_membio2str(out, &status);
+    if(out) data = ossl_protect_membio2str(out, &status);
+    else data = Qnil;
     BIO_free(in);
     BIO_free(out);
     if(status) rb_jump_tag(status);
