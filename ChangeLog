@@ -1,3 +1,6 @@
+Sun, 06 Jul 2003 14:15:36 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ocsp.c: should not assign NULL to revtime (revtime is a VALUE).
+
 Sun, 06 Jul 2003 13:20:04 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509store.c:
 	  - ossl_x509store_add_cert(): should not duplicate added cert.

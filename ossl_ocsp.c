@@ -461,8 +461,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 
     error = 0;
     ths = nxt = rev = NULL;
-    if(NIL_P(revtime)) revtime = NULL;
-    else{
+    if(!NIL_P(revtime)){
 	tmp = rb_protect(rb_Integer, revtime, &rstatus);
 	if(rstatus) goto err;
 	rev = X509_gmtime_adj(NULL, NUM2INT(tmp));
