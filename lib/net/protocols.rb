@@ -1,17 +1,23 @@
 =begin
+= $RCSfile$ -- SSL/TLS enhancement for Net.
 
-= protocols.rb -- SSL/TLS enhancement for Net.
-
+= Info
+  'OpenSSL for Ruby 2' project
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+  All rights reserved.
 
+= Licence
+  This program is licenced under the same licence as Ruby.
+  (See the file 'LICENCE'.)
+
+= Requirements
   This program requires Net 1.2.0 or higher version.
   You can get it from RAA or Ruby's CVS repository.
 
-  $IPR: protocols.rb,v 1.1 2001/06/17 14:30:22 gotoyuzo Exp $
-
-  2001/11/06: Contiributed to Ruby/OpenSSL project.
+= Version
   $Id$
-
+  
+  2001/11/06: Contiributed to Ruby/OpenSSL project.
 =end
 
 require 'net/protocol'

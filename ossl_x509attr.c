@@ -135,7 +135,7 @@ ossl_x509attr_to_a(VALUE self)
 void
 Init_ossl_x509attr(VALUE module)
 {
-	eX509AttributeError = rb_define_class_under(module, "AttributeError", rb_eStandardError);
+	eX509AttributeError = rb_define_class_under(module, "AttributeError", eOSSLError);
 
 	cX509Attribute = rb_define_class_under(module, "Attribute", rb_cObject);
 	rb_define_singleton_method(cX509Attribute, "new_from_array", ossl_x509attr_s_new_from_array, 1);

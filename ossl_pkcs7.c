@@ -575,9 +575,9 @@ ossl_pkcs7si_get_signed_time(VALUE self)
  * INIT
  */
 void
-Init_pkcs7(VALUE module)
+Init_ossl_pkcs7(VALUE module)
 {
-	ePKCS7Error = rb_define_class_under(module, "PKCS7Error", rb_eStandardError);
+	ePKCS7Error = rb_define_class_under(module, "PKCS7Error", eOSSLError);
 
 	cPKCS7 = rb_define_class_under(module, "PKCS7", rb_cObject);
 	/*

@@ -1,11 +1,17 @@
 =begin
+= $RCSfile$ -- Buffering mix-in module.
 
-= buffering.rb -- Buffering mix-in module.
-
+= Info
+  'OpenSSL for Ruby 2' project
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+  All rights reserved.
 
-  $IPR: buffering.rb,v 1.13 2001/09/13 16:42:49 gotoyuzo Exp $
+= Licence
+  This program is licenced under the same licence as Ruby.
+  (See the file 'LICENCE'.)
 
+= Version
+  $Id$
 =end
 
 module Buffering

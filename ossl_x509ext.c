@@ -261,7 +261,7 @@ void
 Init_ossl_x509ext(VALUE module)
 {
 
-	eX509ExtensionError = rb_define_class_under(module, "ExtensionError", rb_eStandardError);
+	eX509ExtensionError = rb_define_class_under(module, "ExtensionError", eOSSLError);
 
 	cX509ExtensionFactory = rb_define_class_under(module, "ExtensionFactory", rb_cObject);
 	rb_define_singleton_method(cX509ExtensionFactory, "new", ossl_x509extfactory_s_new, -1);

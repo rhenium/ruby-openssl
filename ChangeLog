@@ -1,267 +1,84 @@
-$Id$
-'OpenSSL for Ruby' project
-Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
-All rights reserved.
+ChangeLog for
+'OpenSSL for Ruby 2' project
 
-$Log$
-Revision 1.37  2002/04/07 16:35:32  majkl
-	* Macros fixups
-	* X509ExtFactory cleanup
-	* fixed strptime warning on Linux
-	* X509::Certificate#version has been changed!
-	  !!! WARNING !!!
-		x509.version = 2 -> defines X509v3, (0 for v1, 1 for v2, ...)
-		p x509.version -> 2, means that it is X509v3
-	  !!! WARNING !!!
+			### CHANGE LOG ###
 
-Revision 1.36  2002/03/11 21:35:39  majkl
-	* Cipher IV fixup
+Mon,  3 Jun 2002 21:14:34 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* digest.c: new methods added to have the same protocol as Ruby's classes
+		Digest::digest(name, data)
+		Digest::hexdigest(name, data)
+		d.clone()
+		d.==(other)
+	* digest.rb: rewritten to eval
 
-Revision 1.35  2002/03/11 17:20:22  majkl
-	* Big internal cleanup (all structs with only 1 member rearranged)
-	* improved getting time_t from cTime
+Mon,  3 Jun 2002 17:23:10 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* digest.rb: new (holds predefined Digest classes)
+	* digest.c: redesigned (introduced runtime loading Digest algs from OpenSSL)
+	* digest.c: ported to Ruby 1.8 interface
+	* openssl.rb: added require for digest.rb
 
-Revision 1.34  2002/03/06 08:05:05  majkl
-	* build fix-ups
+Mon,  3 Jun 2002 13:19:34 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509.c renamed to x509cert.c
+	* x509.h: new (moved all bits related to x509 there)
+	* x509.c: new (moved init from ossl.c for all x509 related classes there)
 
-Revision 1.33  2002/03/05 15:05:57  majkl
-	* WARNING! All to_str methods are not used any longer (use to_text instead)
-	* made an aliases to_pem as to_s
-	* more relaxed params checking - everywhere where string was needed it is OK that obj implements to_s method
+Mon,  3 Jun 2002 13:03:08 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Moved all Error classes under eOSSLError
 
-Revision 1.32  2002/02/23 07:28:00  majkl
-	* More benevolent checks (Check_SafeStr(x) -> Check_Type(x, T_STRING)
-	  (where we don't care)
+Mon,  3 Jun 2002 12:50:57 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* cipher.h: new (moved bits from ossl.h)
+	* cipher.h: new MACROS:
+		OSSLCipherValue
+		OSSLCipherValuePtr
 
-Revision 1.31  2002/02/20 08:43:54  majkl
-	* Fixed some memory leaks
+Mon,  3 Jun 2002 11:27:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* digest.h: new file (moved bits from ossl.h there)
+	* digest.h: new MACROs:
+		OSSLWrapDigest
+		OSSLGetDigest
+		OSSLDigestValue
 
-Revision 1.30  2002/02/13 13:09:49  majkl
-	* transition from rb_raise to OSSL_Raise (where possible)
-	* some mem checks
-	* preliminary DH key support
+Mon,  3 Jun 2002 10:55:44 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: added methods mod_add, mod_sub, mod_sqr
 
-Revision 1.29  2002/02/06 13:47:00  majkl
-	* ossl-0.1.1 released
+Mon,  3 Jun 2002 10:46:03 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: ported to Ruby 1.8 interface (allocate, enable_super)
 
-Revision 1.28  2002/02/06 13:36:15  majkl
-	* Dropped Random class
-	* Added Random module
-	* Added egd interface to Random module
+Mon,  3 Jun 2002 10:22:17 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* moved from #ifdef, #ifndef to #if defined()
+	* renamed all Init_[^o] to Init_ossl_
 
-Revision 1.27  2002/01/16 14:49:52  majkl
-	* really fixed strptime.c (silly me, thanks Hynek)
+Mon,  3 Jun 2002 09:46:43 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.h: new (all .c will have it's .h to lower ossl.h size and increase modularity)
+	* bn.h: new MACROs introduced:
+		OSSLWrapBN - creates instance of BN (DOESN'T DUP THE ARG)
+		OSSLGetBN - gets BIGNUM with check (DOESN'T DUP THE BIGNUM FROM OBJ)
+		OSSLBNValue - alias to OSSL_Check_Instance(obj, cBN)
+		OSSLBNValuePtr - alias to ossl_bn_get_BIGNUM (DUPS THE BIGNUM FROM OBJ)
+		
+Mon,  3 Jun 2002 01:17:07 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* dsa.c: removed MS_CALLBACK.
+	* dh.c: ditto.
+	* rsa.c: ditto.
+	* ssl.c: ditto.
+	* ossl.c: introduced generic error-class: OpenSSLError
+	* bn.c: initialize moved from Ruby-space to C-space
+	* bn.c: reordered method defs by 'man bn'
+	* bn.c: speed up math. ops by 1 global BN_CTX (dropped all local BN_CTXes and BN_CTX_inits)
 
-Revision 1.26  2002/01/16 13:52:24  majkl
-	* fixed missing/strptime.c (Hynek)
-	* more strict format for UTC time (ossl.c - 'Z' in the end)
+Sat,  1 Jun 2002 13:38:03 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.h: OSSL2 cannot be compiled if Ruby < 1.7.2 and OpenSSL < 0.9.7
 
-Revision 1.25  2002/01/16 12:12:50  majkl
-	* selfdipatch BN implementation (test only)
-	* removed strncasecmp (for WIN32 made alias to _strnicmp)
-	* fixed missing/strptime.c (Hynek Rostinsky)
+Sat,  1 Jun 2002 11:49:40 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Dropped all #if !defined(NO_*) dependences (stayed just OPENSSL_NO_*)
+	* Dropped all checks for OPENSSL_VERSION_NUMBER
 
-Revision 1.24  2002/01/12 11:49:17  majkl
-	* fixed callbacks in ossl_(ssl|x509store).c
-	* added method X509::Store#verify_status=
+Sat,  1 Jun 2002 11:25:32 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* openssl.rb: splitted to openssl/bn.rb, openssl/pkey.rb, openssl/ssl.rb, and openssl/x509.rb
+	* lib/*: added proped descriptions
+	* bn.rb: simplified BN#initialize (TODO: move it to C-space)
 
-Revision 1.23  2002/01/10 19:32:23  majkl
-	* fixed and improved verify_callbacks in ossl_(ssl|x509store).c
-	* enhanced ossl_x509store.rb examples
-
-Revision 1.22  2002/01/10 17:33:16  majkl
-	* OpenSSL::Cipher::BITx constant == x (so BIT40 = 40,...)
-
-Revision 1.21  2002/01/10 13:46:09  majkl
-	* added OpenSSL-SNAPSHOT style NO_* (OPENSSL_NO_*)
-	* added AES cipher when compiled under OpenSSL-SNAPSHOT
-	* added warnings if the OpenSSL is compiled without some feature
-	* handle NO_RSA, NO_DSA in openssl.rb
-	* incremented version in ossl_version.h
-
-Revision 1.20  2002/01/10 00:44:17  majkl
-	* OpenSSL 0.9.6c support (BN)
-	* MS_CALLBACK to ossl_pkey_*.c
-	* Memory checking with OSSL_DEBUG
-	* API doc style change
-
-Revision 1.19  2002/01/06 16:18:32  majkl
-	* ossl-0.1.0 released
-
-Revision 1.18  2002/01/06 16:10:37  majkl
-	* BN is (somewhat) full imp. now
-	* Config reworked (get_value, get_section)
-
-Revision 1.17  2002/01/04 11:27:45  majkl
-	* API doc in README (but still not completed)
-	* missing str(ncasecmp|strptime).c files moved to missing/
-	* ifdef NO_* handled
-
-Revision 1.16  2002/01/04 11:22:55  majkl
-	* SelfDispatching used for X509:: Name, Extension, Attribute
-		def XXX.new(arg)
-			XXX.send("new_from_#{arg.type.name.downcase}", arg)
-		end
-
-	* RSA,DSA - 'new_from_pem', 'generate' singleton methods defined
-		'new' - implemented in Ruby space
-
-Revision 1.15  2002/01/04 11:12:45  majkl
-	* Further checking (Check_SafeStr, memory leaks)
-
-Revision 1.14  2001/12/21 20:10:24  majkl
-*** empty log message ***
-
-Revision 1.13  2001/12/21 20:10:12  majkl
-	* Memory checking
-
-Revision 1.12  2001/12/21 19:21:35  gotoyuzo
-	* fixed unusual usage of ## preprocessing token sequence.
-
-Revision 1.11  2001/12/13 18:08:58  majkl
-	* added bn methods (thanks to UNKNOWN <oss-ruby@technorama.net>)
-	* simplify ossl_digest sources
-
-Revision 1.10  2001/11/29 13:17:24  majkl
-	* Make work under MS Windows (strptime added) + doc in README
-
-Revision 1.9  2001/11/26 11:48:36  majkl
-	* Just forgot to add stuff to changelog...
-
-2001/11/21 majkl
-	* BN added (only proof of concept)
-	* indent changed
-	* rand.h to ossl.h added
-
-Revision 1.8  2001/11/21 09:37:03  gotoyuzo
-	* buffering.rb went under ``openssl'' directory.
-
-Revision 1.7  2001/11/20 19:39:37  majkl
-	* HMAC added
-	* Config came back
-	* API changed in PKCS7 (param. order)
-	* API changed in Cipher (can't add data in .new)
-	* indentation changed (only half of files, 2nd half to do)
-	* some API doc added to README
-
-Revision 1.6  2001/11/19 12:44:57  majkl
-	* added X509::Certificate .to_der
-
-2001/11/18 (ossl-0.0.9)
-	* all project is moved to savannah.gnu.org
-	* applied patch to make yielding optional (GOTOU Yuuzou - thanks!)
-
-2001/11/17
-	* ossl_version.h - new file
-	* SSL::VERSION and SSL::OPENSSL_VERSION went under OpenSSL
-	* SSLSocket - connect and accept were reworked; use Mutex to protect verify_callback_proc from race condition
-	* SSLSocket - new allows certificate and pkey as filename
-	* ossl_x509_new_from_file() added
-	* ossl_pkey_new_from_file() added
-	* lib/ssl.rb added for migrations from old SSLSocket
-	* lib/net/* should follow above changes
-
-2001/11/16
-	* added yielding when generating RSA key (see test/ossl_pkey.rb)
-	* added yielding when generating DSA key (see test/ossl_pkey.rb)
-
-2001/11/15
-	* PKCS7::Signer - introduced
-	* PKCS7 - yield Signer when verifiing data
-
-2001/11/14
-	* PKCS7 - sign is working, verify problem remains
-	* X509::Store - verify_callback implemented
-	* PKCS7 - verify is working!
-
-2001/11/13
-	* PKCS7 added (not fully tested, but it seems to be working)
-	* some additions to X509::Store
-
-2001/11/12
-	* added set_default_paths, load_locations(path) to X509::Store
-	* fixed StringValuePtr --> RSTRING()->ptr
-
-2001/11/06 (ossl-0.0.8)
-	* GOTOU Yuuzou: patches to lib/*.rb in order to mark his SSLlib as deprecated
-	* lib name is now 'openssl' (not 'OpenSSL' anymore - GOTOU Yuuzou's idea)
-
-2001/11/05
-	* openssl_missing.c dropped :-))
-	* PKeys reworked (Again? Am I mad???)
-	* sign/verify methods for RSA/DSA - compatibility tests needed!
-
-2001/11/02 (ossl-0.0.7)
-	* GOTOU Yuuzou: remove nasty warnings - make compilation clean (Thanks!)
-	* GOTOU Yuuzou: ossl_ssl.c cleanups, more error proof
-	* openssl_missing.c - for easy key _dups
-	* fixed completely dead ossl_pkey_new2, ossl_pkey_get_EVP_PKEY
-	* fixed ExtFactory's create_extension
-	* make test/ssl/svr.rb generate selfsigned cert (GOTOU Yuuzou's idea)
-
-2001/11/01
-	* Added 'protect' method to X509::Store that denies freeing internal X509_STORE_CTX
-	* changed all // comments to /* */ (Gotou requested)
-	* brought back .ca_file, .ca_path (Gotou requested)
-
-2001/10/31
-	* fixed serious BUG in PKey .encrypt, .decrypt
-	* disabled .enc/.dec for DSA since it's not supported from OpenSSL
-	* since I don't know how to _dup X509_STORE_CTX, free is disabled (SSLSocket is not segfaulting now)
-	* added lib/* from Yuuzou's project (nothing changed => TODO!)
-	* ported some SSL examples test/ssl/* (cli, svr, verify_cb, wget)
-
-2001/10/30
-	* fixed PKey .public?, .private?
-	* SSL project from GOTOU Yuuzou <gotoyuzo@notwork.org> merged in (not tested, waiting for responce from Yuuzou)
-	* API for PKey to README
-	* DSS digest added (SHA for DSA)
-	* some more API to README
-	* really add challenge to SPKI ;-)
-
-2001/10/29 (ossl-0.0.6)
-	* openssl_missing.h added
-	* PKey reworked (some methods deleted, keys made Abstract)
-	* DSA keys added
-	* DSS1 digest added (SHA1 for DSA)
-	* PKey sign and verify added (see test/ossl_pkey.rb)
-
-2001/10/28
-	* API doc for Cipers
-	* Random class and API for it to README
-
-2001/10/27
-	* Challenge added to SPKI
-	* Added ChangeLog
-	* Added OpenSSL module functions for RAND (seed, load_random_file, write_random_file)
-
-2001/10/26 (ossl-0.0.5)
-	* Ciphers reworked, more general approach (less classes)
-	* All OpenSSL ciphers added
-	* Added cipher option to RSA
-
-2001/10/25
-	* ExtensionMaker renamed to ExtensionFactory
-	* First Cipher class made (#of classes will be HUGE - is this good approach???)
-	* Whole project is now licenced under Ruby's licence
-
-2001/10/23
-	* OpenSSL::Netscape::SPKI added
-
-2001/10/20 (ossl-0.0.4)
-	* step ahead to merge with Gotou Yuuzou <gotoyuzo@notwork.org>'s ssl project
-	* (X509::Store reworked - behave like gotoyuzo's ssl version)
-	* make build on FreeBSD (remove strndup) - GOTOU Yuuzou <gotoyuzo@notwork.org> contributed
-
-2001/10/19
-	* add_extension methods added
-	* all (hopefully) setters to extension= frees old extensions mem.
-	* some changes to api (RSA mainly)
-	* openssl.cnf parser to be dropped???
-	* lib and main module renamed to OpenSSL
-	* full modularization introduced (will you hate it?)
-
-2001/10/13
-	* Extensions reworked (ExtensionMaker added)
-	* build fixed up (Robert Feldt <feldt@ce.chalmers.se>)
+Sat,  1 Jun 2002 00:40:59 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Started work on OSSL2 (Starting version = CVS 2002/04/07)
+	  OSSL2 will support only upcomming Ruby 1.8 and OpenSSL 0.9.7.
 

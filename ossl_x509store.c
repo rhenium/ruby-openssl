@@ -27,7 +27,7 @@ VALUE eX509StoreError;
 /*
  * General callback for OpenSSL verify
  */
-int MS_CALLBACK ossl_x509store_verify_cb(int, X509_STORE_CTX *);
+int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
 
 /*
  * Struct
@@ -282,7 +282,7 @@ ossl_x509store_verify_false(VALUE dummy)
 	return Qfalse;
 }
 
-int MS_CALLBACK
+int
 ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
 	VALUE proc, store_ctx, args, ret = Qnil;
@@ -466,7 +466,7 @@ Init_ossl_x509store(VALUE module)
 	 */
 	db_root = NULL;
 	
-	eX509StoreError = rb_define_class_under(module, "StoreError", rb_eStandardError);
+	eX509StoreError = rb_define_class_under(module, "StoreError", eOSSLError);
 
 	cX509Store = rb_define_class_under(module, "Store", rb_cObject);
 	rb_define_singleton_method(cX509Store, "new", ossl_x509store_s_new, -1);

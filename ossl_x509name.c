@@ -147,7 +147,7 @@ ossl_x509name_to_h(VALUE self)
 void 
 Init_ossl_x509name(VALUE module)
 {
-	eX509NameError = rb_define_class_under(module, "NameError", rb_eStandardError);
+	eX509NameError = rb_define_class_under(module, "NameError", eOSSLError);
 
 	cX509Name = rb_define_class_under(module, "Name", rb_cObject);
 	rb_define_singleton_method(cX509Name, "new_from_hash", ossl_x509name_s_new_from_hash, 1);

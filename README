@@ -1,75 +1,80 @@
-$Id$
-'OpenSSL for Ruby' project
-Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
+'OpenSSL for Ruby 2' project
+Copyright (C) 2002  Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 This program is licenced under the same licence as Ruby.
 (See the file 'LICENCE'.)
 
+
+	$Id$
+
+
 ['OpenSSL for Ruby' team members]
-GOTOU Yuuzou <gotoyuzo@notwork.org> - SSL Socket implementation
-Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate), maintainer
+	GOTOU Yuuzou <gotoyuzo@notwork.org> - SSL Socket implementation
+	Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate), maintainer
 
 [Contributors]
-UNKNOWN <oss-ruby@technorama.net> - BN implementation core
-Hynek Rostinsky <hynek.rostinsky@foresta.cz> - Windows platform fixes (strptime mainly)
+	UNKNOWN <oss-ruby@technorama.net> - BN implementation core
+	Hynek Rostinsky <hynek.rostinsky@foresta.cz> - Windows platform fixes (strptime mainly)
 
 [Done] (but not fully tested)
-= PKey:: RSA,DSA keys - new, load, export
-= X509::Certificate - generating new certs, load, looking inside
-= X509::CRL - load, new, looking inside
-= X509::Name - new, export, to_a, to_h (hash)
-= X509::Revoked - new, looking inside (on parameters)
-= X509::Store - new, import trusted certs and CRL, verifiing certs
-= Digest::... - various hashes
-= X509::Request - Cert requests
-= X509::Attribute - as X509Request extensions (not tested)
-= X509::Extension - to Certs, CRLs...
-= X509::ExtensionMaker - for easy creating new Extensions
-= Netscape::SPKI - for requests from NetscapeCommunicators
-= Cipher::... - various ciphers
-= basic PRNG functions (random generator) for OpenSSL module and class Random
-= SSLSocket (merged Gotou Yuuzou's SSLsocket-Ruby project)
-= PKCS7 (signing&data_verify is working, rest needs some testing)
-= HMAC
-= OpenSSL config file parser (part)
-= BN (safe bignums)
-= Diffie-Hellman
+	= PKey:: RSA,DSA keys - new, load, export
+	= X509::Certificate - generating new certs, load, looking inside
+	= X509::CRL - load, new, looking inside
+	= X509::Name - new, export, to_a, to_h (hash)
+	= X509::Revoked - new, looking inside (on parameters)
+	= X509::Store - new, import trusted certs and CRL, verifiing certs
+	= Digest::... - various hashes
+	= X509::Request - Cert requests
+	= X509::Attribute - as X509Request extensions (not tested)
+	= X509::Extension - to Certs, CRLs...
+	= X509::ExtensionMaker - for easy creating new Extensions
+	= Netscape::SPKI - for requests from NetscapeCommunicators
+	= Cipher::... - various ciphers
+	= basic PRNG functions (random generator) for OpenSSL module and class Random
+	= SSLSocket (merged Gotou Yuuzou's SSLsocket-Ruby project)
+	= PKCS7 (signing&data_verify is working, rest needs some testing)
+	= HMAC
+	= OpenSSL config file parser (part)
+	= BN (safe bignums)
+	= Diffie-Hellman
 
 [To-Do]
-= check for memory leaking :-))
-= cleaner code
-= examples
-= RubyUnit to be used!
-= API documentation
-= comments to sources!!!
-= further functionality to existing
-= Std. Extensions, Attributes to be made as Classes?
-= AttributeFactory?
-= add aliases to to_pem as s_dump s_load to support Marshal module
-= CipherFactory?
-= autogen random IVs for Ciphers
-= PKCS12
-= PKCS8
-= ASN.1 ???
-= BIO ???
-= compat tests for RSA/DSA sign/encrypt
+	= check for memory leaking :-))
+	= cleaner code
+	= examples
+	= RubyUnit to be used!
+	= API documentation
+	= comments to sources!!!
+	= further functionality to existing
+	= Std. Extensions, Attributes to be made as Classes?
+	= AttributeFactory?
+	= add aliases to to_pem as s_dump s_load to support Marshal module
+	= CipherFactory?
+	= autogen random IVs for Ciphers
+	= PKCS12
+	= PKCS8
+	= ASN.1 ???
+	= BIO ???
+	= compat tests for RSA/DSA sign/encrypt
 
 [Requirements]
 	Ruby	>= 1.6.4
 	OpenSSL >= 0.9.6b
 
 [Instalation]
-= Unix like systems:
-	ruby extconf.rb
-	make
-	su root -c make install
+	* Unix like systems:
+		ruby extconf.rb
+		make
+		su root -c make install
 
-= Windows like systems:
-	add to %PATH%: c:\openssl\bin (where the dlls lays)
-	ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
-	(or ruby extconf.rb --with-openssl-dir=c:\openssl (NOT TESTED))
-	nmake
-	nmake install
+	* Windows like systems:
+		add to %PATH%: c:\openssl\bin (where the dlls lays)
+		ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
+		(or ruby extconf.rb --with-openssl-dir=c:\openssl (NOT TESTED))
+		nmake
+		nmake install
+
+	* Developers can use 'ruby extconf.rb --with-debug' (or --enable-debug)
 
 [Documentation/API]
 	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_*method :-))

@@ -1,13 +1,19 @@
 =begin
+= $RCSfile$ -- SSL/TLS enhancement for Net::Telnet.
 
-= telnets.rb -- SSL/TLS enhancement for Net::Telnet.
-
+= Info
+  'OpenSSL for Ruby 2' project
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+  All rights reserved.
 
-  $IPR: telnets.rb,v 1.5 2001/09/13 16:42:50 gotoyuzo Exp $
+= Licence
+  This program is licenced under the same licence as Ruby.
+  (See the file 'LICENCE'.)
 
-  2001/11/06: Contiributed to Ruby/OpenSSL project.
+= Version
   $Id$
+  
+  2001/11/06: Contiributed to Ruby/OpenSSL project.
 
 == class Net::Telnet
 
@@ -45,7 +51,6 @@ Michal Rokos's OpenSSL module.
          })
 
 This class is expected to be a superset of usual Net::Telnet.
-
 =end
 
 require "net/telnet"

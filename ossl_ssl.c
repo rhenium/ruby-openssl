@@ -32,6 +32,7 @@
 #include "ossl.h"
 #include <rubysig.h>
 #include <rubyio.h>
+#include <unistd.h> /* for read(), and write() */
 
 #define numberof(ary) (sizeof(ary)/sizeof((ary)[0]))
 
@@ -136,7 +137,7 @@ ssl_false(VALUE dummy)
 	return Qfalse;
 }
 
-static int MS_CALLBACK
+static int
 ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
 	VALUE x509stc, args, ret = Qnil;
@@ -607,12 +608,12 @@ ssl_set_key_file2(VALUE self, VALUE v)
 }
 
 void
-Init_ssl(VALUE module)
+Init_ossl_ssl(VALUE module)
 {
     int i;
 
     /* class SSLError */
-    eSSLError = rb_define_class_under(module, "Error", rb_eStandardError);
+    eSSLError = rb_define_class_under(module, "SSLError", eOSSLError);
 
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(module, "SSLSocket", rb_cObject);

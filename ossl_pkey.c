@@ -11,10 +11,10 @@
 #include "ossl.h"
 #include "ossl_pkey.h"
 
-#define GetPKey(obj, pkeyp) {\
+#define GetPKey(obj, pkeyp) do {\
 	Data_Get_Struct(obj, ossl_pkey, pkeyp);\
 	if (!pkeyp->get_EVP_PKEY) rb_raise(ePKeyError, "not initialized!");\
-}
+} while (0)
 
 /*
  * Classes
@@ -38,15 +38,15 @@ ossl_pkey_new(EVP_PKEY *key)
 		rb_raise(ePKeyError, "Cannot make new key from NULL.");
 	
 	switch (key->type) {
-#if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
+#if !defined(OPENSSL_NO_RSA)
 		case EVP_PKEY_RSA:
 			return ossl_rsa_new(key->pkey.rsa);
 #endif
-#if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
+#if !defined(OPENSSL_NO_DSA)
 		case EVP_PKEY_DSA:
 			return ossl_dsa_new(key->pkey.dsa);
 #endif
-#if !defined(NO_DH) && !defined(OPENSSL_NO_DH)
+#if !defined(OPENSSL_NO_DH)
 		case EVP_PKEY_DH:
 			return ossl_dh_new(key->pkey.dh);
 #endif
@@ -122,7 +122,7 @@ Init_ossl_pkey(VALUE module)
 {
 	id_private_q = rb_intern("private?");
 	
-	ePKeyError = rb_define_class_under(module, "PKeyError", rb_eStandardError);
+	ePKeyError = rb_define_class_under(module, "PKeyError", eOSSLError);
 
 	cPKey = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cPKey, "new", ossl_pkey_s_new, -1);

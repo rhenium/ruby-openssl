@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
+#if !defined(OPENSSL_NO_RSA)
 
 #include "ossl.h"
 #include "ossl_pkey.h"
@@ -155,7 +155,7 @@ ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 /*
  * CB for yielding when generating RSA data
  */
-static void MS_CALLBACK
+static void
 ossl_rsa_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;

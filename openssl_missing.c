@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
+#if !defined(OPENSSL_NO_HMAC)
 
 #include <string.h>
 #include <openssl/hmac.h>

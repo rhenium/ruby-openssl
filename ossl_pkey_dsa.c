@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
+#if !defined(OPENSSL_NO_DSA)
 
 #include "ossl.h"
 #include "ossl_pkey.h"
@@ -154,7 +154,7 @@ ossl_dsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 /*
  * CB for yielding when generating DSA params
  */
-static void MS_CALLBACK
+static void
 ossl_dsa_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;

@@ -214,7 +214,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
 void
 Init_ossl_x509revoked(VALUE module)
 {
-	eX509RevokedError = rb_define_class_under(module, "RevokedError", rb_eStandardError);
+	eX509RevokedError = rb_define_class_under(module, "RevokedError", eOSSLError);
 
 	cX509Revoked = rb_define_class_under(module, "Revoked", rb_cObject);
 	rb_define_singleton_method(cX509Revoked, "new", ossl_x509revoked_s_new, -1);

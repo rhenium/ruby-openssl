@@ -16,14 +16,13 @@
 #endif
 
 #include "ossl.h"
+
 /*
  * On Windows platform there is no strptime function
  * implementation in strptime.c
  */
-#ifndef HAVE_STRPTIME
+#if !defined(HAVE_STRPTIME)
 #  include "./missing/strptime.c"
-#else
-#  include <time.h>
 #endif
 
 /*
@@ -74,7 +73,7 @@ asn1time_to_time(ASN1_UTCTIME *time)
 }
 
 /*
- * This function is not exported to ruby.h
+ * This function is not exported in Ruby's *.h
  */
 extern struct timeval rb_time_timeval(VALUE time);
 
@@ -92,14 +91,17 @@ time_to_time_t(VALUE time)
  * Modules
  */
 VALUE mOSSL;
-VALUE mX509;
-VALUE mDigest;
-VALUE mCipher;
-VALUE mPKey;
-VALUE mNetscape;
-VALUE mSSL;
-VALUE mPKCS7;
-VALUE mRandom;
+VALUE   mDigest;
+VALUE   mNetscape;
+VALUE   mPKCS7;
+VALUE   mPKey;
+VALUE   mRandom;
+VALUE   mSSL;
+
+/*
+ * OpenSSLError < StandardError
+ */
+VALUE eOSSLError;
 
 /*
  * OSSL library init
@@ -121,42 +123,38 @@ Init_openssl()
 	 * Universe of Modules
 	 */
 	mOSSL = rb_define_module("OpenSSL");
-	mX509 = rb_define_module_under(mOSSL, "X509");
-	mDigest = rb_define_module_under(mOSSL, "Digest");
-	mPKey = rb_define_module_under(mOSSL, "PKey");
 	mNetscape = rb_define_module_under(mOSSL, "Netscape");
-	mCipher = rb_define_module_under(mOSSL, "Cipher");
-	mSSL = rb_define_module_under(mOSSL, "SSL");
 	mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
+	mPKey = rb_define_module_under(mOSSL, "PKey");
 	mRandom = rb_define_module_under(mOSSL, "Random");
+	mSSL = rb_define_module_under(mOSSL, "SSL");
 	
 	/*
 	 * Constants
 	 */
 	rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
 	rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+
+	/*
+	 * Generic error,
+	 * common for all classes under OpenSSL module
+	 */
+	eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 	
 	/*
-	 * Components
+	 * Init components
 	 */
+	Init_ossl_bn();
+	Init_ossl_cipher();
 	Init_ossl_config(mOSSL);
-	Init_ossl_x509(mX509);
-	Init_ossl_x509name(mX509);
-	Init_ossl_x509revoked(mX509);
-	Init_ossl_x509crl(mX509);
-	Init_ossl_x509store(mX509);
-	Init_ossl_digest(mDigest);
-	Init_ossl_x509req(mX509);
-	Init_ossl_x509ext(mX509);
-	Init_ossl_x509attr(mX509);
-	Init_ossl_spki(mNetscape);
-	Init_ossl_cipher(mCipher);
-	Init_ossl_rand(mRandom);
+	Init_ossl_digest();
+	Init_ossl_hmac(mOSSL);
+	Init_ossl_pkcs7(mPKCS7);
 	Init_ossl_pkey(mPKey);
-	Init_ssl(mSSL);
-	Init_pkcs7(mPKCS7);
-	Init_hmac(mOSSL);
-	Init_bn(mOSSL);
+	Init_ossl_rand(mRandom);
+	Init_ossl_spki(mNetscape);
+	Init_ossl_ssl(mSSL);
+	Init_ossl_x509();
 }
 
 #if defined(OSSL_DEBUG)

@@ -460,7 +460,7 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
 void 
 Init_ossl_x509crl(VALUE module)
 {
-	eX509CRLError = rb_define_class_under(module, "CRLError", rb_eStandardError);
+	eX509CRLError = rb_define_class_under(module, "CRLError", eOSSLError);
 
 	cX509CRL = rb_define_class_under(module, "CRL", rb_cObject);
 	rb_define_singleton_method(cX509CRL, "new", ossl_x509crl_s_new, -1);

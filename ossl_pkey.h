@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#ifndef _OSSL_PKEY_H_
+#if !defined(_OSSL_PKEY_H_)
 #define _OSSL_PKEY_H_
 
 /*

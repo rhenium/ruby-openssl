@@ -121,6 +121,6 @@ Init_ossl_rand(VALUE module)
 	rb_define_method(module, "egd", ossl_rand_egd, 1);
 	rb_define_method(module, "egd_bytes", ossl_rand_egd_bytes, 2);
 	
-	eRandomError = rb_define_class_under(module, "RandomError", rb_eStandardError);
+	eRandomError = rb_define_class_under(module, "RandomError", eOSSLError);
 }
 

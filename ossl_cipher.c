@@ -33,6 +33,7 @@
 /*
  * Classes
  */
+VALUE mCipher;
 VALUE cCipher;
 VALUE eCipherError;
 VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5, cAES;
@@ -92,7 +93,7 @@ ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 
 	if (klass == cCipher)
-		rb_raise(rb_eNotImpError, "cannot do Cipher::ANY.new - it is an abstract class");
+		rb_raise(rb_eNotImpError, "cannot do Cipher::Cipher.new - it is an abstract class");
 
 	MakeCipher(obj, klass, ciphp);
 	
@@ -264,12 +265,15 @@ ossl_des_initialize(int argc, VALUE *argv, VALUE self)
 		case ECB:
 			nid = NID_des_ecb;
 			break;
+/*
+ * NO LONGER SUPPORTED IN OPENSSL
 		case EDE:
 			nid = NID_des_ede;
 			break;
 		case EDE3:
 			nid = NID_des_ede3;
 			break;
+ */
 		case CFB:
 			nid = NID_des_cfb64;
 			break;
@@ -541,46 +545,46 @@ ossl_aes_initialize(int argc, VALUE *argv, VALUE self)
 	
 	switch (spec) {
 		case BIT128+ECB:
-			nid = NID_aes128_ecb;
+			nid = NID_aes_128_ecb;
 			break;
 		/*
 		case BIT128+CFB:
-			nid = NID_aes128_cfb;
+			nid = NID_aes_128_cfb;
 			break;
 		case BIT128+OFB:
-			nid = NID_aes128_ofb;
+			nid = NID_aes_128_ofb;
 			break;
 		 */
 		case BIT128+CBC:
-			nid = NID_aes128_cbc;
+			nid = NID_aes_128_cbc;
 			break;
 		case BIT192+ECB:
-			nid = NID_aes192_ecb;
+			nid = NID_aes_192_ecb;
 			break;
 		/*
 		case BIT192+CFB:
-			nid = NID_aes192_cfb;
+			nid = NID_aes_192_cfb;
 			break;
 		case BIT192+OFB:
-			nid = NID_aes192_ofb;
+			nid = NID_aes_192_ofb;
 			break;
 		 */
 		case BIT192+CBC:
-			nid = NID_aes192_cbc;
+			nid = NID_aes_192_cbc;
 			break;
 		case BIT256+ECB:
-			nid = NID_aes256_ecb;
+			nid = NID_aes_256_ecb;
 			break;
 		/*
 		case BIT256+CFB:
-			nid = NID_aes256_cfb;
+			nid = NID_aes_256_cfb;
 			break;
 		case BIT256+OFB:
-			nid = NID_aes256_ofb;
+			nid = NID_aes_256_ofb;
 			break;
 		 */
 		case BIT256+CBC:
-			nid = NID_aes256_cbc;
+			nid = NID_aes_256_cbc;
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
@@ -595,11 +599,13 @@ ossl_aes_initialize(int argc, VALUE *argv, VALUE self)
  * INIT
  */
 void 
-Init_ossl_cipher(VALUE module)
+Init_ossl_cipher(void)
 {
-	eCipherError = rb_define_class_under(module, "CipherError", rb_eStandardError);
+	mCipher = rb_define_module_under(mOSSL, "Cipher");
 
-	cCipher = rb_define_class_under(module, "ANY", rb_cObject);
+	eCipherError = rb_define_class_under(mOSSL, "CipherError", eOSSLError);
+
+	cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);
 	rb_define_singleton_method(cCipher, "new", ossl_cipher_s_new, -1);
 	/*"initialize"*/
 	rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
@@ -611,7 +617,7 @@ Init_ossl_cipher(VALUE module)
 /*
  * Constants
  */
-#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(x))
+#define DefCipherConst(x) rb_define_const(mOSSL, #x, INT2FIX(x))
 
 	DefCipherConst(ECB);
 	DefCipherConst(EDE);
@@ -629,69 +635,67 @@ Init_ossl_cipher(VALUE module)
  * automation for classes creation and initialize method binding
  */
 #define DefCipher(name, func) 							\
-	c##name = rb_define_class_under(module, #name, cCipher);		\
+	c##name = rb_define_class_under(mOSSL, #name, cCipher);			\
 	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*
  * create classes and bind initialize method
  */
-#if !defined(NO_DES) && !defined(OPENSSL_NO_DES)
+#if !defined(OPENSSL_NO_DES)
 	DefCipher(DES, des);
 #else
 #	warning >>> OpenSSL is compiled without DES support <<<
 	rb_warning("OpenSSL is compiled without DES support");
 #endif /* NO_DES */
-	
-#if !defined(NO_RC2) && !defined(OPENSSL_NO_RC2)
+
+#if !defined(OPENSSL_NO_RC2)
 	DefCipher(RC2, rc2);
 #else
 #	warning >>> OpenSSL is compiled without RC2 support <<<
 	rb_warning("OpenSSL is compiled without RC2 support");
 #endif /* NO_RC2 */
-	
-#if !defined(NO_RC4) && !defined(OPENSSL_NO_RC4)
+
+#if !defined(OPENSSL_NO_RC4)
 	DefCipher(RC4, rc4);
 #else
 #	warning >>> OpenSSL is compiled without RC4 support <<<
 	rb_warning("OpenSSL is compiled without RC4 support");
 #endif /* NO_RC4 */
 	
-#if !defined(NO_RC5) && !defined(OPENSSL_NO_RC5)
+#if !defined(OPENSSL_NO_RC5)
 	DefCipher(RC5, rc5);
 #else
 #	warning >>> OpenSSL is compiled without RC5 support <<<
 	rb_warning("OpenSSL is compiled without RC5 support");
 #endif /* NO_RC5 */
 	
-#if !defined(NO_BF) && !defined(OPENSSL_NO_BF)
+#if !defined(OPENSSL_NO_BF)
 	DefCipher(BlowFish, bf);
 #else
 #	warning >>> OpenSSL is compiled without BF support <<<
 	rb_warning("OpenSSL is compiled without BlowFish support");
 #endif /* NO_BF */
 	
-#if !defined(NO_CAST) && !defined(OPENSSL_NO_CAST)
+#if !defined(OPENSSL_NO_CAST)
 	DefCipher(Cast5, cast5);
 #else
 #	warning >>> OpenSSL is compiled without CAST support <<<
 	rb_warning("OpenSSL is compiled without Cast5 support");
 #endif /* NO_CAST */
 	
-#if !defined(NO_IDEA) && !defined(OPENSSL_NO_IDEA)
+#if !defined(OPENSSL_NO_IDEA)
 	DefCipher(Idea, idea);
 #else
 #	warning >>> OpenSSL is compiled without IDEA support <<<
 	rb_warning("OpenSSL is compiled without Idea support");
 #endif /* NO_IDEA */
 
-#if OPENSSL_VERSION_NUMBER >= 0x00907000L /* DEV version of OpenSSL has AES */
-#  if !defined(OPENSSL_NO_AES)
+#if !defined(OPENSSL_NO_AES)
 	DefCipher(AES, aes);
-#  else
+#else
 #	warning >>> OpenSSL is compiled without AES support <<<
 	rb_warning("OpenSSL is compiled without AES support");
-#  endif /* NO_AES */
-#endif /* OPENSSL_VERSION_NUMBER */
+#endif /* NO_AES */
 
-} /* Init_ */
+} /* Init_ossl_cipher */
 

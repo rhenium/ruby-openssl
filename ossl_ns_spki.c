@@ -224,7 +224,7 @@ ossl_spki_verify(VALUE self, VALUE key)
 void
 Init_ossl_spki(VALUE module)
 {
-	eSPKIError = rb_define_class_under(module, "SPKIError", rb_eStandardError);
+	eSPKIError = rb_define_class_under(module, "SPKIError", eOSSLError);
 	
 	cSPKI = rb_define_class_under(module, "SPKI", rb_cObject);
 	rb_define_singleton_method(cSPKI, "new", ossl_spki_s_new, -1);

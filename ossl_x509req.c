@@ -393,7 +393,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 void 
 Init_ossl_x509req(VALUE module)
 {
-	eX509RequestError = rb_define_class_under(module, "RequestError", rb_eStandardError);
+	eX509RequestError = rb_define_class_under(module, "RequestError", eOSSLError);
 	
 	cX509Request = rb_define_class_under(module, "Request", rb_cObject);
 	rb_define_singleton_method(cX509Request, "new", ossl_x509req_s_new, -1);

@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
+#if !defined(OPENSSL_NO_HMAC)
 
 #include "ossl.h"
 
@@ -142,9 +142,9 @@ ossl_hmac_hexhmac(VALUE self)
  * INIT
  */
 void
-Init_hmac(VALUE module)
+Init_ossl_hmac(VALUE module)
 {
-	eHMACError = rb_define_class_under(module, "HMACError", rb_eStandardError);
+	eHMACError = rb_define_class_under(module, "HMACError", eOSSLError);
 	
 	cHMAC = rb_define_class_under(module, "HMAC", rb_cObject);
 	rb_define_singleton_method(cHMAC, "new", ossl_hmac_s_new, -1);
@@ -160,7 +160,7 @@ Init_hmac(VALUE module)
 #else /* NO_HMAC */
 
 void
-Init_hmac(VALUE module)
+Init_ossl_hmac(VALUE module)
 {
 	rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC.");
 }

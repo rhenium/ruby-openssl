@@ -8,7 +8,7 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(NO_DH) && !defined(OPENSSL_NO_DH)
+#if !defined(OPENSSL_NO_DH)
 
 #include "ossl.h"
 #include "ossl_pkey.h"
@@ -78,7 +78,7 @@ ossl_dh_get_DH(VALUE obj)
 	ossl_dh *dhp = NULL;
 	DH *dh = NULL;
 	
-	OSSL_Check_Type(obj, cDH);
+	OSSL_Check_Instance(obj, cDH);
 	GetDH(obj, dhp);
 
 	dh = DHparams_dup(dhp->dh);
@@ -142,7 +142,7 @@ ossl_dh_s_new_from_pem(VALUE klass, VALUE buffer)
 /*
  * CB for yielding when generating DH params
  */
-static void MS_CALLBACK
+static void
 ossl_dh_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;

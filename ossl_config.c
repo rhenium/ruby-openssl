@@ -114,7 +114,7 @@ ossl_config_get_section(VALUE self, VALUE section)
 void
 Init_ossl_config(VALUE module)
 {
-	eConfigError = rb_define_class_under(module, "ConfigError", rb_eStandardError);
+	eConfigError = rb_define_class_under(module, "ConfigError", eOSSLError);
 
 	cConfig = rb_define_class_under(module, "Config", rb_cObject);
 	
