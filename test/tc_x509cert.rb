@@ -139,6 +139,10 @@ class TC_Certificate < Test::Unit::TestCase
     x509 = Certificate::new($x509.to_pem)
     assert_equal(txt, x509.to_text, "new instance from PEM")
   end
+  def test_12dup
+    assert_equal($x509.to_text, $x509.dup.to_text, "dup")
+    assert_equal($x509.to_text, $x509.clone.to_text, "clone")
+  end
   def tear_down
     ##
     # NONE
