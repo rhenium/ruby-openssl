@@ -158,7 +158,6 @@ Init_openssl()
 	 */
 	mOSSL = rb_define_module("OpenSSL");
 	mPKey = rb_define_module_under(mOSSL, "PKey");
-	mRandom = rb_define_module_under(mOSSL, "Random");
 	mSSL = rb_define_module_under(mOSSL, "SSL");
 	
 	/*
@@ -184,7 +183,7 @@ Init_openssl()
 	Init_ossl_ns_spki();
 	Init_ossl_pkcs7();
 	Init_ossl_pkey(mPKey);
-	Init_ossl_rand(mRandom);
+	Init_ossl_rand();
 	Init_ossl_ssl(mSSL);
 	Init_ossl_x509();
 }

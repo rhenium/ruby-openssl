@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed,  5 Jun 2002 12:17:18 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* rand.h: NEW (bits from ossl.h)
+	* rand.c: port & cleanup
+
 Wed,  5 Jun 2002 11:56:53 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* pkcs7.h: NEW (bits from ossl.h)
 	* pkcs7.c: cleanup & port to Ruby 1.8

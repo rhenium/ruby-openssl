@@ -56,7 +56,6 @@ extern "C" {
  */
 extern VALUE mOSSL;
 extern VALUE   mPKey;
-extern VALUE   mRandom;
 extern VALUE   mSSL;
 
 /*
@@ -67,7 +66,6 @@ VALUE eOSSLError;
 /*
  * Classes
  */
-extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
 /* PKey */
@@ -127,11 +125,6 @@ int string2hex(char *, int, char **, int *);
 #endif /* OSSL_DEBUG */
 
 /*
- * RAND - module methods only
- */
-void Init_ossl_rand(VALUE);
-
-/*
  * PKey
  */
 VALUE ossl_pkey_new(EVP_PKEY *);
@@ -185,7 +178,9 @@ void Init_ossl_ssl(VALUE);
 /*
  * TODO
 #include "ossl_pkey.h"
+ */
 #include "ossl_rand.h"
+/*
 #include "ossl_ssl.h"
  */
 #include "ossl_version.h"

@@ -29,7 +29,7 @@ VALUE eRandomError;
 static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
-	str = rb_obj_as_string(str);
+	StringValue(str);
 	RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
 
 	return str;
@@ -38,26 +38,22 @@ ossl_rand_seed(VALUE self, VALUE str)
 static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
-	filename = rb_str_to_str(filename);
-	Check_SafeStr(filename);
+	SafeStringValue(filename);
 	
-	if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
+	if(!RAND_load_file(StringValuePtr(filename), -1)) {
 		OSSL_Raise(eRandomError, "");
 	}
-
 	return Qtrue;
 }
 
 static VALUE
 ossl_rand_write_file(VALUE self, VALUE filename)
 {
-	filename = rb_str_to_str(filename);
-	Check_SafeStr(filename);
+	SafeStringValue(filename);
 	
-	if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
+	if (RAND_write_file(StringValuePtr(filename)) == -1) {
 		OSSL_Raise(eRandomError, "");
 	}
-
 	return Qtrue;
 }
 
@@ -67,17 +63,13 @@ ossl_rand_bytes(VALUE self, VALUE len)
 	unsigned char *buffer = NULL;
 	VALUE str;
 	
-	Check_Type(len, T_FIXNUM);
-
-	if (!(buffer = OPENSSL_malloc(FIX2INT(len)+1))) {
+	if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
 		OSSL_Raise(eRandomError, "");
 	}
-	
 	if (!RAND_bytes(buffer, FIX2INT(len))) {
 		OPENSSL_free(buffer);
 		OSSL_Raise(eRandomError, "");
 	}
-	
 	str = rb_str_new(buffer, FIX2INT(len));
 	OPENSSL_free(buffer);
 
@@ -87,24 +79,22 @@ ossl_rand_bytes(VALUE self, VALUE len)
 static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
-	Check_SafeStr(filename);
-	if(!RAND_egd(RSTRING(filename)->ptr)) {
+	SafeStringValue(filename);
+	
+	if(!RAND_egd(StringValuePtr(filename))) {
 		OSSL_Raise(eRandomError, "");
 	}
-
 	return Qtrue;
 }
 
 static VALUE
 ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
-	Check_SafeStr(filename);
-	Check_Type(len, T_FIXNUM);
+	SafeStringValue(filename);
 
-	if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len))) {
+	if (!RAND_egd_bytes(StringValuePtr(filename), FIX2INT(len))) {
 		OSSL_Raise(eRandomError, "");
 	}
-	
 	return Qtrue;
 }
 
@@ -112,15 +102,17 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
  * INIT
  */
 void
-Init_ossl_rand(VALUE module)
+Init_ossl_rand()
 {
-	rb_define_method(module, "seed", ossl_rand_seed, 1);
-	rb_define_method(module, "load_random_file", ossl_rand_load_file, 1);
-	rb_define_method(module, "write_random_file", ossl_rand_write_file, 1);
-	rb_define_method(module, "random_bytes", ossl_rand_bytes, 1);	
-	rb_define_method(module, "egd", ossl_rand_egd, 1);
-	rb_define_method(module, "egd_bytes", ossl_rand_egd_bytes, 2);
+	mRandom = rb_define_module_under(mOSSL, "Random");
 	
-	eRandomError = rb_define_class_under(module, "RandomError", eOSSLError);
+	eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);
+	
+	rb_define_method(mRandom, "seed", ossl_rand_seed, 1);
+	rb_define_method(mRandom, "load_random_file", ossl_rand_load_file, 1);
+	rb_define_method(mRandom, "write_random_file", ossl_rand_write_file, 1);
+	rb_define_method(mRandom, "random_bytes", ossl_rand_bytes, 1);	
+	rb_define_method(mRandom, "egd", ossl_rand_egd, 1);
+	rb_define_method(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);	
 }
 
