@@ -4,38 +4,53 @@ require 'openssl'
 require 'md5'
 
 class CHashDir
+  include Enumerable
+
   def initialize(dirpath)
     @dirpath = dirpath
-    @hash_list = nil
+    @fingerprint_cache = @cert_cache = nil
   end
 
-  def hash_dir
-    @hash_list = Hash.new
+  def hash_dir(silent = false)
+    @silent = silent
+    @fingerprint_cache = Hash.new
+    @cert_cache = Hash.new
     do_hash_dir
+  end
+
+  def each
+    @cert_cache.each do |name_hash, certs|
+      yield(certs)
+    end
+  end
+
+  def get_certs(name)
+    @cert_cache[hash_name(name)]
   end
 
 private
 
   def do_hash_dir
-    delete_symlink
-    Dir.glob(File.join(@dirpath, '*.pem')) do |pemfile|
-      cert = load_pem_file(pemfile)
-      case cert
-      when OpenSSL::X509::Certificate
-	link_hash_cert(pemfile, cert)
-      when OpenSSL::X509::CRL
-	link_hash_crl(pemfile, cert)
-      else
-	STDERR.puts("WARNING: #{pemfile} does not contain a certificate or CRL: skipping")
+    Dir.chdir(@dirpath) do
+      delete_symlink
+      Dir.glob('*.pem') do |pemfile|
+	cert = load_pem_file(pemfile)
+	case cert
+	when OpenSSL::X509::Certificate
+	  link_hash_cert(pemfile, cert)
+	when OpenSSL::X509::CRL
+	  link_hash_crl(pemfile, cert)
+	else
+	  STDERR.puts("WARNING: #{pemfile} does not contain a certificate or CRL: skipping") unless @silent
+	end
       end
     end
   end
 
   def delete_symlink
-    Dir.entries(@dirpath).each do |entry|
+    Dir.entries(".").each do |entry|
       next unless /^[\da-f]+\.r{0,1}\d+$/ =~ entry
-      path = File.join(@dirpath, entry)
-      File.unlink(path) if FileTest.symlink?(path)
+      File.unlink(entry) if FileTest.symlink?(entry)
     end
   end
 
@@ -53,34 +68,50 @@ private
   end
 
   def link_hash_cert(org_filename, cert)
-    unless link_hash(org_filename, cert.subject, cert.to_der) { |name_hash, idx| "#{name_hash}.#{idx}" }
-      STDERR.puts("WARNING: Skipping duplicate certificate #{org_filename}")
+    name_hash = hash_name(cert.subject)
+    fingerprint = fingerprint(cert.to_der)
+    filepath = link_hash(org_filename, name_hash, fingerprint) { |idx|
+      "#{name_hash}.#{idx}"
+    }
+    unless filepath
+      unless @silent
+	STDERR.puts("WARNING: Skipping duplicate certificate #{org_filename}")
+      end
+    else
+      (@cert_cache[name_hash] ||= []) << path(filepath)
     end
   end
 
   def link_hash_crl(org_filename, crl)
-    unless link_hash(org_filename, crl.issuer, crl.to_der) { |name_hash, idx| "#{name_hash}.r#{idx}" }
-      STDERR.puts("WARNING: Skipping duplicate CRL #{org_filename}")
+    name_hash = hash_name(crl.issuer)
+    fingerprint = fingerprint(crl.to_der)
+    filepath = link_hash(org_filename, name_hash, fingerprint) { |idx|
+      "#{name_hash}.r#{idx}"
+    }
+    unless filepath
+      unless @silent
+	STDERR.puts("WARNING: Skipping duplicate CRL #{org_filename}")
+      end
+    else
+      (@cert_cache[name_hash] ||= []) << path(filepath)
     end
   end
 
-  def link_hash(org_filename, name, der)
-    name_hash = sprintf("%x", name.hash)
-    md5_fingerprint = MD5.hexdigest(der).upcase
+  def link_hash(org_filename, name, fingerprint)
     idx = 0
     filepath = nil
     while true
-      filepath = File.join(@dirpath, yield(name_hash, idx))
+      filepath = yield(idx)
       break unless FileTest.symlink?(filepath) or FileTest.exist?(filepath)
-      if @hash_list[filepath] == md5_fingerprint
+      if @fingerprint_cache[filepath] == fingerprint
 	return false
       end
       idx += 1
     end
-    STDOUT.puts("#{org_filename} => #{filepath}")
+    STDOUT.puts("#{org_filename} => #{filepath}") unless @silent
     symlink(org_filename, filepath)
-    @hash_list[filepath] = md5_fingerprint
-    true
+    @fingerprint_cache[filepath] = fingerprint
+    filepath
   end
 
   def symlink(from, to)
@@ -91,6 +122,18 @@ private
 	f << File.open(from).read
       end
     end
+  end
+
+  def path(filename)
+    File.join(@dirpath, filename)
+  end
+
+  def hash_name(name)
+    sprintf("%x", name.hash)
+  end
+
+  def fingerprint(der)
+    MD5.hexdigest(der).upcase
   end
 end
 
