@@ -1,9 +1,10 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby18
 
 require 'fox'
 require 'openssl'
 require 'time'
 require 'certstore'
+require 'getopts'
 
 include Fox
 
@@ -38,7 +39,7 @@ module CertDumpSupport
   end
 
   def bn_label(bn)
-    sprintf("%X", bn).scan(/../).join(" ")
+    ("0" << sprintf("%X", bn)).scan(/../).join(" ")
   end
 end
 
@@ -55,16 +56,18 @@ class CertDump
       version
     when 'Serial'
       serial
-    when 'Subject'
-      subject
+    when 'Signature Algorithm'
+      signature_algorithm
     when 'Issuer'
       issuer
-    when 'Valid time'
-      valid_time
+    when 'Validity'
+      validity
     when 'Not before'
       not_before
     when 'Not after'
       not_after
+    when 'Subject'
+      subject
     when 'Public key'
       public_key
     else
@@ -78,12 +81,14 @@ class CertDump
       version_line
     when 'Serial'
       serial_line
+    when 'Signature Algorithm'
+      signature_algorithm_line
     when 'Subject'
       subject_line
     when 'Issuer'
       issuer_line
-    when 'Valid time'
-      valid_time_line
+    when 'Validity'
+      validity_line
     when 'Not before'
       not_before_line
     when 'Not after'
@@ -113,12 +118,20 @@ private
     serial
   end
 
+  def signature_algorithm
+    @cert.signature_algorithm
+  end
+
+  def signature_algorithm_line
+    signature_algorithm
+  end
+
   def subject
     name_text(@cert.subject)
   end
 
   def subject_line
-    name_label(@cert.subject)
+    @cert.subject.to_s
   end
 
   def issuer
@@ -126,17 +139,17 @@ private
   end
 
   def issuer_line
-    name_label(@cert.issuer)
+    @cert.issuer.to_s
   end
 
-  def valid_time
+  def validity
     <<EOS
 Not before: #{not_before}
 Not after: #{not_after}
 EOS
   end
 
-  def valid_time_line
+  def validity_line
     "from #{@cert.not_before.iso8601} to #{@cert.not_after.iso8601}"
   end
 
@@ -193,6 +206,8 @@ class CrlDump
     case tag
     when 'Version'
       version
+    when 'Signature Algorithm'
+      signature_algorithm
     when 'Issuer'
       issuer
     when 'Last update'
@@ -208,6 +223,8 @@ class CrlDump
     case tag
     when 'Version'
       version_line
+    when 'Signature Algorithm'
+      signature_algorithm_line
     when 'Issuer'
       issuer_line
     when 'Last update'
@@ -229,12 +246,20 @@ private
     version
   end
 
+  def signature_algorithm
+    @crl.signature_algorithm
+  end
+
+  def signature_algorithm_line
+    signature_algorithm
+  end
+
   def issuer
     name_text(@crl.issuer)
   end
 
   def issuer_line
-    name_label(@crl.issuer)
+    @crl.issuer.to_s
   end
 
   def last_update
@@ -472,14 +497,15 @@ class CertStoreView < FXMainWindow
       wrap = CertDump.new(cert)
       items = []
       items << ['Version', wrap.get_dump_line('Version')]
-      items << ['Serial', wrap.get_dump_line('Serial')]
-      items << ['Subject', wrap.get_dump_line('Subject')]
+      items << ['Signature Algorithm', wrap.get_dump_line('Signature Algorithm')]
       items << ['Issuer', wrap.get_dump_line('Issuer')]
-      items << ['Valid time', wrap.get_dump_line('Valid time')]
+      items << ['Serial', wrap.get_dump_line('Serial')]
       #items << ['Not before', wrap.get_dump_line('Not before')]
       #items << ['Not after', wrap.get_dump_line('Not after')]
+      items << ['Subject', wrap.get_dump_line('Subject')]
       items << ['Public key', wrap.get_dump_line('Public key')]
-      cert.extensions.each do |ext|
+      items << ['Validity', wrap.get_dump_line('Validity')]
+      (cert.extensions.sort { |a, b| a.oid <=> b.oid }).each do |ext|
 	items << [ext.oid, wrap.get_dump_line(ext.oid)]
       end
       show_items(cert, items)
@@ -489,6 +515,7 @@ class CertStoreView < FXMainWindow
       wrap = CrlDump.new(crl)
       items = []
       items << ['Version', wrap.get_dump_line('Version')]
+      items << ['Signature Algorithm', wrap.get_dump_line('Signature Algorithm')]
       items << ['Issuer', wrap.get_dump_line('Issuer')]
       items << ['Last update', wrap.get_dump_line('Last update')]
       items << ['Next update', wrap.get_dump_line('Next update')]
@@ -587,6 +614,7 @@ class CertStoreView < FXMainWindow
 
   def initialize(app, cert_store)
     @cert_store = cert_store
+    @trust_file = nil
     @verify_filter = 0
     @verify_filename = nil
     full_width = 800
@@ -709,9 +737,10 @@ private
   def verify_certfile(filename)
     begin
       cert = @cert_store.generate_cert(filename)
-      result = @cert_store.verify(cert)
+      @cert_store.verify(cert)
     rescue
       show_error($!)
+      []
     end
   end
 
@@ -721,10 +750,17 @@ private
   end
 end
 
-trust_certs_dir = ARGV.shift or raise "#{$0} trust_cert_dir"
-certfile = ARGV.shift
+GC.start
+getopts nil, "trust_file:", "cert:"
+
+certs_dir = ARGV.shift or raise "#{$0} cert_dir"
+trust_file = $OPT_trust_file
+certfile = $OPT_cert
 app = FXApp.new("CertStore", "FoxTest")
-cert_store = CertStore.new(trust_certs_dir)
+cert_store = CertStore.new(certs_dir)
+if trust_file
+  cert_store.add_trust_file(trust_file)
+end
 w = CertStoreView.new(app, cert_store)
 app.create
 if certfile

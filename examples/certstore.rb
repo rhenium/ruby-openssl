@@ -11,19 +11,24 @@ class CertStore
   attr_reader :ee
   attr_reader :crl
 
-  def initialize(trust_certs_dir)
-    @trust_certs_dir = trust_certs_dir
-    @c_store = CHashDir.new(@trust_certs_dir)
+  def initialize(certs_dir)
+    @trust_anchor = []
+    @certs_dir = certs_dir
+    @c_store = CHashDir.new(@certs_dir)
     @c_store.hash_dir(true)
     @crl_store = CrlStore.new(@c_store)
     @x509store = Store.new
-    @x509store.add_path(@trust_certs_dir)
+    @x509store.add_path(@certs_dir)
     @self_signed_ca = @other_ca = @ee = @crl = nil
 
     # Uncomment thi line to let OpenSSL to check CRL for each certs.
     # @x509store.flags = V_FLAG_CRL_CHECK | V_FLAG_CRL_CHECK_ALL
 
     scan_certs
+  end
+
+  def add_trust_file(certfile)
+    @trust_anchor << @c_store.load_pem_file(certfile)
   end
 
   def generate_cert(filename)
@@ -61,15 +66,24 @@ private
     crl_map = {}
     result = @x509store.verify(cert) do |ok, ctx|
       cert = ctx.current_cert
+      p cert.subject
       if ctx.current_crl
 	crl_map[cert.subject] = true
       end
-      if ok and !ctx.current_crl
-	if crl = @crl_store.find_crl(cert)
-	  crl_map[cert.subject] = true
-	  if crl.revoked.find { |revoked| revoked.serial == cert.serial }
+      if ok
+	if guess_cert_type(cert) == CERT_TYPE_SELF_SIGNED
+	  if !trusted?(cert)
 	    ok = false
-	    error_string = 'certification revoked'
+	    error_sting = 'untrusted self signed CA'
+	  end
+	end
+	if !ctx.current_crl
+	  if crl = @crl_store.find_crl(cert)
+	    crl_map[cert.subject] = true
+	    if crl.revoked.find { |revoked| revoked.serial == cert.serial }
+	      ok = false
+	      error_string = 'certification revoked'
+	    end
 	  end
 	end
       end
@@ -82,6 +96,16 @@ private
 	error_map[cert.subject] || @x509store.error_string
       end
     return error, crl_map
+  end
+
+  def trusted?(cert)
+    if @trust_anchor.empty?
+      return true
+    end
+    if @trust_anchor.find { |c| match_cert(c, cert) }
+      return true
+    end
+    false
   end
 
   def scan_certs
@@ -142,7 +166,8 @@ private
   end
 
   def is_cert_self_signed(cert)
-    cert.subject.cmp(cert.issuer) == 0
+    # cert.subject.cmp(cert.issuer) == 0
+    cert.subject.to_s == cert.issuer.to_s
   end
 end
 

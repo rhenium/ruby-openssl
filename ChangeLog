@@ -1,3 +1,6 @@
+Sun, 09 Jul 2003 01:50:45 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/cert_store_view.rb: Support trust anchor.
+
 Sun, 09 Jul 2003 01:20:56 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/ca/gen_cert.rb: Add some options.  --noakid is an option
 	  worthy to mention.  For cross certification, with OpenSSL, akid seems

@@ -53,9 +53,12 @@ private
 
   def fetch(location)
     if /\AURI:(.*)\z/ =~ location
-      p "fetch"
-      c = HTTPAccess2::Client.new(ENV['http_proxy'] || ENV['HTTP_PROXY'])
-      c.get_content($1)
+      begin
+	c = HTTPAccess2::Client.new(ENV['http_proxy'] || ENV['HTTP_PROXY'])
+	c.get_content($1)
+      rescue
+	nil
+      end
     else
       nil
     end
