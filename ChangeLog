@@ -1,5 +1,5 @@
 Sun, 29 Jun 2003 23:07:25 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
-	* ossl_ssl.c: no longer SSL_CTX_set_default_verify_paths is called.
+	* ossl_ssl.c: SSL_CTX_set_default_verify_paths is no longer called.
 
 Sun, 29 Jun 2003 20:14:00 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/ca/gen_clientee_from_csr.rb: Typo fixed.
