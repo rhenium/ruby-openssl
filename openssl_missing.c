@@ -35,7 +35,6 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
     return 1;
 }
 #endif /* HAVE_HMAC_CTX_COPY */
-
 #endif /* NO_HMAC */
 
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
@@ -50,10 +49,11 @@ void *X509_STORE_get_ex_data(X509_STORE *str, int idx)
 {
     return CRYPTO_get_ex_data(&str->ex_data,idx);
 }
-#endif /* HAVE_X509_STORE_SET_EX_DATA */
+#endif
 
 #if !defined(HAVE_EVP_MD_CTX_CREATE)
-EVP_MD_CTX *EVP_MD_CTX_create(void)
+EVP_MD_CTX *
+EVP_MD_CTX_create(void)
 {
     EVP_MD_CTX *ctx = OPENSSL_malloc(sizeof *ctx);
 
@@ -61,35 +61,39 @@ EVP_MD_CTX *EVP_MD_CTX_create(void)
 
     return ctx;
 }
-#endif /* HAVE_EVP_MD_CTX_CREATE */
+#endif
 
 #if !defined(HAVE_EVP_MD_CTX_CLEANUP)
-int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
+int
+EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
 {
     /* FIXME!!! */
     memset(ctx, '\0', sizeof *ctx);
 
     return 1;
 }
-#endif /* HAVE_EVP_MD_CTX_CLEANUP */
+#endif
 
 #if !defined(HAVE_EVP_MD_CTX_DESTROY)
-void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
+void
+EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
 {
     EVP_MD_CTX_cleanup(ctx);
     OPENSSL_free(ctx);
 }
-#endif /* HAVE_EVP_MD_CTX_DESTROY */
+#endif
 
 #if !defined(HAVE_EVP_MD_CTX_INIT)
-void EVP_MD_CTX_init(EVP_MD_CTX *ctx)
+void
+EVP_MD_CTX_init(EVP_MD_CTX *ctx)
 {
     memset(ctx,'\0',sizeof *ctx);
 }
 #endif
 
 #if !defined(HAVE_HMAC_CTX_INIT)
-void HMAC_CTX_init(HMAC_CTX *ctx)
+void
+HMAC_CTX_init(HMAC_CTX *ctx)
 {
     EVP_MD_CTX_init(&ctx->i_ctx);
     EVP_MD_CTX_init(&ctx->o_ctx);
@@ -98,7 +102,8 @@ void HMAC_CTX_init(HMAC_CTX *ctx)
 #endif
 
 #if !defined(HAVE_HMAC_CTX_CLEANUP)
-void HMAC_CTX_cleanup(HMAC_CTX *ctx)
+void
+HMAC_CTX_cleanup(HMAC_CTX *ctx)
 {
     EVP_MD_CTX_cleanup(&ctx->i_ctx);
     EVP_MD_CTX_cleanup(&ctx->o_ctx);
@@ -108,7 +113,8 @@ void HMAC_CTX_cleanup(HMAC_CTX *ctx)
 #endif
 
 #if !defined(HAVE_X509_CRL_SET_VERSION)
-int X509_CRL_set_version(X509_CRL *x, long version)
+int
+X509_CRL_set_version(X509_CRL *x, long version)
 {
     if (x == NULL) return(0);
     if (x->crl->version == NULL)
@@ -121,7 +127,8 @@ int X509_CRL_set_version(X509_CRL *x, long version)
 #endif
 
 #if !defined(HAVE_X509_CRL_SET_ISSUER_NAME)
-int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name)
+int
+X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name)
 {
     if ((x == NULL) || (x->crl == NULL)) return(0);
     return(X509_NAME_set(&x->crl->issuer,name));
@@ -129,7 +136,8 @@ int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name)
 #endif
 
 #if !defined(HAVE_X509_CRL_SORT)
-int X509_CRL_sort(X509_CRL *c)
+int
+X509_CRL_sort(X509_CRL *c)
 {
     int i;
     X509_REVOKED *r;
@@ -180,58 +188,51 @@ BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx)
 
 #if !defined(HAVE_BN_MOD_ADD) || !defined(HAVE_BN_MOD_SUB)
 int BN_nnmod(BIGNUM *r, const BIGNUM *m, const BIGNUM *d, BN_CTX *ctx)
-    {
+{
     /* like BN_mod, but returns non-negative remainder
      * (i.e.,  0 <= r < |d|  always holds) */
-
-    if (!(BN_mod(r,m,d,ctx)))
-	return 0;
-    if (!r->neg)
-	return 1;
+    if (!(BN_mod(r,m,d,ctx))) return 0;
+    if (!r->neg) return 1;
     /* now   -|d| < r < 0,  so we have to set  r := r + |d| */
     return (d->neg ? BN_sub : BN_add)(r, r, d);
-    }
+}
 #endif
 
 #if !defined(HAVE_BN_MOD_ADD)
-int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
-    {
+int
+BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
+{
     if (!BN_add(r, a, b)) return 0;
     return BN_nnmod(r, r, m, ctx);
-    }
+}
 #endif
 
 #if !defined(HAVE_BN_MOD_SUB)
-int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
-    {
+int
+BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx)
+{
     if (!BN_sub(r, a, b)) return 0;
     return BN_nnmod(r, r, m, ctx);
-    }
+}
 #endif
 
 #if !defined(HAVE_CONF_GET1_DEFAULT_CONFIG_FILE)
-
 #define OPENSSL_CONF "openssl.cnf"
-
-char *CONF_get1_default_config_file(void)
-    {
+char *
+CONF_get1_default_config_file(void)
+{
     char *file;
     int len;
 
     file = getenv("OPENSSL_CONF");
-    if (file)
-	return BUF_strdup(file);
-
+    if (file) return BUF_strdup(file);
     len = strlen(X509_get_default_cert_area());
 #ifndef OPENSSL_SYS_VMS
     len++;
 #endif
     len += strlen(OPENSSL_CONF);
-
     file = OPENSSL_malloc(len + 1);
-
-    if (!file)
-	return NULL;
+    if (!file) return NULL;
     strcpy(file,X509_get_default_cert_area());
 #ifndef OPENSSL_SYS_VMS
     strcat(file,"/");
