@@ -32,7 +32,7 @@ f = File.new("./#{new.serial}cert.pem","w")
 f.write new.to_pem
 f.close
 
-puts "Enter Password:"
+puts "Enter Password to be set for accessing Private key:"
 p pass = gets.chop!
 
 f = File.new("./#{new.serial}key.pem", "w")

@@ -11,21 +11,21 @@
 #include "ossl.h"
 #include <rubysig.h>
 
-#define MakeX509Store(klass, obj, storep) do { \
-    obj = Data_Make_Struct(klass, ossl_x509store, 0, ossl_x509store_free, storep); \
-    if (!storep) { \
+#define WrapX509Store(klass, obj, ctx) do { \
+    if (!ctx) { \
+	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
+    } \
+    obj = Data_Wrap_Struct(klass, 0, ossl_x509store_free, ctx); \
+} while (0)
+#define GetX509Store(obj, ctx) do { \
+    Data_Get_Struct(obj, X509_STORE_CTX, ctx); \
+    if (!ctx) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
-#define GetX509Store(obj, storep) do { \
-    Data_Get_Struct(obj, ossl_x509store, storep); \
-    if (!storep) { \
-	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
-    } \
-} while (0)
-#define SafeGetX509Store(obj, storep) do { \
+#define SafeGetX509Store(obj, ctx) do { \
     OSSL_Check_Kind(obj, cX509Store); \
-    GetX509Store(obj, storep); \
+    GetX509Store(obj, ctx); \
 } while (0)
 
 /*
@@ -35,28 +35,31 @@ VALUE cX509Store;
 VALUE eX509StoreError;
 
 /*
+ * EX-DATA indexes
+ */
+static int ossl_x509store_vcb_idx;
+static int ossl_x509store_free_idx;
+
+/*
  * General callback for OpenSSL verify
  */
 int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
 
-/*
- * Struct
- */
-typedef struct ossl_x509store_st {
-    int protect; /* We have to use this since there is no reference counting for X509_STORE_CTX */
-    X509_STORE_CTX *store;
-} ossl_x509store;
-
 static void 
-ossl_x509store_free(ossl_x509store *storep)
+ossl_x509store_free(X509_STORE_CTX *ctx)
 {
-    if (storep) {
-	if (storep->store && storep->protect == Qfalse) {
-	    X509_STORE_CTX_free(storep->store);
-	}
-	storep->store = NULL;
-	free(storep);
+#if 1
+    if (ctx && (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_x509store_free_idx) == Qtrue) {
+	X509_STORE_CTX_free(ctx);
     }
+#else
+    /*
+     * Relax free-rules
+     * (Just to test whether it coredumps...)
+     * EXPERIMENTAL!!!
+     */
+    X509_STORE_CTX_free(ctx);
+#endif
 }
 
 /*
@@ -65,10 +68,8 @@ ossl_x509store_free(ossl_x509store *storep)
 VALUE 
 ossl_x509store_new(X509_STORE_CTX *ctx)
 {
-    ossl_x509store *storep;
     VALUE obj;
 
-    MakeX509Store(cX509Store, obj, storep);
     /*
      * Is there any way to _dup X509_STORE_CTX?
      */
@@ -78,22 +79,28 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
     }
     X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
     */
-    storep->store = ctx;
-    storep->protect = Qtrue; /* we're using pointer without DUP - don't free this one */
     
+    /* Ruby-space callback */
+    X509_STORE_set_verify_cb_func(ctx->ctx, ossl_x509store_verify_cb);
+
+    /* we're using pointer without DUP - don't free this one */
+    X509_STORE_CTX_set_ex_data(ctx, ossl_x509store_free_idx, (void *)Qfalse);
+    
+    WrapX509Store(cX509Store, obj, ctx);
+
     return obj;
 }
 
 X509_STORE *
 ossl_x509store_get_X509_STORE(VALUE obj)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 	
-    SafeGetX509Store(obj, storep);
+    SafeGetX509Store(obj, ctx);
     /* we gave out internal pointer without DUP - don't free this one */
-    storep->protect = Qtrue;
+    X509_STORE_CTX_set_ex_data(ctx, ossl_x509store_free_idx, (void *)Qfalse);
 
-    return storep->store->ctx;
+    return ctx->ctx;
 }
 
 /*
@@ -102,10 +109,25 @@ ossl_x509store_get_X509_STORE(VALUE obj)
 static VALUE 
 ossl_x509store_alloc(VALUE klass)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
+    X509_STORE *store;
     VALUE obj;
 
-    MakeX509Store(klass, obj, storep);
+    ctx = X509_STORE_CTX_new();
+    if (!ctx) {
+	ossl_raise(eX509StoreError, "");
+    }
+    store = X509_STORE_new();
+    if (!store) {
+	X509_STORE_CTX_free(ctx);
+	ossl_raise(eX509StoreError, "");
+    }
+    X509_STORE_CTX_init(ctx, store, NULL, NULL);
+    
+    X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
+    X509_STORE_CTX_set_ex_data(ctx, ossl_x509store_free_idx, (void *)Qtrue);
+
+    WrapX509Store(klass, obj, ctx);
 
     return obj;
 }
@@ -114,19 +136,6 @@ DEFINE_ALLOC_WRAPPER(ossl_x509store_alloc)
 static VALUE 
 ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
-    ossl_x509store *storep;
-    X509_STORE *store;
-
-    GetX509Store(self, storep);
-    if (!(store = X509_STORE_new())) {
-	ossl_raise(eX509StoreError, "");
-    }
-    if (!(storep->store = X509_STORE_CTX_new())) {
-	ossl_raise(eX509StoreError, "");
-    }
-    X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
-    X509_STORE_CTX_init(storep->store, store, NULL, NULL);
-
     /*
      * instance variable
      */
@@ -138,11 +147,11 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE 
 ossl_x509store_add_trusted(VALUE self, VALUE cert)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 	
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
     /* NO DUP needed! */
-    if (!X509_STORE_add_cert(storep->store->ctx, GetX509CertPtr(cert))) {
+    if (!X509_STORE_add_cert(ctx->ctx, GetX509CertPtr(cert))) {
 	ossl_raise(eX509StoreError, "");
     }
 
@@ -152,20 +161,20 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 static VALUE
 ossl_x509store_get_chain(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
     X509 *x509;
     int i, num;
     VALUE ary;
 
-    GetX509Store(self, storep);
-    num = sk_X509_num(storep->store->chain);
+    GetX509Store(self, ctx);
+    num = sk_X509_num(ctx->chain);
     if (num < 0) {
 	OSSL_Debug("certs in chain < 0???");
 	return rb_ary_new();
     }	
     ary = rb_ary_new2(num);
     for(i=0; i<num; i++) {
-	x509 = sk_X509_value(storep->store->chain, i);
+	x509 = sk_X509_value(ctx->chain, i);
 	rb_ary_push(ary, ossl_x509_new(x509));
 	/*
 	 * TODO
@@ -173,29 +182,26 @@ ossl_x509store_get_chain(VALUE self)
 	X509_free(x509);
 	*/
     }
-	
     return ary;
 }
 
 static VALUE 
 ossl_x509store_add_crl(VALUE self, VALUE crl)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
     /* NO DUP needed */
-    if (!X509_STORE_add_crl(storep->store->ctx, GetX509CRLPtr(crl))) {
+    if (!X509_STORE_add_crl(ctx->ctx, GetX509CRLPtr(crl))) {
 	ossl_raise(eX509StoreError, "");
     }
     /*
      * Check CRL
      */
-    X509_STORE_CTX_set_flags(storep->store, X509_V_FLAG_CRL_CHECK);
+    X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_CRL_CHECK);
 
     return crl;
 }
-
-static int ossl_x509store_vcb_idx;
 
 static VALUE 
 ossl_x509store_call_verify_cb_proc(VALUE args)
@@ -249,19 +255,19 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 static VALUE 
 ossl_x509store_verify(VALUE self, VALUE cert)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
     int result;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
     /* NO DUP NEEDED. */
-    X509_STORE_CTX_set_cert(storep->store, GetX509CertPtr(cert));
-    if ((result = X509_verify_cert(storep->store)) < 0) {
+    X509_STORE_CTX_set_cert(ctx, GetX509CertPtr(cert));
+    if ((result = X509_verify_cert(ctx)) < 0) {
 	ossl_raise(eX509StoreError, "");
     }
     /*
      * TODO
      * Should we clear chain?
-     X509_STORE_CTX_cleanup(storep->store);
+     X509_STORE_CTX_cleanup(ctx);
     */
     if (result == 1) {
 	return Qtrue;
@@ -273,20 +279,20 @@ ossl_x509store_verify(VALUE self, VALUE cert)
 static VALUE 
 ossl_x509store_get_verify_status(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
 
-    return INT2FIX(X509_STORE_CTX_get_error(storep->store));
+    return INT2FIX(X509_STORE_CTX_get_error(ctx));
 }
 
 static VALUE
 ossl_x509store_set_verify_status(VALUE self, VALUE err)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
-    X509_STORE_CTX_set_error(storep->store, FIX2INT(err));
+    GetX509Store(self, ctx);
+    X509_STORE_CTX_set_error(ctx, FIX2INT(err));
 
     return err;
 }
@@ -294,44 +300,44 @@ ossl_x509store_set_verify_status(VALUE self, VALUE err)
 static VALUE 
 ossl_x509store_get_verify_message(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
 
-    return rb_str_new2(X509_verify_cert_error_string(storep->store->error));
+    return rb_str_new2(X509_verify_cert_error_string(ctx->error));
 }
 
 static VALUE 
 ossl_x509store_get_verify_depth(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
 
-    return INT2FIX(X509_STORE_CTX_get_error_depth(storep->store));
+    return INT2FIX(X509_STORE_CTX_get_error_depth(ctx));
 }
 
 static VALUE 
 ossl_x509store_get_cert(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
 
     /*
      * TODO
      * Find out if we can free X509
      */
-    return ossl_x509_new(X509_STORE_CTX_get_current_cert(storep->store));
+    return ossl_x509_new(X509_STORE_CTX_get_current_cert(ctx));
 }
 
 static VALUE 
 ossl_x509store_set_default_paths(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
-    if (!X509_STORE_set_default_paths(storep->store->ctx)) {
+    GetX509Store(self, ctx);
+    if (!X509_STORE_set_default_paths(ctx->ctx)) {
 	ossl_raise(eX509StoreError, "");
     }
 
@@ -341,11 +347,11 @@ ossl_x509store_set_default_paths(VALUE self)
 static VALUE 
 ossl_x509store_load_locations(VALUE self, VALUE path)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
     SafeStringValue(path);
-    if (!X509_STORE_load_locations(storep->store->ctx, NULL,
+    if (!X509_STORE_load_locations(ctx->ctx, NULL,
 				   RSTRING(path)->ptr)) {
 	ossl_raise(eX509StoreError, "");
     }
@@ -356,13 +362,13 @@ ossl_x509store_load_locations(VALUE self, VALUE path)
 static VALUE 
 ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
+    GetX509Store(self, ctx);
     /*
      * Associate verify_cb with Store in DB
      */
-    X509_STORE_CTX_set_ex_data(storep->store, ossl_x509store_vcb_idx, (void *)proc);
+    X509_STORE_CTX_set_ex_data(ctx, ossl_x509store_vcb_idx, (void *)proc);
     rb_ivar_set(self, rb_intern("@verify_callback"), proc);
 
     return proc;
@@ -371,10 +377,10 @@ ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
 static VALUE
 ossl_x509store_cleanup(VALUE self)
 {
-    ossl_x509store *storep;
+    X509_STORE_CTX *ctx;
 
-    GetX509Store(self, storep);
-    X509_STORE_CTX_cleanup(storep->store); 
+    GetX509Store(self, ctx);
+    X509_STORE_CTX_cleanup(ctx); 
 
     return self;
 }
@@ -386,6 +392,7 @@ void
 Init_ossl_x509store()
 {
     ossl_x509store_vcb_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_x509store_ex_vcb", NULL, NULL, NULL);
+    ossl_x509store_free_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_x509store_ex_free", NULL, NULL, NULL);
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 

@@ -1,3 +1,9 @@
+Tue, 10 Jun 2003 19:59:01 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* examples/gen_crl.rb: added example (based on NaHi's)
+
+Tue, 10 Jun 2003 19:24:10 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl_x509store.c: Unwrap X509::Store
+
 Tue, 10 Jun 2003 18:33:11 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* MANIFEST: added as blank for a start (Requested by Hynek Rostinsky <hynek.rostinsky@foresta.cz>)
 
