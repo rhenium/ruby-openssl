@@ -1,3 +1,14 @@
+Sun, 10 Nov 2002 23:30:56 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: enhance BN so you can pass as parameter Ruby's numbers
+
+Sun, 10 Nov 2002 19:19:32 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509cert.c: Fix #serial, #serial= to support big numbers.
+	* x509req.c: ditto.
+	* pkcs7.c: ditto.
+	* bn.c: implemented #to_int, #coerce to act with Ruby's numbers (so you
+		can: eg. 10 + BN.new("200")
+	* extconf.rb: fix it (again) to work with latest OpenSSL 0.9.7
+
 Thu,  7 Nov 2002 14:02:35 +0900
 	* ossl_ssl.c: memory leak has been in ossl_sslctx_free().
 

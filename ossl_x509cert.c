@@ -295,24 +295,19 @@ ossl_x509_get_serial(VALUE self)
 
 	GetX509(self, x509);
 	
-	return LONG2NUM(ASN1_INTEGER_get(X509_get_serialNumber(x509)));
+	return asn1integer_to_num(X509_get_serialNumber(x509));
 }
 
 static VALUE 
-ossl_x509_set_serial(VALUE self, VALUE serial)
+ossl_x509_set_serial(VALUE self, VALUE num)
 {
 	X509 *x509;
-	long num;
 
 	GetX509(self, x509);
 
-	if ((num = NUM2LONG(serial)) < 0) {
-		ossl_raise(eX509CertError, "Serial cannot be < 0!");
-	}
-	if (!ASN1_INTEGER_set(x509->cert_info->serialNumber, num)) {
-		ossl_raise(eX509CertError, "");
-	}
-	return serial;
+	x509->cert_info->serialNumber = num_to_asn1integer(num, X509_get_serialNumber(x509));
+	
+	return num;
 }
 
 static VALUE 

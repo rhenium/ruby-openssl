@@ -22,9 +22,6 @@ module OpenSSL
 
 class BN
   include Comparable
-  def to_i
-    to_s.to_i
-  end
 end # BN
 
 end # OpenSSL

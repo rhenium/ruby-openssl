@@ -503,7 +503,7 @@ ossl_pkcs7si_get_serial(VALUE self)
 
 	GetPKCS7si(self, p7si);
 
-	return INT2NUM(ASN1_INTEGER_get(p7si->issuer_and_serial->serial));
+	return asn1integer_to_num(p7si->issuer_and_serial->serial);
 }
 
 static VALUE

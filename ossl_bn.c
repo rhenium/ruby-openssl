@@ -35,10 +35,9 @@ VALUE cBN;
 VALUE eBNError;
 
 /*
- * NO Public
- * (MADE PRIVATE UNTIL SOMEBODY WANTS THEM)
- *
-static VALUE
+ * Public
+ */
+VALUE
 ossl_bn_new(BIGNUM *bn)
 {
 	BIGNUM *new;
@@ -56,7 +55,28 @@ ossl_bn_new(BIGNUM *bn)
 
 	return obj;
 }
- */
+
+BIGNUM *
+GetBNPtr(VALUE obj)
+{
+	BIGNUM *bn = NULL;
+
+	if (RTEST(rb_obj_is_kind_of(obj, cBN))) {
+		GetBN(obj, bn);
+	} else switch (TYPE(obj)) {
+		case T_FIXNUM:
+		case T_BIGNUM:
+			obj = rb_String(obj);
+			if (!BN_dec2bn(&bn, StringValuePtr(obj))) {
+				ossl_raise(eBNError, "");
+			}
+			WrapBN(cBN, obj, bn); /* Handle potencial mem leaks */
+			break;
+		default:
+			ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
+	}
+	return bn;
+}
 
 /*
  * Private
@@ -93,7 +113,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 		base = NUM2INT(bs);
 	}
-	if (rb_obj_is_kind_of(str, cBN) == Qtrue) {
+	if (RTEST(rb_obj_is_kind_of(str, cBN))) {
 		BIGNUM *other;
 
 		GetBN(str, other); /* Safe - we checked kind_of? above */
@@ -102,6 +122,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 		}
 		return self;
 	}
+	str = rb_String(str);
 	StringValue(str);
 
 	switch (base) {
@@ -186,6 +207,49 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 	return str;
 }
 
+static VALUE
+ossl_bn_to_i(VALUE self)
+{
+	BIGNUM *bn;
+	char *txt;
+	VALUE num;
+
+	GetBN(self, bn);
+
+	if (!(txt = BN_bn2dec(bn))) {
+	    ossl_raise(eBNError, "");
+	}
+	num = rb_cstr_to_inum(txt, 10, Qtrue);
+	OPENSSL_free(txt);
+
+	return num;
+}
+
+static VALUE
+ossl_bn_to_bn(VALUE self)
+{
+	return self;
+}
+
+static VALUE
+ossl_bn_coerce(VALUE self, VALUE other)
+{
+	switch(TYPE(other)) {
+		case T_STRING:
+			self = ossl_bn_to_s(0, NULL, self);
+			break;
+		case T_FIXNUM:
+		case T_BIGNUM:
+			self = ossl_bn_to_i(self);
+			break;
+		default:
+			if (!RTEST(rb_obj_is_kind_of(other, cBN))) {
+			    ossl_raise(rb_eTypeError, "Don't know how to coerce");
+			}
+	}
+	return rb_assoc_new(other, self);
+}
+
 #define BIGNUM_BOOL1(func)								\
 	static VALUE 									\
 	ossl_bn_##func(VALUE self)							\
@@ -229,11 +293,10 @@ BIGNUM_1c(sqr);
 	static VALUE									\
 	ossl_bn_##func(VALUE self, VALUE other)						\
 	{										\
-		BIGNUM *bn1, *bn2, *result;						\
+		BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;				\
 		VALUE obj;								\
 											\
 		GetBN(self, bn1);							\
-		SafeGetBN(other, bn2);							\
 											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
@@ -253,11 +316,10 @@ BIGNUM_2(sub);
 	static VALUE									\
 	ossl_bn_##func(VALUE self, VALUE other)						\
 	{										\
-		BIGNUM *bn1, *bn2, *result;						\
+		BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;				\
 		VALUE obj;								\
 											\
 		GetBN(self, bn1);							\
-		SafeGetBN(other, bn2);							\
 											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
@@ -280,11 +342,10 @@ BIGNUM_2c(mod_inverse);
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
 {
-	BIGNUM *bn1, *bn2, *r1, *r2;
+	BIGNUM *bn1, *bn2 = GetBNPtr(other), *r1, *r2;
 	VALUE obj1, obj2;
 
 	GetBN(self, bn1);
-	SafeGetBN(other, bn2);
 	
 	if (!(r1 = BN_new())) {
 		ossl_raise(eBNError, "");
@@ -308,12 +369,10 @@ ossl_bn_div(VALUE self, VALUE other)
 	static VALUE									\
 	ossl_bn_##func(VALUE self, VALUE other1, VALUE other2)				\
 	{										\
-		BIGNUM *bn1, *bn2, *bn3, *result;					\
+		BIGNUM *bn1, *bn2 = GetBNPtr(other1), *bn3 = GetBNPtr(other2), *result;	\
 		VALUE obj;								\
 											\
 		GetBN(self, bn1);							\
-		SafeGetBN(other1, bn2);							\
-		SafeGetBN(other2, bn3);							\
 											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
@@ -422,10 +481,8 @@ BIGNUM_RAND(pseudo_rand);
 	static VALUE									\
 	ossl_bn_s_##func##_range(VALUE klass, VALUE range)				\
 	{										\
-		BIGNUM *bn, *result;							\
+		BIGNUM *bn = GetBNPtr(range), *result;					\
 		VALUE obj;								\
-											\
-		SafeGetBN(range, bn);							\
 											\
 		if (!(result = BN_new())) {						\
 			ossl_raise(eBNError, "");					\
@@ -459,8 +516,8 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 		if (NIL_P(vrem)) {
 			ossl_raise(rb_eArgError, "if ADD is specified, REM must be also given");
 		}
-		SafeGetBN(vadd, add);
-		SafeGetBN(vrem, rem);
+		add = GetBNPtr(vadd);
+		rem = GetBNPtr(vrem);
 	}
 	if (!(result = BN_new())) {
 		ossl_raise(eBNError, "");
@@ -497,7 +554,7 @@ ossl_bn_copy(VALUE self, VALUE other)
 	if (self == other) return self;
 
 	GetBN(self, bn1);
-	SafeGetBN(other, bn2);
+	bn2 = GetBNPtr(other);
 	
 	if (!BN_copy(bn1, bn2)) {
 		ossl_raise(eBNError, "");
@@ -509,10 +566,9 @@ ossl_bn_copy(VALUE self, VALUE other)
 	static VALUE									\
 	ossl_bn_##func(VALUE self, VALUE other)						\
 	{										\
-		BIGNUM *bn1, *bn2;							\
+		BIGNUM *bn1, *bn2 = GetBNPtr(other);					\
 											\
 		GetBN(self, bn1);							\
-		SafeGetBN(other, bn2);							\
 											\
 		return INT2FIX(BN_##func(bn1, bn2));					\
 	}
@@ -676,6 +732,11 @@ Init_ossl_bn()
 	 * bn2mpi
 	 * mpi2bn */
 	rb_define_method(cBN, "to_s", ossl_bn_to_s, -1);
+	rb_define_method(cBN, "to_i", ossl_bn_to_i, 0);
+	rb_define_alias(cBN, "to_int", "to_i");
+	rb_define_method(cBN, "to_bn", ossl_bn_to_bn, 0);
+	rb_define_method(cBN, "coerce", ossl_bn_coerce, 1);
+	
 	/*
 	 * TODO:
 	 * But how to: from_bin, from_mpi? PACK?

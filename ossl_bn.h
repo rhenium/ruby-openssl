@@ -14,10 +14,8 @@
 extern VALUE cBN;
 extern VALUE eBNError;
 
-/*
 VALUE ossl_bn_new(BIGNUM *);
- */
-
+BIGNUM *GetBNPtr(VALUE);
 void Init_ossl_bn(void);
 
 #endif /* _OSS_BN_H_ */

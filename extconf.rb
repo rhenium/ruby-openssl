@@ -64,8 +64,8 @@ EOD
 end
 
 if have_header("openssl/crypto.h") and 
-    have_library(CRYPTOLIB, "OpenSSL_add_all_algorithms") and 
-    have_library(SSLLIB, "SSLv23_method")
+    have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules") and 
+    have_library(SSLLIB, "SSL_library_init")
   create_makefile("openssl")
   puts "Done."
 else
