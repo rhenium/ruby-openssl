@@ -48,6 +48,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
+#define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
 #define ossl_sslctx_get_cert_store(o)    rb_iv_get((o),"@cert_store")
 
 static char *ossl_sslctx_attrs[] = {
