@@ -25,34 +25,33 @@ require 'forwardable'
 require 'openssl'
 
 module Net
-  module NetPrivate
+  class SSLIO < InternetMessageIO
+    extend Forwardable
 
-    class SSLSocket < Socket
-      extend Forwardable
+    def_delegators(:@ssl_context,
+                   :key=, :cert=, :key_file=, :cert_file=,
+                   :ca_file=, :ca_path=,
+                   :verify_mode=, :verify_callback=, :verify_depth=,
+                   :timeout=, :cert_store=)
 
-      def_delegators(:@ssl_context,
-                     :key=, :cert=, :key_file=, :cert_file=,
-                     :ca_file=, :ca_path=,
-                     :verify_mode=, :verify_callback=, :verify_depth=,
-                     :timeout=)
+    def initialize(addr, port, otime = nil, rtime = nil, dout = nil)
+      super
+      @ssl_context = OpenSSL::SSL::SSLContext.new()
+    end
 
-      def initialize(addr, port, otime = nil, rtime = nil, pipe = nil)
-        super
-        @ssl_context = OpenSSL::SSL::SSLContext.new()
-      end
+    def ssl_connect()
+      @raw_socket = @socket
+      @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
+      @socket.connect
+    end
 
-      def ssl_connect()
-        @raw_socket = @socket
-        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
-        @socket.connect
-      end
+    def close
+      super
+      @raw_socket.close if @raw_socket
+    end
 
-      def close
-        super
-        @raw_socket.close if @raw_socket
-      end
-
-      def peer_cert; @socket.peer_cert; end
+    def peer_cert
+      @socket.peer_cert
     end
   end
 end

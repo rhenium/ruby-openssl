@@ -3,7 +3,7 @@
 
 = Info
   'OpenSSL for Ruby 2' project
-  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+  Copyright (C) 2001 GOTOU Yuuzou <gotoyuzo@notwork.org>
   All rights reserved.
 
 = Licence
@@ -74,10 +74,6 @@ It can be replaced by follow one:
 : cert_file=((|path|))
     Sets pathname of a X.509 certification file in PEM format.
 
-: ca_cert=((|cert|))
-    Sets an OpenSSL::X509::Certificate object as specific CA certifacate.
-    (This method is appeared in Michal Rokos's OpenSSL extention.)
-
 : ca_file=((|path|))
     Sets path of a CA certification file in PEM format.
     The file can contrain several CA certificats.
@@ -89,12 +85,17 @@ It can be replaced by follow one:
 : verify_mode=((|mode|))
     Sets the flags for server the certification verification at
     begining of SSL/TLS session.
+    OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER is acceptable.
 
 : verify_callback=((|proc|))
     Sets the verify callback for the server certification verification.
 
 : verify_depth=((|num|))
     Sets the maximum depth for the certificate chain verification.
+
+: cert_store=((|store|))
+    Sets the X509::Store to verify peer certificate.
+
 =end
 
 require 'net/protocols'
@@ -102,7 +103,9 @@ require 'net/http'
 
 module Net
   class HTTP
-    protocol_param :socket_type, ::Net::NetPrivate::SSLSocket
+    def self.socket_type
+      SSLIO
+    end
 
     attr_accessor :use_ssl
     attr_writer :key, :cert, :key_file, :cert_file
@@ -110,7 +113,7 @@ module Net
     attr_writer :verify_mode, :verify_callback, :verify_depth
     attr_reader :peer_cert
 
-    class Conn < ::Net::NetPrivate::HTTPRequest
+    class Conn < HTTPRequest
       REQUEST_HAS_BODY=false
       RESPONSE_HAS_BODY=false
       METHOD="connect"
@@ -130,6 +133,24 @@ module Net
       end
     end
 
+    module ProxyMod
+      def edit_path( path )
+        if use_ssl
+          'https://' + addr_port + path
+        else
+          'http://' + addr_port + path
+        end
+      end
+    end
+
+    alias :default_initialize :initialize
+
+    def initialize(*args)
+      default_initialize(*args)
+      @key = @cert = @ca_file = @ca_path = @verify_mode =
+      @verify_callback = @verify_depth = @timeout = @cert_store = nil
+    end
+
     def on_connect
       if use_ssl
         if proxy?
@@ -140,27 +161,16 @@ module Net
           end
         end
         @socket.key             = @key       if @key
-        @socket.key_file        = @key_file  if @key_file
         @socket.cert            = @cert      if @cert
-        @socket.cert_file       = @cert_file if @cert_file
         @socket.ca_file         = @ca_file
         @socket.ca_path         = @ca_path
         @socket.verify_mode     = @verify_mode
         @socket.verify_callback = @verify_callback
         @socket.verify_depth    = @verify_depth
         @socket.timeout         = @timeout
+        @socket.cert_store      = @cert_store
         @socket.ssl_connect
-        @peer_cert = socket.peer_cert
-      end
-    end
-
-    module ProxyMod
-      def edit_path( path )
-        if use_ssl
-          'https://' + addr_port + path
-        else
-          'http://' + addr_port + path
-        end
+        @peer_cert = @socket.peer_cert
       end
     end
 

@@ -1,3 +1,7 @@
+Wed, 02 Jul 2003 02:34:21 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* lib/net/https.rb: revised. (tested on Ruby-1.8.0-previre3)
+	* lib/net/protocols.rb: ditto
+
 Tue, 02 Jul 2003 00:37:58 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/c_rehash.rb: c_rehash written in pure ruby.
 
