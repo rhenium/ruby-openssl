@@ -1,3 +1,6 @@
+Tue, 10 Jun 2003 18:33:11 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* MANIFEST: added as blank for a start (Requested by Hynek Rostinsky <hynek.rostinsky@foresta.cz>)
+
 Tue, 10 Jun 2003 14:11:14 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl_pkey_dh.c: Added #params_ok?, #generate_key!, and #compute_key (Contributed by Dave Symonds <ds@seul.org>)
 
