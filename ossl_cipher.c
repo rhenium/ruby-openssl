@@ -298,7 +298,23 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     StringValue(iv);
     GetCipher(self, ctx);
 
+    if (RSTRING(iv)->len < EVP_CIPHER_CTX_iv_length(ctx))
+        ossl_raise(eCipherError, "iv length too short");
+
     if (EVP_CipherInit(ctx, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
+		ossl_raise(eCipherError, "");
+
+    return Qnil;
+}
+
+static VALUE
+ossl_cipher_set_padding(VALUE self, VALUE padding)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+
+    if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
 		ossl_raise(eCipherError, "");
 
     return Qnil;
@@ -349,6 +365,8 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
 
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
+
+    rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
 
 } /* Init_ossl_cipher */
 
