@@ -125,10 +125,10 @@ ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 	
 	rb_scan_args(argc, argv, "11", &buffer, &pass);
 	
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	if (!NIL_P(pass)) {
-		Check_Type(pass, T_STRING);
+		pass = rb_String(pass);
 		passwd = RSTRING(pass)->ptr;
 	}
 	/* else passwd = NULL; */
@@ -221,19 +221,19 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	BIO *out = NULL;
 	BUF_MEM *buf = NULL;
 	const EVP_CIPHER *ciph = NULL;
-	char *pass = NULL;
-	VALUE cipher, password, str;
+	char *passwd = NULL;
+	VALUE cipher, pass, str;
 
 	GetRSA(self, rsap);
 
-	rb_scan_args(argc, argv, "02", &cipher, &password);
+	rb_scan_args(argc, argv, "02", &cipher, &pass);
 
 	if (!NIL_P(cipher)) {
 		ciph = ossl_cipher_get_EVP_CIPHER(cipher);
 		
-		if (!NIL_P(password)) {
-			Check_Type(password, T_STRING);
-			pass = RSTRING(password)->ptr;
+		if (!NIL_P(pass)) {
+			pass = rb_String(pass);
+			passwd = RSTRING(pass)->ptr;
 		}
 	}
 	if (!(out = BIO_new(BIO_s_mem()))) {
@@ -241,7 +241,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	}
 	
 	if (RSA_PRIVATE(rsap->rsa)) {
-		if (!PEM_write_bio_RSAPrivateKey(out, rsap->rsa, ciph, NULL, 0, NULL, pass)) {
+		if (!PEM_write_bio_RSAPrivateKey(out, rsap->rsa, ciph, NULL, 0, NULL, passwd)) {
 			BIO_free(out);
 			OSSL_Raise(eRSAError, "");
 		}
@@ -269,7 +269,7 @@ ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 	
 	GetRSA(self, rsap);
 
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -296,7 +296,7 @@ ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 
 	GetRSA(self, rsap);
 
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -327,7 +327,7 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 		rb_raise(eRSAError, "PRIVATE key needed for this operation!");
 	}
 	
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	size = RSA_size(rsap->rsa);
 	
@@ -358,7 +358,7 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 		rb_raise(eRSAError, "Private RSA key needed!");
 	}
 	
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	size = RSA_size(rsap->rsa);
 
@@ -448,7 +448,7 @@ ossl_rsa_to_der(VALUE self)
  * Don't use :-)) (I's up to you)
  */
 static VALUE
-ossl_rsa_to_str(VALUE self)
+ossl_rsa_to_text(VALUE self)
 {
 	ossl_rsa *rsap = NULL;
 	BIO *out = NULL;
@@ -507,7 +507,7 @@ ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 
 	GetRSA(self, rsap);
 	OSSL_Check_type(digest, cDigest);
-	Check_Type(text, T_STRING);
+	text = rb_String(text);
 
 	if (!(sign = OPENSSL_malloc(RSA_size(rsap->rsa)+16))) {
 		OSSL_Raise(eRSAError, "");
@@ -548,7 +548,7 @@ Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 	rb_define_alias(CLASS_OF(cRSA), "new_from_fixnum", "generate");
 	rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
 	rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);
-	rb_define_method(cRSA, "to_str", ossl_rsa_to_str, 0);
+	rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);
 	rb_define_method(cRSA, "export", ossl_rsa_export, -1);
 	rb_define_alias(cRSA, "to_pem", "export");
 	rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);

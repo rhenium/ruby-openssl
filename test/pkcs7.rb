@@ -32,7 +32,7 @@ p store.verify_callback = ver_cb
 p p7 = PKCS7.new(str)
 p p7.verify_data(store, data) {|signer|
   puts "GOT IT!"
-  p signer.name.to_str
+  p signer.name.to_s
   p signer.serial
   p signer.signed_time
 }

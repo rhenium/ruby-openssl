@@ -140,17 +140,13 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 		case T_NIL:
 			x509 = X509_new();
 			break;
-			
-		case T_STRING:
+		default:
+			buffer = rb_String(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
 				OSSL_Raise(eX509CertificateError, "");
 			}
 			x509 = PEM_read_bio_X509(in, NULL, NULL, NULL);
 			BIO_free(in);
-			break;
-			
-		default:
-			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	
 	if (!x509)
@@ -210,7 +206,7 @@ ossl_x509_to_pem(VALUE self)
 }
 
 static VALUE
-ossl_x509_to_str(VALUE self)
+ossl_x509_to_text(VALUE self)
 {
 	ossl_x509 *x509p = NULL;
 	BIO *out = NULL;
@@ -682,7 +678,8 @@ Init_ossl_x509(VALUE module)
 	rb_define_method(cX509Certificate, "initialize", ossl_x509_initialize, -1);
 	rb_define_method(cX509Certificate, "to_der", ossl_x509_to_der, 0);
 	rb_define_method(cX509Certificate, "to_pem", ossl_x509_to_pem, 0);
-	rb_define_method(cX509Certificate, "to_str", ossl_x509_to_str, 0);
+	rb_define_alias(cX509Certificate, "to_s", "to_pem");
+	rb_define_method(cX509Certificate, "to_text", ossl_x509_to_text, 0);
 	rb_define_method(cX509Certificate, "version", ossl_x509_get_version, 0);
 	rb_define_method(cX509Certificate, "version=", ossl_x509_set_version, 1);
 	rb_define_method(cX509Certificate, "serial", ossl_x509_get_serial, 0);

@@ -124,10 +124,10 @@ ossl_dsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 	
 	rb_scan_args(argc, argv, "11", &buffer, &pass);
 	
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	if (!NIL_P(pass)) {
-		Check_Type(pass, T_STRING);
+		pass = rb_String(pass);
 		passwd = RSTRING(pass)->ptr;
 	}
 	/* else passwd = NULL; */
@@ -241,7 +241,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 		ciph = ossl_cipher_get_EVP_CIPHER(cipher);
 		
 		if (!NIL_P(password)) {
-			Check_Type(password, T_STRING);
+			password = rb_String(password);
 			pass = RSTRING(password)->ptr;
 		}
 	}
@@ -310,7 +310,7 @@ ossl_dsa_to_der(VALUE self)
  * Don't use :-)) (I's up to you)
  */
 static VALUE
-ossl_dsa_to_str(VALUE self)
+ossl_dsa_to_text(VALUE self)
 {
 	ossl_dsa *dsap = NULL;
 	BIO *out = NULL;
@@ -363,7 +363,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	VALUE str;
 
 	GetDSA(self, dsap);
-	Check_Type(data, T_STRING);
+	data = rb_String(data);
 
 	if (!DSA_PRIVATE(dsap->dsa)) {
 		rb_raise(eDSAError, "Private DSA key needed!");
@@ -391,8 +391,8 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 
 	GetDSA(self, dsap);
 
-	Check_Type(digest, T_STRING);
-	Check_Type(sig, T_STRING);
+	digest = rb_String(digest);
+	sig = rb_String(sig);
 
 	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,\
 			RSTRING(sig)->ptr, RSTRING(sig)->len, dsap->dsa); /*type = 0*/
@@ -421,7 +421,7 @@ Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 
 	rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
 	rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);
-	rb_define_method(cDSA, "to_str", ossl_dsa_to_str, 0);
+	rb_define_method(cDSA, "to_text", ossl_dsa_to_text, 0);
 	rb_define_method(cDSA, "export", ossl_dsa_export, -1);
 	rb_define_alias(cDSA, "to_pem", "export");
 	rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);

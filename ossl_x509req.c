@@ -115,15 +115,13 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 		case T_NIL:
 			req = X509_REQ_new();
 			break;
-		case T_STRING:
+		default:
+			buffer = rb_String(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
 				OSSL_Raise(eX509RequestError, "");
 			}
 			req = PEM_read_bio_X509_REQ(in, NULL, NULL, NULL);
 			BIO_free(in);
-			break;
-		default:
-			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	if (!req)
 		OSSL_Raise(eX509RequestError, "");
@@ -158,7 +156,7 @@ ossl_x509req_to_pem(VALUE self)
 }
 
 static VALUE 
-ossl_x509req_to_str(VALUE self)
+ossl_x509req_to_text(VALUE self)
 {
 	ossl_x509req *reqp = NULL;
 	BIO *out = NULL;
@@ -442,7 +440,8 @@ Init_ossl_x509req(VALUE module)
 	rb_define_singleton_method(cX509Request, "new", ossl_x509req_s_new, -1);
 	rb_define_method(cX509Request, "initialize", ossl_x509req_initialize, -1);
 	rb_define_method(cX509Request, "to_pem", ossl_x509req_to_pem, 0);
-	rb_define_method(cX509Request, "to_str", ossl_x509req_to_str, 0);
+	rb_define_alias(cX509Request, "to_s", "to_pem");
+	rb_define_method(cX509Request, "to_text", ossl_x509req_to_text, 0);
 	rb_define_method(cX509Request, "version", ossl_x509req_get_version, 0);
 	rb_define_method(cX509Request, "version=", ossl_x509req_set_version, 1);
 	rb_define_method(cX509Request, "subject", ossl_x509req_get_subject, 0);

@@ -17,7 +17,7 @@ Hynek Rostinsky <hynek.rostinsky@foresta.cz> - Windows platform fixes (strptime 
 = PKey:: RSA,DSA keys - new, load, export
 = X509::Certificate - generating new certs, load, looking inside
 = X509::CRL - load, new, looking inside
-= X509::Name - new, export to_str, to_a, to_h (hash)
+= X509::Name - new, export, to_a, to_h (hash)
 = X509::Revoked - new, looking inside (on parameters)
 = X509::Store - new, import trusted certs and CRL, verifiing certs
 = Digest::... - various hashes
@@ -105,10 +105,10 @@ OpenSSL::
 		.from_s_hex(sHEX)
 		--- PUBLIC -----------------------
 		.to_s(type="dec") => sDEC
-		.to_s_bin => sBIN
-		.to_s_mpi => sMPI
-		.to_s_dec => sDEC
-		.to_s_hex => sHEX
+		.to_s_bin() => sBIN
+		.to_s_mpi() => sMPI
+		.to_s_dec() => sDEC
+		.to_s_hex() => sHEX
 
 	BNError
 	
@@ -135,8 +135,8 @@ OpenSSL::
 		CipherError
 		
 	Config
-		.new(sFilename) - dispatches .load
-		.load(sFilename)
+		::new(sFilename) - dispatches .load
+		::load(sFilename)
 		----------------------------------
 		.get_value(sSection|nil, sKey) => sValue
 		.get_section(sSection) => hSection
@@ -153,35 +153,36 @@ OpenSSL::
 		SHA1
 		DSS
 		DSS1
-			.new([sData])
+			::new([sData])
 			----------------------------------
 			.update(sData) => self
 			.<< <=> .update
 			.digest() => sDigestFinal
 			.hexdigest() => sHEXDigestFinal
 			.inspect <=> .hexdigest
-			.to_str <=> .hexdigest
+			.to_s <=> .hexdigest
 			
 		DigestError
 
 	HMAC
-		.new(sKey, oDigest::ANY) => self
+		::new(sKey, oDigest::ANY) => self
 		----------------------------------
 		.update(sData) => self
 		.<< <=> .update
 		.hmac() => sHMACFinal
 		.hexhmac() => sHEXHMACFinal
 		.inspect <=> .hexhmac
-		.to_str <=> .hexhmac
+		.to_s <=> .hexhmac
 		
 	HMACError
 		
 	Netscape::
 		SPKI
-			.new([sPEM])
+			::new([sPEM])
 			----------------------------------
 			.to_pem() => sPEM
-			.to_str() => sHumanReadable
+			.to_s <=> .to_pem
+			.to_text() => sHumanReadable
 			.public_key() => oPKey::ANY
 			.public_key=(oPKey::ANY) => oPKey::ANY
 			.sign(oPKey::ANY, oDigest::ANY) => self
@@ -196,7 +197,7 @@ OpenSSL::
 			type:	SIGNED, ENVELOPED, SIGNED_ENVELOPED
 
 		PKCS7
-			.new(cType|sPEM)
+			::new(cType|sPEM)
 			----------------------------------
 			.cipher=(oCipher::ANY) => oCipher::ANY
 			.add_signer(oPKCS7::Signer, oPKey::ANY) => self
@@ -208,9 +209,10 @@ OpenSSL::
 			.verify_data(oX509::Store [, sDetachedData]) => bResult, yields PKCS7::Signer
 			.decode_data(oPKey::ANY, oX509::Certificate) => sData
 			.to_pem() => sPEM
+			.to_s <=> .to_pem
 
 		Signer
-			.new(oX509::Certificate, oPKey::ANY, oDigest::ANY)
+			::new(oX509::Certificate, oPKey::ANY, oDigest::ANY)
 			----------------------------------
 			.name() => X509::Name
 			.serial() => fSerial
@@ -229,23 +231,23 @@ OpenSSL::
 			----------------------------------
 			.public?() => bResult
 			.private?() => bResult
-			.to_str() => sHumanReadable
+			.to_text() => sHumanReadable
 			.export() => sPEM
 			.to_pem <=> .export
 			.public_key() => oPKey::ANY
 
 		DSA
-			.new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
-			.new_from_pem(sPEM [, sPassword])
-			.generate(fKeyLen) - yields |p,n|
-			.new_from_fixnum <=> generate
+			::new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
+			::new_from_pem(sPEM [, sPassword])
+			::generate(fKeyLen) - yields |p,n|
+			::new_from_fixnum <=> generate
 			----------------------------------
 			.public?() => bResult
 			.private?() => bResult
-			.to_str() => sHumanReadable
+			.to_text() => sHumanReadable
 			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
-			.public_key() => oPKey::ANY
+			.public_key() => oPKey::DSA
 			.to_der() => sDER
 			.sign(oDigest::ANY, sData) => sSig
 			.sign_digest(sDigest) => sSig
@@ -255,14 +257,14 @@ OpenSSL::
 		DSAError
 			
 		RSA
-			.new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
-			.new_from_pem(sPEM [, sPassword])
-			.generate(fKeyLen) - yields |p,n|
-			.new_from_fixnum <=> generate
+			::new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
+			::new_from_pem(sPEM [, sPassword])
+			::generate(fKeyLen) - yields |p,n|
+			::new_from_fixnum <=> generate
 			----------------------------------
 			.public?() => bResult
 			.private?() => bResult
-			.to_str() => sHumanReadable
+			.to_text() => sHumanReadable
 			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
 			.public_key() => oPKey::ANY
@@ -292,31 +294,33 @@ OpenSSL::
 		
 	X509::
 		Attribute
-			.new(arg) - dispatches "new_from_#{arg.type.name.downcase}"
-			.new_from_string("oid = value")
-			.new_from_array(["oid", "value"])
-			.new_from_hash({"oid"=>"oid", "value"=>"val"})
+			::new(arg) - dispatches "new_from_#{arg.type.name.downcase}"
+			::new_from_string("oid = value")
+			::new_from_array(["oid", "value"])
+			::new_from_hash({"oid"=>"oid", "value"=>"val"})
 			----------------------------------
 			
 		AttributeError
 		
 		Certificate - Doc TODO!
-		
+			.to_s <=> .to_pem
+			
 		CertificateError
 		
 		CRL - Doc TODO!
+			.to_s <=> .to_pem
 		
 		CRLError
 		
 		Extension - Doc TODO!
-			.new is DISABLED!
+			::new is DISABLED!
 			----------------------------------
-			.to_str => string as "oid = critical, value"
+			.to_s => string as "oid = critical, value"
 			.to_a => ary as ["oid", "value", critical], critical as bool
 			.to_h => hash as {"oid"=>"oid", "value"=>"val", "critical"=>bool}
 			
 		ExtensionFactory - Doc TODO!
-			.new(...)
+			::new(...)
 			----------------------------------
 			.create_extension(*arg)
 			.create_ext_from_string(str)
@@ -326,22 +330,32 @@ OpenSSL::
 		ExtensionError
 		
 		Name - Doc TODO!
-			.new(arg) dispatches "new_from_#{arg.type.name.downcase}"
-			.new_from_string(str) => self, str as "/A=B/C=D/E=F"
-			.new_from_array(ary) => self, ary as [["A","B"],["C","D"],["E","F"]]
-			.new_from_hash(hash) => self, hash as {"A"=>"B","C"=>"D","E"=>"F"}
+			::new(arg) dispatches "new_from_#{arg.type.name.downcase}"
+			::new_from_string(str) => self, str as "/A=B/C=D/E=F"
+			::new_from_array(ary) => self, ary as [["A","B"],["C","D"],["E","F"]]
+			::new_from_hash(hash) => self, hash as {"A"=>"B","C"=>"D","E"=>"F"}
 			----------------------------------
-			.to_str => str as "/A=B/C=D/E=F"
+			.to_s => str as "/A=B/C=D/E=F"
 			.to_a => ary as [["A","B"],["C","D"],["E","F"]]
 			.to_h => hash as {"A"=>"B","C"=>"D","E"=>"F"}
 		
 		NameError
 		
 		Request - Doc TODO!
+			.to_s <=> .to_pem
 
 		RequestError
 		
-		Revoked - Doc TODO!
+		Revoked
+			::new()
+			----------------------------------
+			serial() => nSerial
+			serial=(nSerial) => nSerial
+			time() => tRevoked
+			time=(tRevoked) => tRevoked
+			extensions() => Ary(X509::Extension)
+			extensions=(ary) => Ary(X509::Extension)
+			add_extension(oExtension) => oExtension
 
 		RevokedError
 		

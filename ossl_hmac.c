@@ -70,7 +70,7 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "20", &key, &digest);
 
-	Check_Type(key, T_STRING);
+	key = rb_String(key);
 	md = ossl_digest_get_EVP_MD(digest);
 
 	if (!(hmacp->hmac = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
@@ -88,7 +88,7 @@ ossl_hmac_update(VALUE self, VALUE data)
 
 	GetHMAC(self, hmacp);
 
-	Check_Type(data, T_STRING);
+	data = rb_String(data);
 
 	HMAC_Update(hmacp->hmac, RSTRING(data)->ptr, RSTRING(data)->len);
 
@@ -174,7 +174,7 @@ Init_hmac(VALUE module)
 	rb_define_method(cHMAC, "hmac", ossl_hmac_hmac, 0);
 	rb_define_method(cHMAC, "hexhmac", ossl_hmac_hexhmac, 0);
 	rb_define_alias(cHMAC, "inspect", "hexhmac");
-	rb_define_alias(cHMAC, "to_str", "hexhmac");
+	rb_define_alias(cHMAC, "to_s", "hexhmac");
 }
 
 #else /* NO_HMAC */

@@ -156,7 +156,7 @@ end # defined? DH
       #
       # to_h is built-in method
       # 
-      def to_str # "/A=B/C=D/E=F"
+      def to_s # "/A=B/C=D/E=F"
         hash = self.to_h
 	str = ""
 	hash.keys.each do |key|
@@ -218,7 +218,7 @@ end # defined? DH
       #
       # to_a is built-in
       # 
-      def to_str # "oid = critical, value"
+      def to_s # "oid = critical, value"
         ary = self.to_a
 	str = ary[0] + " = "
 	str += "critical, " if ary[2] == true

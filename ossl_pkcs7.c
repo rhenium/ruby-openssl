@@ -131,7 +131,7 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	
 	OSSL_Check_Type(key, cPKey);
 	OSSL_Check_Type(cert, X509Certificate);
-	Check_Type(data, T_STRING);
+	data = rb_String(data);
 
 	if (rb_funcall(key, rb_intern("private?"), 0, NULL) != Qtrue) {
 		rb_raise(ePKCS7Error, "private key needed!");
@@ -186,7 +186,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 	GetPKCS7_unsafe(self, p7p);
 
 	rb_scan_args(argc, argv, "10", &arg1);
-	
+
 	switch (TYPE(arg1)) {
 		case T_FIXNUM:
 			if (!(p7 = PKCS7_new())) {
@@ -197,7 +197,8 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 				OSSL_Raise(ePKCS7Error, "");
 			}
 			break;
-		case T_STRING:
+		default:
+			arg1 = rb_String(arg1);
 			if (!(in = BIO_new_mem_buf(RSTRING(arg1)->ptr, RSTRING(arg1)->len))) {
 				OSSL_Raise(ePKCS7Error, "");
 			}
@@ -206,9 +207,6 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 				OSSL_Raise(ePKCS7Error, "");
 			}
 			BIO_free(in);
-			break;
-		default:
-			rb_raise(ePKCS7Error, "unsupported param (%s)", rb_class2name(CLASS_OF(arg1)));
 	}
 	p7p->pkcs7 = p7;
 
@@ -373,7 +371,7 @@ ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &data, &detach);
 	
-	Check_Type(data, T_STRING);
+	data = rb_String(data);
 
 	PKCS7_content_new(p7p->pkcs7, NID_pkcs7_data);
 
@@ -420,7 +418,7 @@ ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
 	store = ossl_x509store_get_X509_STORE(x509store);
 	
 	if (!NIL_P(detached)) {
-		Check_Type(detached, T_STRING);
+		detached = rb_String(detached);
 		if (!(data = BIO_new_mem_buf(RSTRING(detached)->ptr, RSTRING(detached)->len))) {
 			OSSL_Raise(ePKCS7Error, "");
 		}
@@ -652,6 +650,7 @@ Init_pkcs7(VALUE module)
 	rb_define_method(cPKCS7, "verify_data", ossl_pkcs7_data_verify, -1);
 	rb_define_method(cPKCS7, "decode_data", ossl_pkcs7_data_decode, 2);
 	rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
+	rb_define_alias(cPKCS7, "to_s", "to_pem");
 	
 #define DefPKCS7Const(x) rb_define_const(module, #x, INT2FIX(x))
 

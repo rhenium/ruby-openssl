@@ -223,7 +223,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 
 	/* key [0] */
 	item = RARRAY(ary)->ptr[0];
-	Check_Type(item, T_STRING);
+	item = rb_String(item);
 	if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr)))
 		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
 			OSSL_Raise(eX509ExtensionError, "");
@@ -231,7 +231,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 
 	/* data [1] */
 	item = RARRAY(ary)->ptr[1];
-	Check_Type(item, T_STRING);
+	item = rb_String(item);
 
 	/* (optional) critical [2] */
 	if (RARRAY(ary)->len == 3 && RARRAY(ary)->ptr[2] == Qtrue) {

@@ -80,11 +80,11 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 
 #define BIGNUM_FROM(func)								\
 	static VALUE									\
-	ossl_bn_from_##func(VALUE self, VALUE str)					\
+	ossl_bn_from_s_##func(VALUE self, VALUE str)					\
 	{										\
 		BIGNUM *bn = NULL;							\
 											\
-		Check_Type(str, T_STRING);						\
+		str = rb_String(str);							\
 											\
 		GetBN(self, bn);							\
 											\
@@ -98,11 +98,11 @@ BIGNUM_FROM(mpi);
 
 #define BIGNUM_FROM2(func)								\
 	static VALUE									\
-	ossl_bn_from_##func(VALUE self, VALUE str)					\
+	ossl_bn_from_s_##func(VALUE self, VALUE str)					\
 	{										\
 		BIGNUM *bn = NULL;							\
 											\
-		Check_Type(str, T_STRING);						\
+		str = rb_String(str);							\
 											\
 		GetBN(self, bn);							\
 											\
@@ -164,9 +164,9 @@ ossl_bn_to_mpi(VALUE self)
 	return str;
 }
 
-#define BIGNUM_TO_STR(func)								\
+#define BIGNUM_TO_S(func)								\
 	static VALUE									\
-	ossl_bn_to_##func(VALUE self)							\
+	ossl_bn_to_s_##func(VALUE self)							\
 	{										\
 		BIGNUM *bn = NULL;							\
 		char *txt = NULL;							\
@@ -669,15 +669,15 @@ Init_bn(VALUE module)
 
 	rb_define_singleton_method(cBN, "new", ossl_bn_s_new, -1);
 	
-	rb_define_private_method(cBN, "from_s_bin", ossl_bn_from_bin, 1);
-	rb_define_private_method(cBN, "from_s_mpi", ossl_bn_from_mpi, 1);
-	rb_define_private_method(cBN, "from_s_dec", ossl_bn_from_dec, 1);
-	rb_define_private_method(cBN, "from_s_hex", ossl_bn_from_hex, 1);
+	rb_define_private_method(cBN, "from_s_bin", ossl_bn_from_s_bin, 1);
+	rb_define_private_method(cBN, "from_s_mpi", ossl_bn_from_s_mpi, 1);
+	rb_define_private_method(cBN, "from_s_dec", ossl_bn_from_s_dec, 1);
+	rb_define_private_method(cBN, "from_s_hex", ossl_bn_from_s_hex, 1);
 	
-	rb_define_method(cBN, "to_s_bin", ossl_bn_to_bin, 0);
-	rb_define_method(cBN, "to_s_mpi", ossl_bn_to_mpi, 0);
-	rb_define_method(cBN, "to_s_dec", ossl_bn_to_dec, 0);
-	rb_define_method(cBN, "to_s_hex", ossl_bn_to_hex, 0);
+	rb_define_method(cBN, "to_s_bin", ossl_bn_to_s_bin, 0);
+	rb_define_method(cBN, "to_s_mpi", ossl_bn_to_s_mpi, 0);
+	rb_define_method(cBN, "to_s_dec", ossl_bn_to_s_dec, 0);
+	rb_define_method(cBN, "to_s_hex", ossl_bn_to_s_hex, 0);
 
 	rb_define_method(cBN, "zero?", ossl_bn_is_zero, 0);
 	rb_define_method(cBN, "one?", ossl_bn_is_one, 0);

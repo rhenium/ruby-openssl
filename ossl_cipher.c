@@ -116,7 +116,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
-	Check_Type(pass, T_STRING);
+	pass = rb_String(pass);
 
 	if (NIL_P(init_v)) {
 		/*
@@ -131,7 +131,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		}
 		 */
 	} else {
-		Check_Type(init_v, T_STRING);
+		init_v = rb_obj_as_string(init_v);
 		memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
 	}
 	EVP_CIPHER_CTX_init(ciphp->ctx);
@@ -157,7 +157,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
-	Check_Type(pass, T_STRING);
+	pass = rb_String(pass);
 	
 	if (NIL_P(init_v)) {
 		/*
@@ -166,7 +166,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 		 */
 		memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
 	} else {
-		Check_Type(init_v, T_STRING);
+		init_v = rb_obj_as_string(init_v);
 		memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
 	}
 	EVP_CIPHER_CTX_init(ciphp->ctx);
@@ -193,7 +193,7 @@ ossl_cipher_update(VALUE self, VALUE data)
 
 	GetCipher(self, ciphp);
 
-	Check_Type(data, T_STRING);
+	data = rb_String(data);
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
 	

@@ -2,7 +2,7 @@
 
   ssl.rb -- to support migrations from SSLSocket.
 
-  Copyright (C) 2001 GOTOU Yuuzou <gotoyuzo@notowrk.org>
+  Copyright (C) 2001-2002 GOTOU Yuuzou <gotoyuzo@notowrk.org>
 
   This program is licenced under the same licence as Ruby.
   (See the file 'LICENCE'.)
@@ -29,8 +29,7 @@ module SSL
   X509 = ::OpenSSL::X509::Certificate
   class X509
     alias serialNumber serial
-    alias inspect to_str
-    alias to_s to_pem
+    alias inspect to_pem
     def notBefore; not_before.to_s; end
     def notAfter; not_after.to_s; end
 

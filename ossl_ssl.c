@@ -388,8 +388,7 @@ ssl_write(VALUE self, VALUE str)
 	FILE *fp;
 
 	Data_Get_Struct(self, ssl_st, p);
-	if(TYPE(str) != T_STRING)
-        str = rb_obj_as_string(str);
+        str = rb_String(str);
 
 	if (p->ssl) {
 		nwrite = SSL_write(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
@@ -533,20 +532,18 @@ ssl_set_ciphers(VALUE self, VALUE v)
         return Qnil;
     }
 
-    if(TYPE(v) == T_STRING) str = v;
-    else if(TYPE(v) == T_ARRAY){
-        str = rb_str_new2("");
-        for(i = 0; i < RARRAY(v)->len; i++){
-            elem = rb_ary_entry(v, i);
-            if(TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
-            elem = rb_obj_as_string(elem);
-            rb_str_append(str, elem);
-            if(i < RARRAY(v)->len-1) rb_str_cat2(str, ":");
-        }
-    }
-    else str = rb_obj_as_string(v);
+	if (TYPE(v) == T_ARRAY) {
+		str = rb_str_new2("");
+		for (i = 0; i < RARRAY(v)->len; i++) {
+			elem = rb_ary_entry(v, i);
+			if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
+			elem = rb_String(elem);
+			rb_str_append(str, elem);
+			if (i < RARRAY(v)->len-1) rb_str_cat2(str, ":");
+		}
+	} else str = rb_String(v);
 
-	if(!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr)) {
+	if (!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr)) {
 		OSSL_Raise(eSSLError, "SSL_CTX_set_ciphers:");
 	}
 	return Qnil;

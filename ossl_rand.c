@@ -29,7 +29,7 @@ VALUE eRandomError;
 static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
-	Check_Type(str, T_STRING);
+	str = rb_obj_as_string(str);
 	RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
 
 	return str;
@@ -38,7 +38,9 @@ ossl_rand_seed(VALUE self, VALUE str)
 static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
+	filename = rb_str_to_str(filename);
 	Check_SafeStr(filename);
+	
 	if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
 		OSSL_Raise(eRandomError, "");
 	}
@@ -49,7 +51,9 @@ ossl_rand_load_file(VALUE self, VALUE filename)
 static VALUE
 ossl_rand_write_file(VALUE self, VALUE filename)
 {
+	filename = rb_str_to_str(filename);
 	Check_SafeStr(filename);
+	
 	if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
 		OSSL_Raise(eRandomError, "");
 	}

@@ -7,7 +7,7 @@ include X509
 verify_cb = Proc.new {|ok, x509_store|
   puts "\t\t====begin Verify===="
   puts "\t\tOK = #{ok}"
-  puts "\t\tchecking #{x509_store.cert.subject.to_str}"
+  puts "\t\tchecking #{x509_store.cert.subject.to_s}"
   puts "\t\tstatus = #{x509_store.verify_status} - that is \"#{x509_store.verify_message}\""
   puts "\t\t==== end Verify===="
   #raise "SOME ERROR!" # Cert will be rejected
@@ -17,11 +17,11 @@ verify_cb = Proc.new {|ok, x509_store|
 }
 							  
 p ca = Certificate.new(File.open("./cacert.pem").read)
-puts "CA = #{ca.subject.to_str}, serial = #{ca.serial}"
+puts "CA = #{ca.subject.to_s}, serial = #{ca.serial}"
 cakey = ca.public_key
 
 p cert = Certificate.new(File.open("./01cert.pem").read)
-puts "Cert = #{cert.subject.to_str}, serial = #{cert.serial}"
+puts "Cert = #{cert.subject.to_s}, serial = #{cert.serial}"
 key = cert.public_key
 
 p crl = CRL.new(File.open("./01crl.pem").read)
@@ -71,6 +71,6 @@ end
 
 puts "Trusted certs:"
 store.chain.each_with_index {|cert, i|
-	puts "> #{i} --- #{cert.subject.to_str}"
+	puts "> #{i} --- #{cert.subject.to_s}"
 }
 

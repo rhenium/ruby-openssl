@@ -122,7 +122,7 @@ ossl_dh_s_new_from_pem(VALUE klass, VALUE buffer)
 	BIO *in = NULL;
 	VALUE obj;
 	
-	Check_Type(buffer, T_STRING);
+	buffer = rb_String(buffer);
 	
 	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len)))
 		OSSL_Raise(eDHError, "");
@@ -237,7 +237,7 @@ ossl_dh_export(VALUE self)
  * Don't use :-)) (I's up to you)
  */
 static VALUE
-ossl_dh_to_str(VALUE self)
+ossl_dh_to_text(VALUE self)
 {
 	ossl_dh *dhp = NULL;
 	BIO *out = NULL;
@@ -297,7 +297,7 @@ Init_ossl_dh(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 
 	rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
 	rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
-	rb_define_method(cDH, "to_str", ossl_dh_to_str, 0);
+	rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);
 	rb_define_method(cDH, "export", ossl_dh_export, 0);
 	rb_define_alias(cDH, "to_pem", "export");
 	rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);

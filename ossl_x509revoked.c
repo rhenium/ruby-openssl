@@ -225,7 +225,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 	return ary;
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_add_extension(VALUE self, VALUE ext)
 {
 	ossl_x509revoked *revp = NULL;

@@ -9,7 +9,7 @@ p req = Request.new
 p req = Request.new(File.open("./01req.pem").read)
 p pkey = RSA.new(File.open("./02key.pem").read, "alfa")
 p k2 = Certificate.new(File.open("./02cert.pem").read).public_key
-#puts req.to_str
+#puts req.to_pem
 #p req.methods.sort
 p key = req.public_key
 p req.verify key

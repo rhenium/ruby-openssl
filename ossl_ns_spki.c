@@ -72,11 +72,9 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 		case T_NIL:
 			spki = NETSCAPE_SPKI_new();
 			break;
-		case T_STRING:
-			spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1);
-			break;
 		default:
-			rb_raise(rb_eTypeError, "unsupported type");
+			buffer = rb_String(buffer);
+			spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1);
 	}
 	if (!spki)
 		OSSL_Raise(eSPKIError, "");
@@ -106,7 +104,7 @@ ossl_spki_to_pem(VALUE self)
 }
 
 static VALUE
-ossl_spki_to_str(VALUE self)
+ossl_spki_to_text(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	BIO *out = NULL;
@@ -181,7 +179,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 	ossl_spki *spkip = NULL;
 
 	GetSPKI(self, spkip);
-	Check_Type(str, T_STRING);
+	str = rb_String(str);
 
 	if (!ASN1_STRING_set(spkip->spki->spkac->challenge, RSTRING(str)->ptr, RSTRING(str)->len)) {
 		OSSL_Raise(eSPKIError, "");
@@ -251,7 +249,8 @@ Init_ossl_spki(VALUE module)
 	rb_define_singleton_method(cSPKI, "new", ossl_spki_s_new, -1);
 	rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
 	rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);
-	rb_define_method(cSPKI, "to_str", ossl_spki_to_str, 0);
+	rb_define_alias(cSPKI, "to_s", "to_pem");
+	rb_define_method(cSPKI, "to_text", ossl_spki_to_text, 0);
 	rb_define_method(cSPKI, "public_key", ossl_spki_get_public_key, 0);
 	rb_define_method(cSPKI, "public_key=", ossl_spki_set_public_key, 1);
 	rb_define_method(cSPKI, "sign", ossl_spki_sign, 2);

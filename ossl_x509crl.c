@@ -94,15 +94,13 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 		case T_NIL:
 			crl = X509_CRL_new();
 			break;
-		case T_STRING:
+		default:
+			buffer = rb_String(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
 				OSSL_Raise(eX509CRLError, "");
 			}
 			crl = PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
 			BIO_free(in);
-			break;
-		default:
-			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	if (!crl)
 		OSSL_Raise(eX509CRLError, "");
@@ -385,7 +383,7 @@ ossl_x509crl_to_pem(VALUE self)
 }
 
 static VALUE 
-ossl_x509crl_to_str(VALUE self)
+ossl_x509crl_to_text(VALUE self)
 {
 	ossl_x509crl *crlp = NULL;
 	BIO *out = NULL;
@@ -514,7 +512,8 @@ Init_ossl_x509crl(VALUE module)
 	rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 1);
 	rb_define_method(cX509CRL, "verify", ossl_x509crl_verify, 1);
 	rb_define_method(cX509CRL, "to_pem", ossl_x509crl_to_pem, 0);
-	rb_define_method(cX509CRL, "to_str", ossl_x509crl_to_str, 0);
+	rb_define_alias(cX509CRL, "to_s", "to_pem");
+	rb_define_method(cX509CRL, "to_text", ossl_x509crl_to_text, 0);
 	rb_define_method(cX509CRL, "extensions", ossl_x509crl_get_extensions, 0);
 	rb_define_method(cX509CRL, "extensions=", ossl_x509crl_set_extensions, 1);
 	rb_define_method(cX509CRL, "add_extension", ossl_x509crl_add_extension, 1);
