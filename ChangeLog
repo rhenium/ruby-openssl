@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.29  2002/02/06 13:47:00  majkl
+	* ossl-0.1.1 released
+
 Revision 1.28  2002/02/06 13:36:15  majkl
 	* Dropped Random class
 	* Added Random module

@@ -91,10 +91,6 @@ Integer
 	.to_bn() => BN.new
 	
 OpenSSL::
-	.seed(sSeed) => sSeed
-	.load_random_file(sFilename) => bResult
-	.write_random_file(sFilename) => bResult
-
 	BN - Doc TODO!
 		::new(...)
 		--- PRIVATE ----------------------
@@ -267,12 +263,12 @@ OpenSSL::
 		RSAError
 
 	Random
-		.new is default
-		----------------------------------
 		.seed(sSeed) => sSeed
 		.load_random_file(sFilename) => bResult
 		.write_random_file(sFilename) => bResult
 		.random_bytes(fLen) => sRandom
+		.egd(sUNIXSocketPath) => bResult
+		.egd_bytes(sUNIXSocketPath, fLen) => bResult
 	
 	RandomError
 	
