@@ -47,32 +47,21 @@ ossl_x509name_free(ossl_x509name *namep)
  * Public
  */
 VALUE 
-ossl_x509name_new_null(void)
-{
-	ossl_x509name *namep = NULL;
-	VALUE obj;
-
-	MakeX509Name(obj, namep);
-
-	if (!(namep->name = X509_NAME_new()))
-		OSSL_Raise(eX509NameError, "");
-
-	return obj;
-}
-
-VALUE 
 ossl_x509name_new(X509_NAME *name)
 {
 	ossl_x509name *namep = NULL;
+	X509_NAME *new = NULL;
 	VALUE obj;
 
 	if (!name)
-		return ossl_x509name_new_null();
+		new = X509_NAME_new();
+	else new = X509_NAME_dup(name);
+	
+	if (!new)
+		OSSL_Raise(eX509NameError, "");
 	
 	MakeX509Name(obj, namep);
-
-	if (!(namep->name = X509_NAME_dup(name)))
-		OSSL_Raise(eX509NameError, "");
+	namep->name = new;
 
 	return obj;
 }

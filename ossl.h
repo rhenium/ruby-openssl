@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -78,7 +78,6 @@ extern VALUE eSPKIError;
 extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
-
 /* Cipher */
 extern VALUE cCipher;
 extern VALUE eCipherError;
@@ -125,7 +124,6 @@ VALUE asn1time_to_time(ASN1_UTCTIME *);
 /*
  * ERRor messages
  */
-#define ossl_error OSSL_ErrMsg /* for compat.; DEPRECATED! */
 #define OSSL_ErrMsg() \
 	ERR_error_string(ERR_get_error(), NULL)
 
@@ -139,7 +137,7 @@ VALUE asn1time_to_time(ASN1_UTCTIME *);
 #  define OSSL_Warning(text) \
 	rb_warning("%s%s [in '%s', file: '%s', line: %d]", \
 			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
-#else
+#else /*OSSL_DEBUG*/
 #  define OSSL_Raise(klass,text) \
 	rb_raise(klass, "%s%s", text, OSSL_ErrMsg())
 #  define OSSL_Warn(text) \
@@ -163,7 +161,6 @@ void Init_ossl_digest(VALUE);
 /*
  * X509
  */
-VALUE ossl_x509_new_null(void);
 VALUE ossl_x509_new(X509 *);
 VALUE ossl_x509_new_from_file(VALUE);
 X509 *ossl_x509_get_X509(VALUE);
@@ -178,7 +175,6 @@ void Init_ossl_x509crl(VALUE);
 /*
  * X509Name
  */
-VALUE ossl_x509name_new_null(void);
 VALUE ossl_x509name_new(X509_NAME *);
 X509_NAME *ossl_x509name_get_X509_NAME(VALUE);
 void Init_ossl_x509name(VALUE);
@@ -186,7 +182,6 @@ void Init_ossl_x509name(VALUE);
 /*
  * X509Request
  */
-VALUE ossl_x509req_new_null(void);
 VALUE ossl_x509req_new(X509_REQ *);
 X509_REQ *ossl_x509req_get_X509_REQ(VALUE);
 void Init_ossl_x509req(VALUE);
@@ -194,7 +189,6 @@ void Init_ossl_x509req(VALUE);
 /*
  * X509Revoked
  */
-VALUE ossl_x509revoked_new_null(void);
 VALUE ossl_x509revoked_new(X509_REVOKED *);
 X509_REVOKED *ossl_x509revoked_get_X509_REVOKED(VALUE);
 void Init_ossl_x509revoked(VALUE);
@@ -209,7 +203,6 @@ void Init_ossl_x509store(VALUE);
 /*
  * X509Extension
  */
-VALUE ossl_x509ext_new_null(void);
 VALUE ossl_x509ext_new(X509_EXTENSION *);
 X509_EXTENSION *ossl_x509ext_get_X509_EXTENSION(VALUE);
 void Init_ossl_x509ext(VALUE);
@@ -217,7 +210,6 @@ void Init_ossl_x509ext(VALUE);
 /*
  * X509Attribute
  */
-VALUE ossl_x509attr_new_null(void);
 VALUE ossl_x509attr_new(X509_ATTRIBUTE *);
 X509_ATTRIBUTE *ossl_x509attr_get_X509_ATTRIBUTE(VALUE);
 void Init_ossl_x509attr(VALUE);
@@ -251,7 +243,6 @@ void Init_ossl_pkey(VALUE);
  * RSA
  */
 #if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
-VALUE ossl_rsa_new_null();
 VALUE ossl_rsa_new(RSA *);
 RSA *ossl_rsa_get_RSA(VALUE);
 EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE);
@@ -262,12 +253,21 @@ void Init_ossl_rsa(VALUE, VALUE, VALUE);
  * DSA
  */
 #if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
-VALUE ossl_dsa_new_null();
 VALUE ossl_dsa_new(DSA *);
 DSA *ossl_dsa_get_DSA(VALUE);
 EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE);
-#endif /* NO_RSA */
+#endif /* NO_DSA */
 void Init_ossl_dsa(VALUE, VALUE, VALUE);
+
+/*
+ * DH
+ */
+#if !defined(NO_DH) && !defined(OPENSSL_NO_DH)
+VALUE ossl_dh_new(DH *);
+DH *ossl_dh_get_DH(VALUE);
+EVP_PKEY *ossl_dh_get_EVP_PKEY(VALUE);
+#endif /* NO_DH */
+void Init_ossl_dh(VALUE, VALUE, VALUE);
 
 /*
  * SSL
@@ -277,7 +277,6 @@ void Init_ssl(VALUE);
 /*
  * PKCS7
  */
-VALUE ossl_pkcs7si_new_null(void);
 VALUE ossl_pkcs7si_new(PKCS7_SIGNER_INFO *);
 PKCS7_SIGNER_INFO *ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE);
 void Init_pkcs7(VALUE);
@@ -290,7 +289,6 @@ void Init_hmac(VALUE);
 /*
  * BN
  */
-VALUE ossl_bn_new_null(void);
 VALUE ossl_bn_new(BIGNUM *);
 BIGNUM *ossl_bn_get_BIGNUM(VALUE);
 void Init_bn(VALUE);

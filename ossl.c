@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -10,7 +10,7 @@
  */
 #include "ossl.h"
 
-#ifdef WIN32
+#if defined(NT)
 #  define strncasecmp _strnicmp
 #endif
 
@@ -20,12 +20,6 @@
  */
 #ifndef HAVE_STRPTIME
 #  include "./missing/strptime.c"
-/*
-#else
-#  define _XOPEN_SOURCE * glibc2 needs this *
-#  include <features.h>
-#  include <time.h>
- */
 #endif
 
 /*
@@ -34,17 +28,19 @@
 void
 ossl_check_kind(VALUE obj, VALUE klass)
 {
-	if (rb_obj_is_kind_of(obj, klass) == Qfalse)
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",
+	if (rb_obj_is_kind_of(obj, klass) == Qfalse) {
+		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",\
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
+	}
 }
 
 void
 ossl_check_instance(VALUE obj, VALUE klass)
 {
-	if (rb_obj_is_instance_of(obj, klass) == Qfalse)
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",
+	if (rb_obj_is_instance_of(obj, klass) == Qfalse) {
+		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
+	}
 }
 
 /*

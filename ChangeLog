@@ -4,6 +4,11 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.30  2002/02/13 13:09:49  majkl
+	* transition from rb_raise to OSSL_Raise (where possible)
+	* some mem checks
+	* preliminary DH key support
+
 Revision 1.29  2002/02/06 13:47:00  majkl
 	* ossl-0.1.1 released
 

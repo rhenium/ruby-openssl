@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -26,7 +26,7 @@ extern "C" {
 #define PEM_write_bio_DSAPublicKey(bp,x) \
 	PEM_ASN1_write_bio((int (*)())i2d_DSAPublicKey,\
 		PEM_STRING_DSA_PUBLIC,\
-		bp,(char *)x,NULL,NULL,0,NULL,NULL)
+		bp,(char *)x, NULL, NULL, 0, NULL, NULL)
 #endif /* NO_DSA */
 
 /* to x509.h */
@@ -41,9 +41,9 @@ extern "C" {
 
 /* to pkcs7.h */
 #define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \
-	(char *(*)())d2i_PKCS7_SIGNER_INFO,(char *)si)
+	(char *(*)())d2i_PKCS7_SIGNER_INFO, (char *)si)
 #define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
-	(char *(*)())d2i_PKCS7_RECIP_INFO,(char *)ri)
+	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
 
 /* to hmac.[ch] */
 #if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
@@ -54,5 +54,5 @@ int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
 }
 #endif
 
-#endif
+#endif /*_OPENSSL_MISSING_H_*/
 

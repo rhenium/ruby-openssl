@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -108,11 +108,10 @@ ossl_digest_digest(VALUE self)
 	GetDigest(self, digestp);
 	
 	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
-		rb_raise(eDigestError, "%s", ossl_error());
+		OSSL_Raise(eDigestError, "");
 	}
-
 	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for digest");
+		OSSL_Raise(eDigestError, "Cannot allocate mem for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
@@ -138,17 +137,16 @@ ossl_digest_hexdigest(VALUE self)
 	GetDigest(self, digestp);
 	
 	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
-		rb_raise(eDigestError, "%s", ossl_error());
+		OSSL_Raise(eDigestError, "");
 	}
-
 	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for digest");
+		OSSL_Raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
 	if (!(hexdigest_txt = OPENSSL_malloc(2*digest_len+1))) {
 		OPENSSL_free(digest_txt);
-		rb_raise(eDigestError, "Memory alloc error");
+		OSSL_Raise(eDigestError, "Memory alloc error");
 	}
 	for (i = 0; i < digest_len; i++) {
 		hexdigest_txt[i + i] = hex[((unsigned char)digest_txt[i]) >> 4];
@@ -177,11 +175,11 @@ ossl_digest_hexdigest(VALUE self)
 	GetDigest(self, digestp);
 	
 	if (!EVP_MD_CTX_copy(&final, digestp->md)) {
-		rb_raise(eDigestError, "%s", ossl_error());
+		OSSL_Raise(eDigestError, "");
 	}
 
 	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		rb_raise(eDigestError, "Cannot allocate memory for digest");
+		OSSL_Raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
@@ -206,7 +204,7 @@ ossl_digest_hexdigest(VALUE self)
 												\
 		GetDigest(self, digestp);							\
 		if (!(digestp->md = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {			\
-			rb_raise(eDigestError, "Cannot allocate memory for new digest");	\
+			OSSL_Raise(eDigestError, "Cannot allocate memory for a digest's CTX");	\
 		}										\
 		EVP_DigestInit(digestp->md, EVP_##dgst());					\
 												\
@@ -262,7 +260,7 @@ Init_ossl_digest(VALUE module)
 	rb_define_method(cDigest, "digest", ossl_digest_digest, 0);
 	rb_define_method(cDigest, "hexdigest", ossl_digest_hexdigest, 0);
 	rb_define_alias(cDigest, "inspect", "hexdigest");
-	rb_define_alias(cDigest, "to_str", "hexdigest");
+	rb_define_alias(cDigest, "to_s", "hexdigest");
 	/*rb_define_method(cDigest, "==", ossl_digest_equal, 1);*/
 
 /*

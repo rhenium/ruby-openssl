@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -13,7 +13,6 @@
 /*
  * Classes
  */
-VALUE cRandom;
 VALUE eRandomError;
 
 /*
@@ -41,7 +40,7 @@ ossl_rand_load_file(VALUE self, VALUE filename)
 {
 	Check_SafeStr(filename);
 	if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
-		rb_raise(rb_eIOError, "%s", ossl_error());
+		OSSL_Raise(eRandomError, "");
 	}
 
 	return Qtrue;
@@ -52,7 +51,7 @@ ossl_rand_write_file(VALUE self, VALUE filename)
 {
 	Check_SafeStr(filename);
 	if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
-		rb_raise(rb_eIOError, "%s", ossl_error());
+		OSSL_Raise(eRandomError, "");
 	}
 
 	return Qtrue;
@@ -67,12 +66,12 @@ ossl_rand_bytes(VALUE self, VALUE len)
 	Check_Type(len, T_FIXNUM);
 
 	if (!(buffer = OPENSSL_malloc(FIX2INT(len)+1))) {
-		rb_raise(eRandomError, "%s", ossl_error());
+		OSSL_Raise(eRandomError, "");
 	}
 	
 	if (!RAND_bytes(buffer, FIX2INT(len))) {
 		OPENSSL_free(buffer);
-		rb_raise(eRandomError, "%s", ossl_error());
+		OSSL_Raise(eRandomError, "");
 	}
 	
 	str = rb_str_new(buffer, FIX2INT(len));
@@ -85,8 +84,9 @@ static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
 	Check_SafeStr(filename);
-	if(!RAND_egd(RSTRING(filename)->ptr))
-		rb_raise(eRandomError, "%s", ossl_error());
+	if(!RAND_egd(RSTRING(filename)->ptr)) {
+		OSSL_Raise(eRandomError, "");
+	}
 
 	return Qtrue;
 }
@@ -97,8 +97,9 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 	Check_SafeStr(filename);
 	Check_Type(len, T_FIXNUM);
 
-	if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len)))
-		rb_raise(eRandomError, "%s", ossl_error());
+	if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len))) {
+		OSSL_Raise(eRandomError, "");
+	}
 	
 	return Qtrue;
 }

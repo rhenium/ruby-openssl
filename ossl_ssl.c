@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2000-2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+ * Copyright (c) 2000-2002 GOTOU YUUZOU <gotoyuzo@notwork.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -182,11 +182,11 @@ ssl_ctx_setup(VALUE self)
     key = NIL_P(val) ? NULL : ossl_pkey_get_EVP_PKEY(val);
 	if(cert && key){
 		if(!SSL_CTX_use_certificate(p->ctx,cert))
-			rb_raise(eSSLError,"SSL_CTX_use_certificate:%s",ossl_error());
+			OSSL_Raise(eSSLError,"SSL_CTX_use_certificate:");
 		if(!SSL_CTX_use_PrivateKey(p->ctx,key))
-			rb_raise(eSSLError,"SSL_CTX_use_PrivateKey:%s",ossl_error());
+			OSSL_Raise(eSSLError,"SSL_CTX_use_PrivateKey:");
 		if(!SSL_CTX_check_private_key(p->ctx))
-			rb_raise(eSSLError,"SSL_CTX_check_private_key:%s",ossl_error());
+			OSSL_Raise(eSSLError,"SSL_CTX_check_private_key:");
 	}
 
     val = ssl_get_ca(self);
@@ -197,11 +197,12 @@ ssl_ctx_setup(VALUE self)
     ca_path = NIL_P(val) ? NULL : RSTRING(val)->ptr;
 	if (ca)
 		if(!SSL_CTX_add_client_CA(p->ctx, ca))
-			rb_raise(eSSLError, "%s", ossl_error());
+			OSSL_Raise(eSSLError, "");
+	
 	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
 			!SSL_CTX_set_default_verify_paths(p->ctx)) &&
 			ruby_verbose) {
-		rb_warning("can't set verify locations:%s", ossl_error());
+		OSSL_Warning("can't set verify locations");
 	}
 
     val = ssl_get_verify_mode(self);
@@ -229,7 +230,7 @@ ssl_setup(VALUE self)
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
         if((p->ssl = SSL_new(p->ctx)) == NULL)
-            rb_raise(eSSLError, "SSL_new:%s", ossl_error());
+		OSSL_Raise(eSSLError, "SSL_new:");
         SSL_set_fd(p->ssl, fileno(fptr->f));
     }
 }
@@ -243,7 +244,8 @@ ssl_s_new(int argc, VALUE *argv, VALUE klass)
     obj = Data_Make_Struct(klass, ssl_st, 0, ssl_free, p);
     memset(p, 0, sizeof(ssl_st));
     if((p->ctx = SSL_CTX_new(SSLv23_method())) == NULL)
-        rb_raise(eSSLError, "SSL_CTX_new:%s", ossl_error());
+		OSSL_Raise(eSSLError, "SSL_CTX_new:");
+    
     SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
 
     rb_obj_call_init(obj, argc, argv);
@@ -294,7 +296,7 @@ ssl_connect(VALUE self)
 
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_connect(p->ssl) <= 0){
-        rb_raise(eSSLError, "SSL_connect:%s", ossl_error());
+		OSSL_Raise(eSSLError, "SSL_connect:");
     }
 
     return self;
@@ -311,7 +313,7 @@ ssl_accept(VALUE self)
 
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_accept(p->ssl) <= 0){
-        rb_raise(eSSLError, "SSL_accept:%s", ossl_error());
+		OSSL_Raise(eSSLError, "SSL_accept:");
     }
 
     return self;
@@ -320,63 +322,71 @@ ssl_accept(VALUE self)
 static VALUE
 ssl_read(VALUE self, VALUE len)
 {
-    ssl_st *p;
-    size_t ilen, nread = 0;
-    VALUE str;
+	ssl_st *p;
+	size_t ilen, nread = 0;
+	VALUE str;
 	OpenFile *fptr;
 
-    Data_Get_Struct(self, ssl_st, p);
-    ilen = NUM2INT(len);
-    str = rb_str_new(0, ilen);
-    
-    if(p->ssl){
-        nread = SSL_read(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-        if(nread < 0) rb_raise(eSSLError, "SSL_read:%s", ossl_error());
-    }
-    else{
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        GetOpenFile(ssl_get_io(self), fptr);
-        rb_io_check_readable(fptr);
-        TRAP_BEG;
-        nread = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
-        TRAP_END;
-        if(nread < 0) rb_raise(eSSLError, "read:%s", strerror(errno));
-    }
-    if(nread == 0) rb_raise(rb_eEOFError, "End of file reached");
+	Data_Get_Struct(self, ssl_st, p);
+	ilen = NUM2INT(len);
+	str = rb_str_new(0, ilen);
+	
+	if (p->ssl) {
+		nread = SSL_read(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+		if(nread < 0)
+			OSSL_Raise(eSSLError, "SSL_read:");
+	} else {
+		rb_warning("SSL session is not started yet.");
 
-    RSTRING(str)->len = nread;
-    RSTRING(str)->ptr[nread] = 0;
-    OBJ_TAINT(str);
+		GetOpenFile(ssl_get_io(self), fptr);
+		rb_io_check_readable(fptr);
 
-    return str;
+		TRAP_BEG;
+		nread = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
+		TRAP_END;
+
+		if(nread < 0)
+			rb_raise(eSSLError, "read:%s", strerror(errno));
+	}
+
+	if(nread == 0)
+		rb_raise(rb_eEOFError, "End of file reached");
+
+	RSTRING(str)->len = nread;
+	RSTRING(str)->ptr[nread] = 0;
+	OBJ_TAINT(str);
+
+	return str;
 }
 
 static VALUE
 ssl_write(VALUE self, VALUE str)
 {
-    ssl_st *p;
-    size_t nwrite = 0;
+	ssl_st *p;
+	size_t nwrite = 0;
 	OpenFile *fptr;
 	FILE *fp;
 
-    Data_Get_Struct(self, ssl_st, p);
-    if(TYPE(str) != T_STRING)
+	Data_Get_Struct(self, ssl_st, p);
+	if(TYPE(str) != T_STRING)
         str = rb_obj_as_string(str);
 
-    if(p->ssl){
-        nwrite = SSL_write(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-        if(nwrite < 0) rb_raise(eSSLError, "SSL_write:%s", ossl_error());
-    }
-    else{
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        GetOpenFile(ssl_get_io(self), fptr);
-        rb_io_check_writable(fptr);
-        fp = GetWriteFile(fptr);
-        nwrite = write(fileno(fp), RSTRING(str)->ptr, RSTRING(str)->len);
-        if(nwrite < 0) rb_raise(eSSLError, "write:%s", strerror(errno));
-    }
+	if (p->ssl) {
+		nwrite = SSL_write(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+		if (nwrite < 0)
+			OSSL_Raise(eSSLError, "SSL_write:");
+	} else {
+		rb_warning("SSL session is not started yet.");
 
-    return INT2NUM(nwrite);
+		GetOpenFile(ssl_get_io(self), fptr);
+		rb_io_check_writable(fptr);
+		fp = GetWriteFile(fptr);
+		nwrite = write(fileno(fp), RSTRING(str)->ptr, RSTRING(str)->len);
+		if(nwrite < 0)
+			rb_raise(eSSLError, "write:%s", strerror(errno));
+	}
+
+	return INT2NUM(nwrite);
 }
 
 static VALUE
@@ -397,8 +407,8 @@ ssl_get_certificate(VALUE self)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ssl){
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        return Qnil;
+		rb_warning("SSL session is not started yet.");
+		return Qnil;
     }
 
     if((cert = SSL_get_certificate(p->ssl)) == NULL) return Qnil;
@@ -414,8 +424,8 @@ ssl_get_peer_certificate(VALUE self)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ssl){
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        return Qnil;
+		rb_warning("SSL session is not started yet.");
+		return Qnil;
     }
 
     if((cert = SSL_get_peer_certificate(p->ssl)) == NULL) return Qnil;
@@ -447,8 +457,8 @@ ssl_get_cipher(VALUE self)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ssl){
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        return Qnil;
+		rb_warning("SSL session is not started yet.");
+		return Qnil;
     }
     cipher = SSL_get_current_cipher(p->ssl);
 
@@ -466,8 +476,8 @@ ssl_get_ciphers(VALUE self)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ctx){
-        if(ruby_verbose) rb_warning("SSL_CTX is not initialized.");
-        return Qnil;
+		rb_warning("SSL_CTX is not initialized.");
+		return Qnil;
     }
     ciphers = p->ctx->cipher_list;
     ary = rb_ary_new();
@@ -506,10 +516,10 @@ ssl_set_ciphers(VALUE self, VALUE v)
     }
     else str = rb_obj_as_string(v);
 
-    if(!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr))
-        rb_raise(eSSLError, "SSL_CTX_set_ciphers:%s", ossl_error());
-
-    return Qnil;
+	if(!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr)) {
+		OSSL_Raise(eSSLError, "SSL_CTX_set_ciphers:");
+	}
+	return Qnil;
 }
 
 static VALUE
@@ -520,8 +530,8 @@ ssl_get_state(VALUE self)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ssl){
-        if(ruby_verbose) rb_warning("SSL session is not started yet.");
-        return Qnil;
+		rb_warning("SSL session is not started yet.");
+		return Qnil;
     }
     ret = rb_str_new2(SSL_state_string(p->ssl));
     if(ruby_verbose){

@@ -47,32 +47,21 @@ ossl_x509attr_free(ossl_x509attr *attrp)
  * public
  */
 VALUE 
-ossl_x509attr_new_null(void)
-{
-	ossl_x509attr *attrp = NULL;
-	VALUE obj;
-
-	MakeX509Attr(obj, attrp);
-
-	if (!(attrp->attribute = X509_ATTRIBUTE_new()))
-		OSSL_Raise(eX509AttributeError, "");
-
-	return obj;
-}
-
-VALUE 
 ossl_x509attr_new(X509_ATTRIBUTE *attr)
 {
 	ossl_x509attr *attrp = NULL;
+	X509_ATTRIBUTE *new = NULL;
 	VALUE obj;
 
 	if (!attr)
-		return ossl_x509attr_new_null();
+		new = X509_ATTRIBUTE_new();
+	else new = X509_ATTRIBUTE_dup(attr);
+
+	if (!new)
+		OSSL_Raise(eX509AttributeError, "");
 	
 	MakeX509Attr(obj, attrp);
-
-	if (!(attrp->attribute = X509_ATTRIBUTE_dup(attr)))
-		OSSL_Raise(eX509AttributeError, "");
+	attrp->attribute = new;
 
 	return obj;
 }

@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -67,7 +67,7 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
 	 */
 	/*
 	if (!(ctx2 = X509_STORE_CTX_new())) {
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 	X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
 	*/
@@ -175,10 +175,10 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 	GetX509Store_unsafe(self, storep);
 
 	if (!(store = X509_STORE_new())) {
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 	if (!(storep->store = X509_STORE_CTX_new())) {
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 	X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
 	/* OpenSSL 0.9.6c
@@ -207,7 +207,7 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 
 	if (!X509_STORE_add_cert(storep->store->ctx, x509)) {
 		X509_free(x509);
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 	X509_free(x509);
 	
@@ -256,7 +256,7 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 
 	if (!X509_STORE_add_crl(storep->store->ctx, crl)) {
 		X509_CRL_free(crl);
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 	X509_CRL_free(crl);
 
@@ -407,7 +407,7 @@ ossl_x509store_set_default_paths(VALUE self)
 	GetX509Store(self, storep);
 
 	if (!X509_STORE_set_default_paths(storep->store->ctx)) {
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 
 	return self;
@@ -423,7 +423,7 @@ ossl_x509store_load_locations(VALUE self, VALUE path)
 	Check_SafeStr(path);
 
 	if (!X509_STORE_load_locations(storep->store->ctx, NULL, RSTRING(path)->ptr)) {
-		rb_raise(eX509StoreError, "%s", ossl_error());
+		OSSL_Raise(eX509StoreError, "");
 	}
 
 	return self;

@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -80,7 +80,7 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	if (!spki)
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 
 	spkip->spki = spki;
 
@@ -97,7 +97,7 @@ ossl_spki_to_pem(VALUE self)
 	GetSPKI(self, spkip);
 
 	if (!(data = NETSCAPE_SPKI_b64_encode(spkip->spki))) {
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 
 	str = rb_str_new2(data);
@@ -117,11 +117,11 @@ ossl_spki_to_str(VALUE self)
 	GetSPKI(self, spkip);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 	if (!NETSCAPE_SPKI_print(out, spkip->spki)) {
 		BIO_free(out);
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -139,7 +139,7 @@ ossl_spki_get_public_key(VALUE self)
 	GetSPKI(self, spkip);
 	
 	if (!(pkey = NETSCAPE_SPKI_get_pubkey(spkip->spki))) {
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 
 	return ossl_pkey_new(pkey);
@@ -157,7 +157,7 @@ ossl_spki_set_public_key(VALUE self, VALUE pubk)
 
 	if (!NETSCAPE_SPKI_set_pubkey(spkip->spki, pkey)) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 
 	return pubk;
@@ -185,7 +185,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 	Check_SafeStr(str);
 
 	if (!ASN1_STRING_set(spkip->spki->spkac->challenge, RSTRING(str)->ptr, RSTRING(str)->len)) {
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 
 	return str;
@@ -209,7 +209,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 
 	if (!NETSCAPE_SPKI_sign(spkip->spki, pkey, md)) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	}
 
 	return self;
@@ -233,7 +233,7 @@ ossl_spki_verify(VALUE self, VALUE key)
 	EVP_PKEY_free(pkey);
 	
 	if (result < 0) {
-		rb_raise(eSPKIError, "%s", ossl_error());
+		OSSL_Raise(eSPKIError, "");
 	} else if (result > 0)
 		return Qtrue;
 

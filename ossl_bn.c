@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 UNKNOWN <oss-ruby@technorama.net>
+ * Copyright (C) 2001-2002  UNKNOWN <oss-ruby@technorama.net>
  * All rights reserved.
  */
 /*
@@ -31,29 +31,16 @@ VALUE eBNError;
  * Public
  */
 VALUE
-ossl_bn_new_null(void)
-{
-	BIGNUM *bn = NULL;
-	VALUE obj;
-	
-	if (!(bn = BN_new()))
-		OSSL_Raise(eBNError, "");
-	
-	WrapBN(obj, bn);
-	
-	return obj;
-}
-
-VALUE
 ossl_bn_new(BIGNUM *bn)
 {
 	BIGNUM *new = NULL;
 	VALUE obj;
 
-	if (!bn)
-		return ossl_bn_new_null();
-	
-	if (!(new = BN_dup(bn)))
+	if (!bn) 
+		new = BN_new();
+	else new = BN_dup(bn);
+
+	if (!new)
 		OSSL_Raise(eBNError, "");
 	
 	WrapBN(obj, new);
@@ -69,9 +56,9 @@ ossl_bn_get_BIGNUM(VALUE obj)
 	OSSL_Check_Type(obj, cBN);
 	GetBN(obj, bn);
 
-	if (!(new = BN_dup(bn)))
+	if (!(new = BN_dup(bn))) {
 		OSSL_Raise(eBNError, "");
-	
+	}
 	return new;
 }
 
@@ -84,10 +71,8 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 	BIGNUM *bn = NULL;
 	VALUE obj;
 
-	if (!(bn = BN_new()))
-		OSSL_Raise(eBNError, "");
-
-	WrapBN(obj, bn);
+	obj = ossl_bn_new(NULL);
+	
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -103,9 +88,9 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 											\
 		GetBN(self, bn);							\
 											\
-		if (!BN_##func##2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn))		\
+		if (!BN_##func##2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {	\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		return self;								\
 	}
 BIGNUM_FROM(bin);
@@ -121,9 +106,9 @@ BIGNUM_FROM(mpi);
 											\
 		GetBN(self, bn);							\
 											\
-		if (!BN_##func##2bn(&bn, RSTRING(str)->ptr))				\
+		if (!BN_##func##2bn(&bn, RSTRING(str)->ptr)) {				\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		return self;								\
 	}
 BIGNUM_FROM2(dec);
@@ -140,11 +125,14 @@ ossl_bn_to_bin(VALUE self)
 	GetBN(self, bn);
 	
 	len = BN_num_bytes(bn);
-	buf = OPENSSL_malloc(len);
-
-	if (BN_bn2bin(bn, buf) != len)
+	if (!(buf = OPENSSL_malloc(len))) {
+		OSSL_Raise(eBNError, "Cannot allocate mem for BN");
+	}
+	if (BN_bn2bin(bn, buf) != len) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eBNError, "");
-
+	}
+	
 	str = rb_str_new(buf, len);
 	OPENSSL_free(buf);
 
@@ -162,10 +150,13 @@ ossl_bn_to_mpi(VALUE self)
 	GetBN(self, bn);
 	
 	len = BN_bn2mpi(bn, NULL);
-	buf = OPENSSL_malloc(len);
-
-	if (BN_bn2mpi(bn, buf) != len)
+	if (!(buf = OPENSSL_malloc(len))) {
+		OSSL_Raise(eBNError, "Cannot allocate mem for BN");
+	}
+	if (BN_bn2mpi(bn, buf) != len) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eBNError, "");
+	}
 
 	str = rb_str_new(buf, len);
 	OPENSSL_free(buf);
@@ -183,9 +174,9 @@ ossl_bn_to_mpi(VALUE self)
 											\
 		GetBN(self, bn);							\
 											\
-		if (!(txt = BN_bn2##func(bn)))						\
+		if (!(txt = BN_bn2##func(bn))) {					\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		str = rb_str_new2(txt);							\
 		OPENSSL_free(txt);							\
 											\
@@ -222,9 +213,9 @@ BIGNUM_BOOL1(is_odd);
 											\
 		GetBN(self, bn);							\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		BN_CTX_init(&ctx);							\
 		if (BN_##func(result, bn, &ctx) != 1) {					\
 			BN_free(result);						\
@@ -250,9 +241,9 @@ BIGNUM_1c(sqr);
 		OSSL_Check_Type(other, cBN);						\
 		GetBN(other, bn2);							\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		if (BN_##func(result, bn1, bn2) != 1) {					\
 			BN_free(result);						\
 			OSSL_Raise(eBNError, "");					\
@@ -279,9 +270,9 @@ BIGNUM_2(sub);
 		OSSL_Check_Type(other, cBN);						\
 		GetBN(other, bn2);							\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		BN_CTX_init(&ctx);							\
 		if (BN_##func(result, bn1, bn2, &ctx) != 1) {				\
 			BN_free(result);						\
@@ -310,8 +301,9 @@ ossl_bn_div(VALUE self, VALUE other)
 	OSSL_Check_Type(other, cBN);
 	GetBN(other, bn2);
 	
-	if (!(r1 = BN_new()))
+	if (!(r1 = BN_new())) {
 		OSSL_Raise(eBNError, "");
+	}
 	if (!(r2 = BN_new())) {
 		BN_free(r1);
 		OSSL_Raise(eBNError, "");
@@ -343,9 +335,9 @@ ossl_bn_mod_inverse(VALUE self, VALUE other)
 	OSSL_Check_Type(other, cBN);
 	GetBN(other, bn2);
 	
-	if (!(result = BN_new()))
+	if (!(result = BN_new())) {
 		OSSL_Raise(eBNError, "");
-	
+	}
 	BN_CTX_init(&ctx);
 	if (BN_mod_inverse(result, bn1, bn2, &ctx) == NULL) {
 		BN_free(result);
@@ -373,9 +365,9 @@ ossl_bn_mod_inverse(VALUE self, VALUE other)
 		GetBN(other1, bn2);							\
 		GetBN(other2, bn3);							\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		BN_CTX_init(&ctx);							\
 		if (BN_##func(result, bn1, bn2, bn3, &ctx) != 1) {			\
 			BN_free(result);						\
@@ -397,9 +389,9 @@ BIGNUM_3c(mod_exp);
 											\
 		GetBN(self, bn);							\
 											\
-		if (BN_##func(bn, NUM2INT(bit)) != 1)					\
+		if (BN_##func(bn, NUM2INT(bit)) != 1) {					\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		return self;								\
 	}
 BIGNUM_BIT_SETCLEAR(set_bit);
@@ -425,9 +417,9 @@ ossl_bn_mask_bits(VALUE self, VALUE bit)
 
 	GetBN(self, bn);
 
-	if (BN_mask_bits(bn, NUM2INT(bit)) != 1)
+	if (BN_mask_bits(bn, NUM2INT(bit)) != 1) {
 		OSSL_Raise(eBNError, "");
-
+	}
 	return self;
 }
 
@@ -441,9 +433,9 @@ ossl_bn_mask_bits(VALUE self, VALUE bit)
 											\
 		GetBN(self, bn);							\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		if (BN_##func(result, bn, NUM2INT(bits)) != 1) {			\
 			BN_free(result);						\
 			OSSL_Raise(eBNError, "");					\
@@ -463,12 +455,13 @@ BIGNUM_SHIFT(rshift);
 		BIGNUM *result = NULL;							\
 		VALUE obj;								\
 											\
-		if (!(result = BN_new()))						\
+		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
-											\
-		if (!BN_##func(result, NUM2INT(bits), NUM2INT(top), NUM2INT(bottom)))	\
+		}									\
+		if (!BN_##func(result, NUM2INT(bits), NUM2INT(top), NUM2INT(bottom))) {	\
+			BN_free(result);						\
 			OSSL_Raise(eBNError, "");					\
-											\
+		}									\
 		WrapBN(obj, result);							\
 											\
 		return obj;								\
@@ -487,12 +480,13 @@ BIGNUM_RAND(pseudo_rand);
 	OSSL_Check_Type(range, cBN);							\
 	GetBN(range, bn);								\
 											\
-	if (!(result = BN_new()))							\
+	if (!(result = BN_new())) {							\
 		OSSL_Raise(eBNError, "");						\
-											\
-	if (!BN_##func##_range(result, bn))						\
+	}										\
+	if (!BN_##func##_range(result, bn)) {						\
+		BN_free(result);							\
 		OSSL_Raise(eBNError, "");						\
-											\
+	}										\
 	WrapBN(obj, result);								\
 											\
 	return obj;									\
@@ -516,7 +510,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 
 	if (!NIL_P(vadd)) {
 		if (NIL_P(vrem))
-			rb_raise(rb_eArgError, "if add specified, rem must be also given");
+			rb_raise(rb_eArgError, "if add is specified, rem must be also given");
 
 		OSSL_Check_Type(vadd, cBN);
 		OSSL_Check_Type(vrem, cBN);
@@ -525,12 +519,13 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 		GetBN(vrem, rem);
 	}
 
-	if (!(result = BN_new()))
+	if (!(result = BN_new())) {
 		OSSL_Raise(eBNError, "");
-	
-	if (!BN_generate_prime(result, NUM2INT(vnum), safe, add, rem, NULL, NULL))
+	}
+	if (!BN_generate_prime(result, NUM2INT(vnum), safe, add, rem, NULL, NULL)) {
+		BN_free(result);
 		OSSL_Raise(eBNError, "");
-	
+	}
 	WrapBN(obj, result);
 	
 	return obj;
@@ -569,9 +564,9 @@ ossl_bn_copy(VALUE self, VALUE other)
 	OSSL_Check_Type(other, cBN);
 	GetBN(other, bn2);
 	
-	if (!BN_copy(bn1, bn2))
+	if (!BN_copy(bn1, bn2)) {
 		OSSL_Raise(eBNError, "");
-	
+	}
 	return self;
 }
 
@@ -581,9 +576,9 @@ ossl_bn_copy(VALUE self, VALUE other)
 	{										\
 		BIGNUM *bn1 = NULL, *bn2 = NULL;					\
 											\
-		GetBN(self, bn1);							\
-											\
 		OSSL_Check_Type(other, cBN);						\
+											\
+		GetBN(self, bn1);							\
 		GetBN(other, bn2);							\
 											\
 		return INT2FIX(BN_##func(bn1, bn2));					\
@@ -591,10 +586,6 @@ ossl_bn_copy(VALUE self, VALUE other)
 BIGNUM_CMP(cmp);
 BIGNUM_CMP(ucmp);
 
-/*
- * Seems strange to me.
- * MR 2002/01/14
- */
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
 {

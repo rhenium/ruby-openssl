@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002 Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -56,7 +56,7 @@ ossl_x509crl_get_X509_CRL(VALUE obj)
 	GetX509CRL(obj, crlp);
 
 	if (!(crl = X509_CRL_dup(crlp->crl))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 
 	return crl;
@@ -97,7 +97,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 		case T_STRING:
 			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
-				rb_raise(eX509CRLError, "%s", ossl_error());
+				OSSL_Raise(eX509CRLError, "");
 			}
 			crl = PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
 			BIO_free(in);
@@ -106,7 +106,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	if (!crl)
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 
 	crlp->crl = crl;
 
@@ -135,10 +135,10 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
 	GetX509CRL(self, crlp);
 
 	if (!(asn1int = ASN1_INTEGER_new())) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	if (!ASN1_INTEGER_set(asn1int, NUM2LONG(version))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	
 	ASN1_INTEGER_free(crlp->crl->crl->version);
@@ -170,7 +170,7 @@ ossl_x509crl_set_issuer(VALUE self, VALUE issuer)
 	
 	if (!X509_NAME_set(&(crlp->crl->crl->issuer), name)) { /* DUPs name - FREE it */
 		X509_NAME_free(name);
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	X509_NAME_free(name);
 	
@@ -202,7 +202,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 		rb_raise(eX509CRLError, "wierd time");
 
 	if (!ASN1_UTCTIME_set(crlp->crl->crl->lastUpdate, FIX2INT(sec))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 
 	return time;
@@ -233,7 +233,7 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 		rb_raise(eX509CRLError, "wierd time");
 
 	if (!ASN1_UTCTIME_set(crlp->crl->crl->nextUpdate, FIX2INT(sec))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 
 	return time;
@@ -287,7 +287,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 		rev = ossl_x509revoked_get_X509_REVOKED(RARRAY(ary)->ptr[i]);
 
 		if (!sk_X509_CRL_push(crlp->crl->crl->revoked, rev)) { /* NO DUP - don't free! */
-			rb_raise(eX509CRLError, "%s", ossl_error());
+			OSSL_Raise(eX509CRLError, "");
 		}
 	}
 	sk_X509_REVOKED_sort(crlp->crl->crl->revoked);
@@ -307,7 +307,7 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
 	rev = ossl_x509revoked_get_X509_REVOKED(revoked);
 
 	if (!sk_X509_CRL_push(crlp->crl->crl->revoked, rev)) { /* NO DUP - don't free! */
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	sk_X509_REVOKED_sort(crlp->crl->crl->revoked);
 	
@@ -335,7 +335,7 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 	
 	if (!X509_CRL_sign(crlp->crl, pkey, md)) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	EVP_PKEY_free(pkey);
 
@@ -372,11 +372,11 @@ ossl_x509crl_to_pem(VALUE self)
 	GetX509CRL(self, crlp);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	if (!PEM_write_bio_X509_CRL(out, crlp->crl)) {
 		BIO_free(out);
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -396,11 +396,11 @@ ossl_x509crl_to_str(VALUE self)
 	GetX509CRL(self, crlp);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	if (!X509_CRL_print(out, crlp->crl)) {
 		BIO_free(out);
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -462,7 +462,7 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 
 		if(!X509_CRL_add_ext(crlp->crl, ext, -1)) { /* DUPs ext - FREE it */
 			X509_EXTENSION_free(ext);
-			rb_raise(eX509CRLError, "%s", ossl_error());
+			OSSL_Raise(eX509CRLError, "");
 		}
 		X509_EXTENSION_free(ext);
 	}
@@ -483,7 +483,7 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
 	
 	if(!X509_CRL_add_ext(crlp->crl, ext, -1)) { /* DUPs ext - FREE it */
 		X509_EXTENSION_free(ext);
-		rb_raise(eX509CRLError, "%s", ossl_error());
+		OSSL_Raise(eX509CRLError, "");
 	}
 	X509_EXTENSION_free(ext);
 

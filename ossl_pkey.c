@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -34,7 +34,7 @@ VALUE
 ossl_pkey_new(EVP_PKEY *key)
 {
 	if (!key)
-		rb_raise(ePKeyError, "Empty key!");
+		rb_raise(ePKeyError, "Cannot make new key from NULL.");
 	
 	switch (key->type) {
 #if !defined(NO_RSA) && !defined(OPENSSL_NO_RSA)
@@ -44,6 +44,10 @@ ossl_pkey_new(EVP_PKEY *key)
 #if !defined(NO_DSA) && !defined(OPENSSL_NO_DSA)
 		case EVP_PKEY_DSA:
 			return ossl_dsa_new(key->pkey.dsa);
+#endif
+#if !defined(NO_DH) && !defined(OPENSSL_NO_DH)
+		case EVP_PKEY_DH:
+			return ossl_dh_new(key->pkey.dh);
 #endif
 	}
 	
@@ -62,15 +66,24 @@ ossl_pkey_new_from_file(VALUE path)
 	Check_SafeStr(path);
 	
 	filename = RSTRING(path)->ptr;
+	
 	if ((fp = fopen(filename, "r")) == NULL)
 		rb_raise(ePKeyError, "%s", strerror(errno));
+
+	/*
+	 * MR:
+	 * How about PublicKeys from file?
+	 * pkey = PEM_read_PublicKey(fp, NULL, NULL, NULL);
+	 * MISSING IN OPENSSL
+	 */
 	/*
 	 * Will we handle user passwords?
 	 */
 	pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
+	
 	if (!pkey)
-		rb_raise(ePKeyError, "%s", ossl_error());
+		OSSL_Raise(ePKeyError, "");
 
 	obj = ossl_pkey_new(pkey);
 	EVP_PKEY_free(pkey);
@@ -117,9 +130,6 @@ Init_ossl_pkey(VALUE module)
 	 */
 	Init_ossl_rsa(module, cPKey, ePKeyError);
 	Init_ossl_dsa(module, cPKey, ePKeyError);
-	/*
-	 * TODO:
-	 * Init_ossl_dh(module, cPKey, ePKeyError);
-	 */
+	Init_ossl_dh(module, cPKey, ePKeyError);
 }
 

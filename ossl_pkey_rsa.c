@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -53,34 +53,21 @@ ossl_rsa_free(ossl_rsa *rsap)
  * Public
  */
 VALUE
-ossl_rsa_new_null()
-{
-	ossl_rsa *rsap = NULL;
-	VALUE obj;
-	
-	MakeRSA(obj, rsap);
-	
-	if (!(rsap->rsa = RSA_new()))
-		rb_raise(eRSAError, "%s", ossl_error());
-
-	return obj;
-}
-
-VALUE
 ossl_rsa_new(RSA *rsa)
 {
 	ossl_rsa *rsap = NULL;
+	RSA *new = NULL;
 	VALUE obj;
 
 	if (!rsa)
-		return ossl_rsa_new_null();
+		new = RSA_new();
+	else new = (RSA_PRIVATE(rsa)) ? RSAPrivateKey_dup(rsa) : RSAPublicKey_dup(rsa);
+
+	if (!new)
+		OSSL_Raise(eRSAError, "");
 	
 	MakeRSA(obj, rsap);
-	
-	rsap->rsa = (RSA_PRIVATE(rsa)) ? RSAPrivateKey_dup(rsa) : RSAPublicKey_dup(rsa);
-
-	if (!rsap->rsa)
-		rb_raise(eRSAError, "%s", ossl_error());
+	rsap->rsa = new;
 	
 	return obj;
 }
@@ -97,7 +84,7 @@ ossl_rsa_get_RSA(VALUE obj)
 	rsa = (RSA_PRIVATE(rsap->rsa)) ? RSAPrivateKey_dup(rsap->rsa) : RSAPublicKey_dup(rsap->rsa);
 	
 	if (!rsa)
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	
 	return rsa;
 }
@@ -112,13 +99,13 @@ ossl_rsa_get_EVP_PKEY(VALUE obj)
 
 	if (!(pkey = EVP_PKEY_new())) {
 		RSA_free(rsa);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 
 	if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 		RSA_free(rsa);
 		EVP_PKEY_free(pkey);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 
 	return pkey;
@@ -146,9 +133,9 @@ ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 	}
 	/* else passwd = NULL; */
 
-	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len)))
-		rb_raise(eRSAError, "%s", ossl_error());
-
+	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
+		OSSL_Raise(eRSAError, "");
+	}
 	if (!(rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL))) {
 		BIO_reset(in);
 		
@@ -194,7 +181,7 @@ ossl_rsa_s_generate(VALUE klass, VALUE size)
 		cb = ossl_rsa_generate_cb;
 
 	if (!(rsa = RSA_generate_key(FIX2INT(size), RSA_F4, cb, NULL))) { /* arg to cb = NULL */
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 
 	MakeRSA(obj, rsap);
@@ -250,18 +237,18 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 		}
 	}
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	
 	if (RSA_PRIVATE(rsap->rsa)) {
 		if (!PEM_write_bio_RSAPrivateKey(out, rsap->rsa, ciph, NULL, 0, NULL, pass)) {
 			BIO_free(out);
-			rb_raise(eRSAError, "%s", ossl_error());
+			OSSL_Raise(eRSAError, "");
 		}
 	} else {
 		if (!PEM_write_bio_RSAPublicKey(out, rsap->rsa)) {
 			BIO_free(out);
-			rb_raise(eRSAError, "%s", ossl_error());
+			OSSL_Raise(eRSAError, "");
 		}
 	}
 
@@ -286,12 +273,12 @@ ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 	
 	size = RSA_size(rsap->rsa);
 	
-	if (!(enc_text = OPENSSL_malloc(size + 16)))
+	if (!(enc_text = OPENSSL_malloc(size + 16))) {
 		OSSL_Raise(eRSAError, "");
-
+	}
 	if ((len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
 		OPENSSL_free(enc_text);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	enc = rb_str_new(enc_text, len);
 	OPENSSL_free(enc_text);
@@ -313,12 +300,12 @@ ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 	
 	size = RSA_size(rsap->rsa);
 	
-	if (!(txt = OPENSSL_malloc(size + 16)))
+	if (!(txt = OPENSSL_malloc(size + 16))) {
 		OSSL_Raise(eRSAError, "");
-
+	}
 	if ((len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
 		OPENSSL_free(txt);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	text = rb_str_new(txt, len);
 	OPENSSL_free(txt);
@@ -344,12 +331,12 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 	
 	size = RSA_size(rsap->rsa);
 	
-	if (!(enc_text = OPENSSL_malloc(size + 16)))
+	if (!(enc_text = OPENSSL_malloc(size + 16))) {
 		OSSL_Raise(eRSAError, "Memory alloc error");
-
+	}
 	if ((len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
 		OPENSSL_free(enc_text);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	enc = rb_str_new(enc_text, len);
 	OPENSSL_free(enc_text);
@@ -375,9 +362,9 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 	
 	size = RSA_size(rsap->rsa);
 
-	if (!(txt = OPENSSL_malloc(size + 16)))
+	if (!(txt = OPENSSL_malloc(size + 16))) {
 		OSSL_Raise(eRSAError, "Memory alloc error");
-
+	}
 	if ((len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
 		OPENSSL_free(txt);
 		OSSL_Raise(eRSAError, "");
@@ -404,11 +391,11 @@ ossl_rsa_get_n(VALUE self)
 	GetRSA(self, rsap);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	if (!BN_print(out, rsap->rsa->n)) {
 		BIO_free(out);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	
 	BIO_get_mem_ptr(out, &buf);
@@ -431,21 +418,21 @@ ossl_rsa_to_der(VALUE self)
 
 	if (!(pkey = EVP_PKEY_new())) {
 		RSA_free(rsa);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	if (!EVP_PKEY_assign_RSA(pkey, rsa)) { /* NO DUP - don't free! */
 		RSA_free(rsa);
 		EVP_PKEY_free(pkey);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	if (!(key = X509_PUBKEY_new())) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	if (!X509_PUBKEY_set(&key, pkey)) { /* safe to FREE pkey??? */
 		EVP_PKEY_free(pkey);
 		X509_PUBKEY_free(key);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 
 	str = rb_str_new(key->public_key->data, key->public_key->length);
@@ -471,11 +458,11 @@ ossl_rsa_to_str(VALUE self)
 	GetRSA(self, rsap);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	if (!RSA_print(out, rsap->rsa, 0)) { //offset = 0
 		BIO_free(out);
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	
 	BIO_get_mem_ptr(out, &buf);
@@ -499,7 +486,7 @@ ossl_rsa_to_public_key(VALUE self)
 	MakeRSA(obj, rsap2);
 	
 	if (!(rsap2->rsa = RSAPublicKey_dup(rsap1->rsa))) {
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	
 	return obj;
@@ -523,7 +510,7 @@ ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 	Check_SafeStr(text);
 
 	if (!(sign = OPENSSL_malloc(RSA_size(rsap->rsa)+16))) {
-		rb_raise(eRSAError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 
 	md = ossl_digest_get_EVP_MD(digest);
@@ -531,7 +518,7 @@ ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
 	EVP_SignUpdate(&ctx, RSTRING(text)->ptr, RSTRING(text)->len);
 	if (!EVP_SignFinal(&ctx, sign, &sign_len, pkeyp->key)) {
 		OPENSSL_free(sign);
-		rb_raise(ePKeyError, "%s", ossl_error());
+		OSSL_Raise(eRSAError, "");
 	}
 	
 	str = rb_str_new(sign, sign_len);

@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -46,33 +46,22 @@ ossl_x509req_free(ossl_x509req *reqp)
 /*
  * Public functions
  */
-VALUE 
-ossl_x509req_new_null(void)
-{
-	ossl_x509req *reqp = NULL;
-	VALUE self;
-	
-	MakeX509Req(self, reqp);
-
-	if (!(reqp->request = X509_REQ_new()))
-		rb_raise(eX509RequestError, "%s", ossl_error());
-
-	return self;
-}
-
 VALUE
 ossl_x509req_new(X509_REQ *req)
 {
 	ossl_x509req *reqp = NULL;
+	X509_REQ *new = NULL;
 	VALUE self;
 
 	if (!req)
-		return ossl_x509req_new_null();
-	
-	MakeX509Req(self, reqp);
+		new = X509_REQ_new();
+	else new = X509_REQ_dup(req);
 
-	if (!(reqp->request = X509_REQ_dup(req)))
-		rb_raise(eX509RequestError, "%s", ossl_error());
+	if (!new)
+		OSSL_Raise(eX509RequestError, "");
+
+	MakeX509Req(self, reqp);
+	reqp->request = new;
 
 	return self;
 }
@@ -87,8 +76,9 @@ ossl_x509req_get_X509_REQ(VALUE obj)
 	
 	GetX509Req(obj, reqp);
 	
-	if (!(req = X509_REQ_dup(reqp->request)))
-		rb_raise(eX509RequestError, "%s", ossl_error());
+	if (!(req = X509_REQ_dup(reqp->request))) {
+		OSSL_Raise(eX509RequestError, "");
+	}
 
 	return req;
 }
@@ -128,7 +118,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 		case T_STRING:
 			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
-				rb_raise(eX509RequestError, "%s", ossl_error());
+				OSSL_Raise(eX509RequestError, "");
 			}
 			req = PEM_read_bio_X509_REQ(in, NULL, NULL, NULL);
 			BIO_free(in);
@@ -137,7 +127,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
 	if (!req)
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 
 	reqp->request = req;
 
@@ -155,11 +145,11 @@ ossl_x509req_to_pem(VALUE self)
 	GetX509Req(self, reqp);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	if (!PEM_write_bio_X509_REQ(out, reqp->request)) {
 		BIO_free(out);
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -179,11 +169,11 @@ ossl_x509req_to_str(VALUE self)
 	GetX509Req(self, reqp);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	if (!X509_REQ_print(out, reqp->request)) {
 		BIO_free(out);
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -204,7 +194,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 	GetX509Req(self, reqp);
 	...
 	if (!(x509 = X509_REQ_to_X509(reqp->req, d, pkey))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 
 	return ossl_x509req_new(x509);
@@ -236,7 +226,7 @@ ossl_x509req_set_version(VALUE self, VALUE version)
 		rb_raise(eX509RequestError, "version must be > 0!");
 	}
 	if (!X509_REQ_set_version(reqp->request, version)) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 
 	return version;
@@ -252,7 +242,7 @@ ossl_x509req_get_subject(VALUE self)
 	GetX509Req(self, reqp);
 
 	if (!(name = X509_REQ_get_subject_name(reqp->request))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	subject = ossl_x509name_new(name);
 	/*X509_NAME_free(name);*/
@@ -272,7 +262,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
 	name = ossl_x509name_get_X509_NAME(subject);
 
 	if (!X509_REQ_set_subject_name(reqp->request, name)) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	/*X509_NAME_free(name);*/
 
@@ -289,7 +279,7 @@ ossl_x509req_get_public_key(VALUE self)
 	GetX509Req(self, reqp);
 	
 	if (!(pkey = X509_REQ_get_pubkey(reqp->request))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	pub_key = ossl_pkey_new(pkey);
 	EVP_PKEY_free(pkey);
@@ -310,7 +300,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE pubk)
 
 	if (!X509_REQ_set_pubkey(reqp->request, pkey)) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	EVP_PKEY_free(pkey);
 
@@ -337,7 +327,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 
 	if (!X509_REQ_sign(reqp->request, pkey, md)) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 	EVP_PKEY_free(pkey);
 
@@ -362,7 +352,7 @@ ossl_x509req_verify(VALUE self, VALUE key)
 	EVP_PKEY_free(pkey);
 
 	if (i < 0)
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	
 	if (i > 0)
 		return Qtrue;
@@ -418,7 +408,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 		attr = ossl_x509attr_get_X509_ATTRIBUTE(item);
 
 		if (!X509_REQ_add1_attr(reqp->request, attr)) {
-			rb_raise(eX509RequestError, "%s", ossl_error());
+			OSSL_Raise(eX509RequestError, "");
 		}
 	}
 
@@ -435,7 +425,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 	OSSL_Check_Type(attr, cX509Attribute);
 
 	if (!X509_REQ_add1_attr(reqp->request, ossl_x509attr_get_X509_ATTRIBUTE(attr))) {
-		rb_raise(eX509RequestError, "%s", ossl_error());
+		OSSL_Raise(eX509RequestError, "");
 	}
 
 	return attr;

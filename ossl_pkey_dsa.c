@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -53,35 +53,22 @@ ossl_dsa_free(ossl_dsa *dsap)
  * Public
  */
 VALUE
-ossl_dsa_new_null()
-{
-	ossl_dsa *dsap = NULL;
-	VALUE obj;
-	
-	MakeDSA(obj, dsap);
-	
-	if (!(dsap->dsa = DSA_new()))
-		rb_raise(eDSAError, "%s", ossl_error());
-
-	return obj;
-}
-
-VALUE
 ossl_dsa_new(DSA *dsa)
 {
 	ossl_dsa *dsap = NULL;
+	DSA *new = NULL;
 	VALUE obj;
 
 	if (!dsa)
-		return ossl_dsa_new_null();
+		new = DSA_new();
+	else new = (DSA_PRIVATE(dsa)) ? DSAPrivateKey_dup(dsa) : DSAPublicKey_dup(dsa);
+
+	if (!new)
+		OSSL_Raise(eDSAError, "");
 	
 	MakeDSA(obj, dsap);
-	
-	dsap->dsa = (DSA_PRIVATE(dsa)) ? DSAPrivateKey_dup(dsa) : DSAPublicKey_dup(dsa);
+	dsap->dsa = new;
 
-	if (!dsap->dsa)
-		rb_raise(eDSAError, "%s", ossl_error());
-	
 	return obj;
 }
 
@@ -96,7 +83,7 @@ ossl_dsa_get_DSA(VALUE obj)
 
 	dsa = (DSA_PRIVATE(dsap->dsa)) ? DSAPrivateKey_dup(dsap->dsa) : DSAPublicKey_dup(dsap->dsa);
 	if (!dsa)
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	
 	return dsa;
 }
@@ -111,13 +98,13 @@ ossl_dsa_get_EVP_PKEY(VALUE obj)
 
 	if (!(pkey = EVP_PKEY_new())) {
 		DSA_free(dsa);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 
 	if (!EVP_PKEY_assign_DSA(pkey, dsa)) { /* NO DUP - don't free! */
 		DSA_free(dsa);
 		EVP_PKEY_free(pkey);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 
 	return pkey;
@@ -192,9 +179,9 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 	
 	Check_Type(size, T_FIXNUM);
 	
-	if (!RAND_bytes(seed, seed_len))
-	 	rb_raise(eDSAError, "%s", ossl_error());
-	
+	if (!RAND_bytes(seed, seed_len)) {
+	 	OSSL_Raise(eDSAError, "");
+	}
 	if (rb_block_given_p())
 		cb = ossl_dsa_generate_cb;
 
@@ -203,7 +190,7 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 	}
 	if (!DSA_generate_key(dsa)) {
 		DSA_free(dsa);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	
 	MakeDSA(obj, dsap);
@@ -259,18 +246,18 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 		}
 	}
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	
 	if (DSA_PRIVATE(dsap->dsa)) {
 		if (!PEM_write_bio_DSAPrivateKey(out, dsap->dsa, ciph, NULL, 0, NULL, pass)) {
 			BIO_free(out);
-			rb_raise(eDSAError, "%s", ossl_error());
+			OSSL_Raise(eDSAError, "");
 		}
 	} else {
 		if (!PEM_write_bio_DSAPublicKey(out, dsap->dsa)) {
 			BIO_free(out);
-			rb_raise(eDSAError, "%s", ossl_error());
+			OSSL_Raise(eDSAError, "");
 		}
 	}
 
@@ -293,21 +280,21 @@ ossl_dsa_to_der(VALUE self)
 	
 	if (!(pkey = EVP_PKEY_new())) {
 		DSA_free(dsa);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	if (!EVP_PKEY_assign_DSA(pkey, dsa)) { /* NO DUP - don't free! */
 		DSA_free(dsa);
 		EVP_PKEY_free(pkey);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}	
 	if (!(key = X509_PUBKEY_new())) {
 		EVP_PKEY_free(pkey);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	if (!X509_PUBKEY_set(&key, pkey)) { /* safe to FREE pkey or NOT? */
 		EVP_PKEY_free(pkey);
 		X509_PUBKEY_free(key);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 
 	str = rb_str_new(key->public_key->data, key->public_key->length);
@@ -333,11 +320,11 @@ ossl_dsa_to_str(VALUE self)
 	GetDSA(self, dsap);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	if (!DSA_print(out, dsap->dsa, 0)) { //offset = 0
 		BIO_free(out);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	
 	BIO_get_mem_ptr(out, &buf);
@@ -361,7 +348,7 @@ ossl_dsa_to_public_key(VALUE self)
 	MakeDSA(obj, dsap2);
 	
 	if (!(dsap2->dsa = DSAPublicKey_dup(dsap1->dsa))) {
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	
 	return obj;
@@ -383,12 +370,12 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	}
 	
 	if (!(sig = OPENSSL_malloc(DSA_size(dsap->dsa)+16))) {
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	
 	if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, sig, &sig_len, dsap->dsa)) { /*type = 0*/
 		OPENSSL_free(sig);
-		rb_raise(eDSAError, "%s", ossl_error());
+		OSSL_Raise(eDSAError, "");
 	}
 	str = rb_str_new(sig, sig_len);
 	OPENSSL_free(sig);
@@ -410,9 +397,9 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,\
 			RSTRING(sig)->ptr, RSTRING(sig)->len, dsap->dsa); /*type = 0*/
 
-	if (ret < 0)
-		rb_raise(eDSAError, "%s", ossl_error());
-	else if (ret == 1)
+	if (ret < 0) {
+		OSSL_Raise(eDSAError, "");
+	} else if (ret == 1)
 		return Qtrue;
 	
 	return Qfalse;

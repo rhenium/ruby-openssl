@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -96,9 +96,9 @@ ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 
 	MakeCipher(obj, klass, ciphp);
 	
-	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX))))
+	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX)))) {
 		OSSL_Raise(eCipherError, "");
-	
+	}
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -139,9 +139,9 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	cipher = EVP_get_cipherbynid(ciphp->nid);
 	EVP_BytesToKey(cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
-	if (!EVP_EncryptInit(ciphp->ctx, cipher, key, iv))
+	if (!EVP_EncryptInit(ciphp->ctx, cipher, key, iv)) {
 		OSSL_Raise(eCipherError, "");
-
+	}
 	return self;
 }
 
@@ -177,9 +177,9 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 
 	EVP_BytesToKey(cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
-	if (!EVP_DecryptInit(ciphp->ctx, cipher, key, iv))
+	if (!EVP_DecryptInit(ciphp->ctx, cipher, key, iv)) {
 		OSSL_Raise(eCipherError, "");
-
+	}
 	return self;
 }
 
@@ -197,9 +197,9 @@ ossl_cipher_update(VALUE self, VALUE data)
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
 	
-	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx))))
+	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
 		OSSL_Raise(eCipherError, "");
-	
+	}
 	if (!EVP_CipherUpdate(ciphp->ctx, out, &out_len, in, in_len)) {
 		OPENSSL_free(out);
 		OSSL_Raise(eCipherError, "");
@@ -222,9 +222,9 @@ ossl_cipher_cipher(VALUE self)
 
 	GetCipher(self, ciphp);
 	
-	if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ciphp->ctx))))
+	if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
 		OSSL_Raise(eCipherError, "");
-		
+	}
 	if (!EVP_CipherFinal(ciphp->ctx, out, &out_len)) {
 		OPENSSL_free(out);
 		OSSL_Raise(eCipherError, "");

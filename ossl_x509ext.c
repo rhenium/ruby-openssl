@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -65,33 +65,22 @@ ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
  * Public
  */
 VALUE 
-ossl_x509ext_new_null(void)
-{
-	ossl_x509ext *extp = NULL;
-	VALUE obj;
-
-	MakeX509Ext(obj, extp);
-	
-	if (!(extp->extension = X509_EXTENSION_new()))
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
-	
-	return obj;
-}
-
-VALUE 
 ossl_x509ext_new(X509_EXTENSION *ext)
 {
 	ossl_x509ext *extp = NULL;
+	X509_EXTENSION *new = NULL;
 	VALUE obj;
 
 	if (!ext)
-		return ossl_x509ext_new_null();
+		new = X509_EXTENSION_new();
+	else new = X509_EXTENSION_dup(ext);
 
+	if (!new)
+		OSSL_Raise(eX509ExtensionError, "");
+		
 	MakeX509Ext(obj, extp);
+	extp->extension = new;
 	
-	if (!(extp->extension = X509_EXTENSION_dup(ext)))
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
-
 	return obj;
 }
 
@@ -229,15 +218,16 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 		rb_raise(eX509ExtensionError, "unsupported structure");
 	}
 	if (!(ext = X509_EXTENSION_new())) {
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
+		OSSL_Raise(eX509ExtensionError, "");
 	}
 
 	/* key [0] */
 	item = RARRAY(ary)->ptr[0];
 	Check_SafeStr(item);
 	if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr)))
-		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr)))
-			rb_raise(eX509ExtensionError, "%s", ossl_error());
+		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
+			OSSL_Raise(eX509ExtensionError, "");
+	}
 
 	/* data [1] */
 	item = RARRAY(ary)->ptr[1];
@@ -255,7 +245,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 
 	if (!(ext = X509V3_EXT_conf_nid(NULL, &(extfactoryp->ctx), nid, value))) {
 		free(value);
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
+		OSSL_Raise(eX509ExtensionError, "");
 	}
 	free(value);
 	
@@ -285,11 +275,11 @@ ossl_x509ext_to_a(VALUE obj)
 	rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
+		OSSL_Raise(eX509ExtensionError, "");
 	}
 	if (!X509V3_EXT_print(out, extp->extension, 0, 0)) {
 		BIO_free(out);
-		rb_raise(eX509ExtensionError, "%s", ossl_error());
+		OSSL_Raise(eX509ExtensionError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	value = rb_str_new(buf->data, buf->length);

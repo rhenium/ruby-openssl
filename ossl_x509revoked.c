@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -46,32 +46,21 @@ ossl_x509revoked_free(ossl_x509revoked *revp)
  * PUBLIC
  */
 VALUE 
-ossl_x509revoked_new_null(void)
-{
-	ossl_x509revoked *revp = NULL;
-	VALUE obj;
-	
-	MakeX509Revoked(obj, revp);
-
-	if (!(revp->revoked = X509_REVOKED_new()))
-		rb_raise(eX509RevokedError, "%s", ossl_error());
-	
-	return obj;
-}
-
-VALUE 
 ossl_x509revoked_new(X509_REVOKED *rev)
 {
 	ossl_x509revoked *revp = NULL;
+	X509_REVOKED *new = NULL;
 	VALUE obj;
 
 	if (!rev)
-		return ossl_x509revoked_new_null();
+		new = X509_REVOKED_new();
+	else new = X509_REVOKED_dup(rev);
+
+	if (!new)
+		OSSL_Raise(eX509RevokedError, "");
 	
 	MakeX509Revoked(obj, revp);
-	
-	if (!(revp->revoked = X509_REVOKED_dup(rev)))
-		rb_raise(eX509RevokedError, "%s", ossl_error());
+	revp->revoked = new;
 	
 	return obj;
 }
@@ -113,7 +102,7 @@ ossl_x509revoked_initialize(int argc, VALUE *argv, VALUE obj)
 	GetX509Revoked_unsafe(obj, revp);
 
 	if (!(revoked = X509_REVOKED_new())) {
-		rb_raise(eX509RevokedError, "%s", ossl_error());
+		OSSL_Raise(eX509RevokedError, "");
 	}
 	revp->revoked = revoked;
 	
@@ -138,7 +127,7 @@ ossl_x509revoked_set_serial(VALUE obj, VALUE serial)
 	GetX509Revoked(obj, revp);
 
 	if (!ASN1_INTEGER_set(revp->revoked->serialNumber, NUM2INT(serial))) {
-		rb_raise(eX509RevokedError, "%s", ossl_error());
+		OSSL_Raise(eX509RevokedError, "");
 	}
 
 	return serial;
@@ -170,7 +159,7 @@ ossl_x509revoked_set_time(VALUE obj, VALUE time)
 		rb_raise(eX509RevokedError, "wierd time");
 
 	if (!ASN1_UTCTIME_set(revp->revoked->revocationDate, FIX2INT(sec))) {
-		rb_raise(eX509RevokedError, "%s", ossl_error());
+		OSSL_Raise(eX509RevokedError, "");
 	}
 
 	return time;
@@ -229,7 +218,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 		ext = ossl_x509ext_get_X509_EXTENSION(item);
 
 		if(!X509_REVOKED_add_ext(revp->revoked, ext, -1)) {
-			rb_raise(eX509RevokedError, "%s", ossl_error());
+			OSSL_Raise(eX509RevokedError, "");
 		}
 	}
 
@@ -246,7 +235,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
 	OSSL_Check_Type(ext, cX509Extension);
 
 	if(!X509_REVOKED_add_ext(revp->revoked, ossl_x509ext_get_X509_EXTENSION(ext), -1)) {
-		rb_raise(eX509RevokedError, "%s", ossl_error());
+		OSSL_Raise(eX509RevokedError, "");
 	}
 
 	return ext;

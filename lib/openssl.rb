@@ -82,6 +82,24 @@ if defined? RSA
       end # verify
     end # RSA
 end # defined? RSA
+if defined? DH
+    class DH
+      def DH::new(arg, gen = 2)
+        if arg.kind_of? Fixnum
+	  DH::generate(arg, gen) {|p,n|
+	    if block_given? then yield [p,n] end
+	  }
+	else
+	  DH::new_from_pem(arg)
+	end
+      end # DH::new
+      #
+      # DH::new_from_pem(PEM string, pass) is built-in
+      # DH::new_from_fixnum(size, gen) is an alias to DH::generate(size, gen)
+      # DH::generate(size, gen) is built-in; yields p,n
+      #
+    end # DH
+end # defined? DH
   end # PKey
 
   module SSL

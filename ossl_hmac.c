@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 'OpenSSL for Ruby' project
- * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
@@ -74,9 +74,8 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 	md = ossl_digest_get_EVP_MD(digest);
 
 	if (!(hmacp->hmac = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
-		rb_raise(eHMACError, "%s", ossl_error());
+		OSSL_Raise(eHMACError, "");
 	}
-	
 	HMAC_Init(hmacp->hmac, RSTRING(key)->ptr, RSTRING(key)->len, md);
 
 	return self;
@@ -108,11 +107,10 @@ ossl_hmac_hmac(VALUE self)
 	GetHMAC(self, hmacp);
 	
 	if (!HMAC_CTX_copy(&final, hmacp->hmac)) {
-		rb_raise(eHMACError, "%s", ossl_error());
+		OSSL_Raise(eHMACError, "");
 	}
-	
 	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {
-		rb_raise(eHMACError, "Cannot allocate memory for hmac");
+		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
 	}
 	HMAC_Final(&final, buf, &buf_len);
 
@@ -135,23 +133,25 @@ ossl_hmac_hexhmac(VALUE self)
 	GetHMAC(self, hmacp);
 	
 	if (!HMAC_CTX_copy(&final, hmacp->hmac)) {
-		rb_raise(eHMACError, "%s", ossl_error());
+		OSSL_Raise(eHMACError, "Cannot copy HMAC CTX");
 	}
-	
 	if (!(buf = OPENSSL_malloc(HMAC_size(&final)))) {
-		rb_raise(eHMACError, "Cannot allocate memory for hmac");
+		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
 	}
 	HMAC_Final(&final, buf, &buf_len);
 	
 	if (!(hexbuf = OPENSSL_malloc(2*buf_len+1))) {
-		rb_raise(eHMACError, "Memory alloc error");
+		OPENSSL_free(buf);
+		OSSL_Raise(eHMACError, "Memory alloc error");
 	}
 	for (i = 0; i < buf_len; i++) {
 		hexbuf[i + i] = hex[((unsigned char)buf[i]) >> 4];
 		hexbuf[i + i + 1] = hex[buf[i] & 0x0f];
 	}
 	hexbuf[i + i] = '\0';
+	
 	str = rb_str_new(hexbuf, 2*buf_len);
+
 	OPENSSL_free(buf);
 	OPENSSL_free(hexbuf);
 
