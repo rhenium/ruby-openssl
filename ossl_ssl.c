@@ -35,8 +35,6 @@
 
 #define numberof(ary) (sizeof(ary)/sizeof((ary)[0]))
 
-#define ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
-
 #define ssl_get_io(o)            rb_ivar_get((o),rb_intern("@io"))
 #define ssl_get_cert(o)          rb_ivar_get((o),rb_intern("@cert"))
 #define ssl_get_cert_file(o)     rb_ivar_get((o),rb_intern("@cert_file"))
@@ -95,8 +93,7 @@ typedef struct ssl_st_t{
 } ssl_st;
 
 static void
-ssl_shutdown(p)
-    ssl_st *p;
+ssl_shutdown(ssl_st *p)
 {
     if(p->ssl){
         SSL_shutdown(p->ssl);
@@ -105,18 +102,20 @@ ssl_shutdown(p)
 }
 
 static void
-ssl_free(p)
-    ssl_st *p;
+ssl_free(ssl_st *p)
 {
     ssl_shutdown(p);
     SSL_free(p->ssl);
+	p->ssl = NULL;
     SSL_CTX_free(p->ctx);
+	p->ctx = NULL;
     free(p);
 }
 
 static VALUE ssl_verify_callback_proc;
 
-static VALUE ssl_call_callback_proc(VALUE args)
+static VALUE
+ssl_call_callback_proc(VALUE args)
 {
 	VALUE proc, ok, x509stc;
 
@@ -131,21 +130,25 @@ static VALUE ssl_call_callback_proc(VALUE args)
  * for rb_rescue in ssl_verify_callback
  * see below
  */
-static VALUE ssl_false(VALUE dummy)
+static VALUE
+ssl_false(VALUE dummy)
 {
 	return Qfalse;
 }
 
-static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
+static int
+ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
 	VALUE x509stc, args, ret;
+
+	ret = (ok) ? Qtrue : Qfalse;
 
 	if (!NIL_P(ssl_verify_callback_proc)) {
 		x509stc = ossl_x509store_new(ctx);
 		rb_funcall(x509stc, rb_intern("protect"), 0, NULL);
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, ssl_verify_callback_proc);
-		rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
+		rb_ary_store(args, 1, ret);
 		rb_ary_store(args, 2, x509stc);
 		ret = rb_rescue(ssl_call_callback_proc, args, ssl_false, Qnil);
 	}
@@ -153,7 +156,8 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 	return (ret == Qtrue) ? 1 : 0;
 }
 
-static void ssl_ctx_setup(VALUE self)
+static void
+ssl_ctx_setup(VALUE self)
 {
     ssl_st *p = NULL;
     X509 *cert = NULL, *ca = NULL;
@@ -187,8 +191,8 @@ static void ssl_ctx_setup(VALUE self)
 	if (ca)
 		if(!SSL_CTX_add_client_CA(p->ctx, ca))
 			rb_raise(eSSLError, "%s", ossl_error());
-	if (!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
-			!SSL_CTX_set_default_verify_paths(p->ctx) &&
+	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
+			!SSL_CTX_set_default_verify_paths(p->ctx)) &&
 			ruby_verbose) {
 		rb_warning("can't set verify locations:%s", ossl_error());
 	}
@@ -204,7 +208,8 @@ static void ssl_ctx_setup(VALUE self)
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(p->ctx, NUM2LONG(val));
 }
 
-static void ssl_setup(VALUE self)
+static void
+ssl_setup(VALUE self)
 {
     ssl_st *p;
     VALUE io;
@@ -223,10 +228,7 @@ static void ssl_setup(VALUE self)
 }
 
 static VALUE
-ssl_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+ssl_s_new(int argc, VALUE *argv, VALUE klass)
 {
     VALUE obj;
     ssl_st *p;
@@ -242,7 +244,8 @@ ssl_s_new(argc, argv, klass)
     return obj;
 }
 
-static VALUE ssl_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+ssl_initialize(int argc, VALUE *argv, VALUE self)
 {
 	VALUE io, key, cert;
 
@@ -273,7 +276,8 @@ static VALUE ssl_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ssl_connect(VALUE self)
+static VALUE
+ssl_connect(VALUE self)
 {
     ssl_st *p;
 
@@ -290,8 +294,7 @@ static VALUE ssl_connect(VALUE self)
 }
 
 static VALUE
-ssl_accept(self)
-    VALUE self;
+ssl_accept(VALUE self)
 {
     ssl_st *p;
 
@@ -308,14 +311,11 @@ ssl_accept(self)
 }
 
 static VALUE
-ssl_read(self, len)
-    VALUE self, len;
+ssl_read(VALUE self, VALUE len)
 {
     ssl_st *p;
     size_t ilen, nread = 0;
-    char *buf;
     VALUE str;
-    int iostate = 1;
 	OpenFile *fptr;
 
     Data_Get_Struct(self, ssl_st, p);
@@ -345,8 +345,7 @@ ssl_read(self, len)
 }
 
 static VALUE
-ssl_write(self, str)
-    VALUE self, str;
+ssl_write(VALUE self, VALUE str)
 {
     ssl_st *p;
     size_t nwrite = 0;
@@ -374,8 +373,7 @@ ssl_write(self, str)
 }
 
 static VALUE
-ssl_close(self)
-    VALUE self;
+ssl_close(VALUE self)
 {
     ssl_st *p;
 
@@ -385,8 +383,7 @@ ssl_close(self)
 }
 
 static VALUE
-ssl_get_certificate(self)
-    VALUE self;
+ssl_get_certificate(VALUE self)
 {
     ssl_st *p;
 	X509 *cert = NULL;
@@ -403,8 +400,7 @@ ssl_get_certificate(self)
 }
 
 static VALUE
-ssl_get_peer_certificate(self)
-    VALUE self;
+ssl_get_peer_certificate(VALUE self)
 {
     ssl_st *p;
 	X509 *cert = NULL;
@@ -421,8 +417,7 @@ ssl_get_peer_certificate(self)
 }
 
 static VALUE
-ssl_cipher_to_ary(cipher)
-    SSL_CIPHER *cipher;
+ssl_cipher_to_ary(SSL_CIPHER *cipher)
 {
     VALUE ary;
     int bits, alg_bits;
@@ -438,8 +433,7 @@ ssl_cipher_to_ary(cipher)
 }
 
 static VALUE
-ssl_get_cipher(self)
-    VALUE self;
+ssl_get_cipher(VALUE self)
 {
     ssl_st *p;
     SSL_CIPHER *cipher;
@@ -455,8 +449,7 @@ ssl_get_cipher(self)
 }
 
 static VALUE
-ssl_get_ciphers(self)
-    VALUE self;
+ssl_get_ciphers(VALUE self)
 {
     ssl_st *p;
     STACK_OF(SSL_CIPHER) *ciphers;
@@ -481,11 +474,10 @@ ssl_get_ciphers(self)
 }
 
 static VALUE
-ssl_set_ciphers(self, v)
-    VALUE self, v;
+ssl_set_ciphers(VALUE self, VALUE v)
 {
     ssl_st *p;
-    VALUE str, s, elem;
+    VALUE str, elem;
     int i;
 
     Data_Get_Struct(self, ssl_st, p);
@@ -514,8 +506,7 @@ ssl_set_ciphers(self, v)
 }
 
 static VALUE
-ssl_get_state(self)
-    VALUE self;
+ssl_get_state(VALUE self)
 {
     ssl_st *p;
     VALUE ret;
@@ -533,7 +524,8 @@ ssl_get_state(self)
     return ret;
 }
 
-static VALUE ssl_set_cert2(VALUE self, VALUE v)
+static VALUE
+ssl_set_cert2(VALUE self, VALUE v)
 {
 	if(!NIL_P(v)) OSSL_Check_Type(v, cX509Certificate);
 	ssl_set_cert(self, v);
@@ -541,7 +533,8 @@ static VALUE ssl_set_cert2(VALUE self, VALUE v)
 	return v;
 }
 
-static VALUE ssl_set_cert_file2(VALUE self, VALUE v)
+static VALUE
+ssl_set_cert_file2(VALUE self, VALUE v)
 {
 	VALUE cert;
 	cert = NIL_P(v) ? Qnil :ossl_x509_new_from_file(v);
@@ -550,7 +543,8 @@ static VALUE ssl_set_cert_file2(VALUE self, VALUE v)
 	return v;
 }
 
-static VALUE ssl_set_key2(VALUE self, VALUE v)
+static VALUE
+ssl_set_key2(VALUE self, VALUE v)
 {
 	if(!NIL_P(v)) OSSL_Check_Type(v, cPKey);
 	ssl_set_key(self, v);
@@ -558,7 +552,8 @@ static VALUE ssl_set_key2(VALUE self, VALUE v)
 	return v;
 }
 
-static VALUE ssl_set_key_file2(VALUE self, VALUE v)
+static VALUE
+ssl_set_key_file2(VALUE self, VALUE v)
 {
 	VALUE key;
 	key = NIL_P(v) ? Qnil : ossl_pkey_new_from_file(v);
@@ -567,15 +562,16 @@ static VALUE ssl_set_key_file2(VALUE self, VALUE v)
 	return v;
 }
 
-void Init_ssl(VALUE mSSL)
+void
+Init_ssl(VALUE module)
 {
     int i;
 
     /* class SSLError */
-    eSSLError = rb_define_class_under(mSSL, "Error", rb_eStandardError);
+    eSSLError = rb_define_class_under(module, "Error", rb_eStandardError);
 
     /* class SSLSocket */
-    cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
+    cSSLSocket = rb_define_class_under(module, "SSLSocket", rb_cObject);
     rb_define_singleton_method(cSSLSocket, "new", ssl_s_new, -1);
     rb_define_method(cSSLSocket, "initialize",   ssl_initialize, -1);
     rb_define_method(cSSLSocket, "__connect",    ssl_connect, 0);
@@ -598,6 +594,8 @@ void Init_ssl(VALUE mSSL)
     for(i = 0; i < numberof(ssl_attr_readers); i++)
         rb_attr(cSSLSocket, rb_intern(ssl_attr_readers[i]), 1, 0, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
+
+#define ssl_def_const(x) rb_define_const(module, #x, INT2FIX(SSL_##x))
 
     ssl_def_const(VERIFY_NONE);
     ssl_def_const(VERIFY_PEER);

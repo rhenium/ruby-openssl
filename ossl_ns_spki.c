@@ -152,7 +152,6 @@ ossl_spki_set_public_key(VALUE self, VALUE pubk)
 	EVP_PKEY *pkey = NULL;
 
 	GetSPKI(self, spkip);
-	OSSL_Check_Type(pubk, cPKey);
 	
 	pkey = ossl_pkey_get_EVP_PKEY(pubk);
 
@@ -161,14 +160,13 @@ ossl_spki_set_public_key(VALUE self, VALUE pubk)
 		rb_raise(eSPKIError, "%s", ossl_error());
 	}
 
-	return self;
+	return pubk;
 }
 
 static VALUE
 ossl_spki_get_challenge(VALUE self)
 {
 	ossl_spki *spkip = NULL;
-	VALUE str;
 
 	GetSPKI(self, spkip);
 
@@ -201,15 +199,13 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 	const EVP_MD *md = NULL;
 
 	GetSPKI(self, spkip);
-	OSSL_Check_Type(key, cPKey);
-	OSSL_Check_Type(digest, cDigest);
+	
+	md = ossl_digest_get_EVP_MD(digest);
 	
 	if (rb_funcall(key, rb_intern("private?"), 0, NULL) == Qfalse) {
 		rb_raise(eSPKIError, "PRIVATE key needed to sign REQ!");
 	}
-
 	pkey = ossl_pkey_get_EVP_PKEY(key);
-	md = ossl_digest_get_EVP_MD(digest);
 
 	if (!NETSCAPE_SPKI_sign(spkip->spki, pkey, md)) {
 		EVP_PKEY_free(pkey);
@@ -227,18 +223,18 @@ ossl_spki_verify(VALUE self, VALUE key)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
-	int i = 0;
+	int result = 0;
 
 	GetSPKI(self, spkip);
-	OSSL_Check_Type(key, cPKey);
 	
 	pkey = ossl_pkey_get_EVP_PKEY(key);
 
-	i = NETSCAPE_SPKI_verify(spkip->spki, pkey);
+	result = NETSCAPE_SPKI_verify(spkip->spki, pkey);
+	EVP_PKEY_free(pkey);
 	
-	if (i < 0) {
+	if (result < 0) {
 		rb_raise(eSPKIError, "%s", ossl_error());
-	} else if (i > 0)
+	} else if (result > 0)
 		return Qtrue;
 
 	return Qfalse;

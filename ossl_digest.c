@@ -48,7 +48,6 @@ ossl_digest_get_NID(VALUE obj)
 	ossl_digest *digestp = NULL;
 	
 	OSSL_Check_Type(obj, cDigest);
-
 	GetDigest(obj, digestp);
 
 	return EVP_MD_CTX_type(digestp->md); /*== digestp->md->digest->type*/
@@ -60,7 +59,6 @@ ossl_digest_get_EVP_MD(VALUE obj)
 	ossl_digest *digestp = NULL;
 
 	OSSL_Check_Type(obj, cDigest);
-
 	GetDigest(obj, digestp);
 
 	return EVP_MD_CTX_md(digestp->md); /*== digestp->md->digest*/
@@ -91,7 +89,8 @@ ossl_digest_update(VALUE self, VALUE data)
 
 	GetDigest(self, digestp);
 
-	Check_Type(data, T_STRING);
+	Check_SafeStr(data);
+
 	EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);
 
 	return self;
@@ -212,7 +211,7 @@ ossl_digest_hexdigest(VALUE self)
 		EVP_DigestInit(digestp->md, EVP_##dgst());					\
 												\
 		if (rb_scan_args(argc, argv, "01", &data) == 1) {				\
-			Check_Type(data, T_STRING);						\
+			Check_SafeStr(data);							\
 			EVP_DigestUpdate(digestp->md, RSTRING(data)->ptr, RSTRING(data)->len);	\
 		}										\
 		return self;									\
@@ -222,25 +221,25 @@ ossl_digest_hexdigest(VALUE self)
  * Define digest initialize methods
  */
 #ifndef NO_MD2
-	DefDigestInit(md2)
+	DefDigestInit(md2);
 #endif
 #ifndef NO_MD4
-	DefDigestInit(md4)
+	DefDigestInit(md4);
 #endif
 #ifndef NO_MD5
-	DefDigestInit(md5)
+	DefDigestInit(md5);
 #endif
 #ifndef NO_SHA
-	DefDigestInit(sha)
-	DefDigestInit(sha1)
-	DefDigestInit(dss)
-	DefDigestInit(dss1)
+	DefDigestInit(sha);
+	DefDigestInit(sha1);
+	DefDigestInit(dss);
+	DefDigestInit(dss1);
 #endif
 #ifndef NO_RIPEMD
-	DefDigestInit(ripemd160)
+	DefDigestInit(ripemd160);
 #endif
 #ifndef NO_MDC2
-	DefDigestInit(mdc2)
+	DefDigestInit(mdc2);
 #endif
 
 /*
@@ -249,7 +248,7 @@ ossl_digest_hexdigest(VALUE self)
 void
 Init_ossl_digest(VALUE module)
 {
-	eDigestError = rb_define_class_under(module, "Error", rb_eStandardError);
+	eDigestError = rb_define_class_under(module, "DigestError", rb_eStandardError);
 	
 	cDigest = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cDigest, "new", ossl_digest_s_new, -1);
@@ -269,8 +268,8 @@ Init_ossl_digest(VALUE module)
 /*
  * automation for classes creation and initialize method binding
  */
-#define DefDigest(name, func) 							\
-	c##name = rb_define_class_under(module, #name, cDigest);		\
+#define DefDigest(name, func) 									\
+	c##name = rb_define_class_under(module, #name, cDigest);				\
 	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*

@@ -82,7 +82,7 @@ ossl_config_initialize(int argc, VALUE* argv, VALUE self)
 	GetConfig(self, configp);
 	rb_scan_args(argc, argv, "10", &path);
 	
-	Check_Type(path, T_STRING);
+	Check_SafeStr(path);
 	
 	configp->config = CONF_load(configp->config, RSTRING(path)->ptr, &err_line);
 	
@@ -106,10 +106,10 @@ ossl_config_get_string(VALUE self, VALUE section, VALUE item)
 	GetConfig(self, configp);
 	
 	if (!NIL_P(section)) {
-		Check_Type(section, T_STRING);
+		Check_SafeStr(section);
 		sect = RSTRING(section)->ptr;
 	}
-	Check_Type(item, T_STRING);
+	Check_SafeStr(item);
 
 	string = CONF_get_string(configp->config, sect, RSTRING(item)->ptr);
 	
@@ -126,10 +126,10 @@ ossl_config_get_number(VALUE self, VALUE section, VALUE item)
 	GetConfig(self, configp);
 	
 	if (!NIL_P(section)) {
-		Check_Type(section, T_STRING);
+		Check_SafeStr(section);
 		sect = RSTRING(section)->ptr;
 	}
-	Check_Type(item, T_STRING);
+	Check_SafeStr(item);
 
 	number = CONF_get_number(configp->config, sect, RSTRING(item)->ptr);
 	return INT2NUM(number);
@@ -145,7 +145,7 @@ ossl_config_get_section(VALUE self, VALUE section)
 	VALUE obj;
 	ossl_configsect_st *ps;
 
-	Check_Type(section, T_STRING);
+	Check_SafeStr(section);
 
 	GetConfig(self, p);
 	
@@ -165,12 +165,14 @@ ossl_config_get_section(VALUE self, VALUE section)
  * INIT
  */
 void
-Init_ossl_config(VALUE mOSSL)
+Init_ossl_config(VALUE module)
 {
-	eConfigError = rb_define_class_under(mOSSL, "ConfigError", rb_eStandardError);
+	eConfigError = rb_define_class_under(module, "ConfigError", rb_eStandardError);
 
-	cConfig = rb_define_class_under(mOSSL, "Config", rb_cObject);
+	cConfig = rb_define_class_under(module, "Config", rb_cObject);
+	
 	rb_define_singleton_method(cConfig, "new", ossl_config_s_new, -1);
+	
 	rb_define_method(cConfig, "initialize", ossl_config_initialize, -1);
 	rb_define_method(cConfig, "get_string", ossl_config_get_string, 2);
 	rb_define_method(cConfig, "get_number", ossl_config_get_number, 2);

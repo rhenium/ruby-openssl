@@ -126,6 +126,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 			req = X509_REQ_new();
 			break;
 		case T_STRING:
+			Check_SafeStr(buffer);
 			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
 				rb_raise(eX509RequestError, "%s", ossl_error());
 			}
@@ -428,8 +429,6 @@ static VALUE
 ossl_x509req_add_attribute(VALUE self, VALUE attr)
 {
 	ossl_x509req *reqp = NULL;
-	int i = 0;
-	VALUE item;
 
 	GetX509Req(self, reqp);
 

@@ -25,6 +25,7 @@ This program is licenced under the same licence as Ruby.
 = PKCS7 (signing&data_verify is working, rest needs some testing)
 = HMAC
 = OpenSSL config file parser (part)
+= BN (safe bignums)
 
 [To-Do]
 = check for memory leaking :-))
@@ -39,7 +40,6 @@ This program is licenced under the same licence as Ruby.
 = add aliases to to_pem as s_dump s_load to support Marshal module
 = CipherFactory?
 = autogen random IVs for Ciphers
-= safe BigNums
 = PKCS12
 = PKCS8
 = ASN.1 ???
@@ -57,40 +57,39 @@ This program is licenced under the same licence as Ruby.
 	su root -c make install
 
 = Windows like systems:
-	add to %PATH%: c:\openssl\bin - where the dlls lays
+	add to %PATH%: c:\openssl\bin (where the dlls lays)
 	ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
 	nmake
 	nmake install
 
 [Documentation/API]
-	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_method :-))
+	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_*method :-))
 
 --------------------------------------------------
+=> XXX	- XXX is return value
+A <=> B	- A is an alias to B
+[XXX]	- argument XXX is optional
+A|B	- argument can be A or B
+bXXX	- XXX is true or false
+cXXX	- XXX is defined as constant
+fXXX	- XXX is Fixnum
+nXXX	- XXX is Number (Fixnum or Bignum)
+oXXX	- argument.kind_of?(XXX) => true
+sXXX	- XXX is String
+tXXX	- XXX is instance of Time
+--------------------------------------------------
+Integer
+	.to_bn() => BN.new
+	
 OpenSSL::
-	.seed(String) => true|false
-	.load_random_file(Filename) => true|false
-	.write_random_file(Filename) => true|false
+	.seed(sSeed) => sSeed
+	.load_random_file(sFilename) => bResult
+	.write_random_file(sFilename) => bResult
 
-	Config
-		.new(String (filename)) => self
-		.get_string(String (section)|nil, String (key)) => String (value)
-		.get_number(String (section)|nil, String (key)) => String (value)
-		
-	HMAC
-		.new(String(key), Digest) => self
-		.update(String) => self
-		.<<(String) <=> .update(String)
-		.hmac() => String
-		.hexhmac() => String
-		.inspect() <=> .hexhmac()
-		.to_str() <=> .hexhmac()
-		
-	Random
-		.seed(String) => true|false
-		.load_random_file(String (filename)) => true|false
-		.write_random_file(String (filename)) => true|false
-		.random_bytes(size) => String
+	BN - Doc TODO!
 
+	BNError
+	
 	Cipher::
 		constants:	UNSPEC
 			modes:	ECB, CFB, OFB, CBC
@@ -103,15 +102,25 @@ OpenSSL::
 		RC2 (ECB, CBC, BIT40:CBC, BIT64:CBC, CFB, OFB)
 		RC4 (nil, UNSPEC, BIT40)
 		RC5 (ECB, CFB, OFB, CBC)
-			.new([mode|type] [,type|mode]) => self
-			.encrypt(Password [, Init_Vect]) => self
-			.decrypt(Password [, Init_Vect]) => self
-			.update(String) => String
-			.<<(String) <=> .update
-			.cipher => String
+			.new([cMode|cType] [,cType|cMode])
+			.encrypt(sPassword [, sInitVector]) => self
+			.decrypt(sPassword [, sInitVector]) => self
+			.update(sData) => s(En|De)crypted
+			.<< <=> .update
+			.cipher() => s(En|De)cryptedFinal
+			
+		CipherError
+		
+	Config
+		.new(sFilename)
+		.get_string(sSection|nil, sKey) => sValue
+		.get_number(sSection|nil, sKey) => nValue
+		
+	ConfigError
 			
 	Digest::
 		MD2
+		MD4
 		MD5
 		MDC2
 		RIPEMD160
@@ -119,88 +128,175 @@ OpenSSL::
 		SHA1
 		DSS
 		DSS1
-			.new([String]) => self
-			.update(String) => self
-			.<<(String) <=> .update
-			.digest => String
-			.hexdigest => String
+			.new([sData])
+			.update(sData) => self
+			.<< <=> .update
+			.digest() => sDigestFinal
+			.hexdigest() => sHEXDigestFinal
 			.inspect <=> .hexdigest
 			.to_str <=> .hexdigest
+			
+		DigestError
+
+	HMAC
+		.new(sKey, oDigest::ANY) => self
+		.update(sData) => self
+		.<< <=> .update
+		.hmac() => sHMACFinal
+		.hexhmac() => sHEXHMACFinal
+		.inspect <=> .hexhmac
+		.to_str <=> .hexhmac
+		
+	HMACError
 		
 	Netscape::
 		SPKI
-			.new([String (PEM)]) => self
-			.to_pem => String (PEM)
-			.to_str => String
-			.public_key => PKey
-			.public_key=(PKey) => PKey
-			.sign(PKey, Digest) => self
-			.verify(PKey) => true|false
-			.challenge => String
-			.challenge=(String) => String
+			.new([sPEM])
+			.to_pem() => sPEM
+			.to_str() => sHumanReadable
+			.public_key() => oPKey::ANY
+			.public_key=(oPKey::ANY) => oPKey::ANY
+			.sign(oPKey::ANY, oDigest::ANY) => self
+			.verify(oPKey::ANY) => bResult
+			.challenge() => sChallenge
+			.challenge=(sChallenge) => sChallenge
+			
+		SPKIError
 
 	PKCS7::
-		constants: SIGNED, ENVELOPED, SIGNED_ENVELOPED
+		constants:
+			type:	SIGNED, ENVELOPED, SIGNED_ENVELOPED
 
 		PKCS7
-			.new(CONST|String (PEM)) => self
-			.add_signer(PKCS7::Signer, PKey (his private))
-			.signers => Ary of PKCS7::Signer
-			.cipher=(Cipher::Any) => Cipher
-			.add_recipient(X509::Certificate) => self
-			.add_certificate(X509::Certificate) => self
-			.add_crl(X509::CRL) => self
-			.add_data(String (data), [(true|false) (detached?)]) => self
-			.verify_data(X509::Store, [String (detached)]) => true|false, yields PKCS7::Signer
-			.decode_data(PKey::Any (private), X509::Certificate) => String
-			.to_pem => String (PEM)
+			.new(cType|sPEM)
+			.cipher=(oCipher::ANY) => oCipher::ANY
+			.add_signer(oPKCS7::Signer, oPKey::ANY) => self
+			.signers() => Array of PKCS7::Signer
+			.add_recipient(oX509::Certificate) => self
+			.add_certificate(oX509::Certificate) => self
+			.add_crl(oX509::CRL) => self
+			.add_data(sData [, bDetached]) => self
+			.verify_data(oX509::Store [, sDetachedData]) => bResult, yields PKCS7::Signer
+			.decode_data(oPKey::ANY, oX509::Certificate) => sData
+			.to_pem() => sPEM
 
 		Signer
-			.new(X509::Certificate, PKey (his private), Digest::Any) => self
-			.name => X509::Name
-			.serial => FixNum
-			.signed_time => Time
+			.new(oX509::Certificate, oPKey::ANY, oDigest::ANY)
+			.name() => X509::Name
+			.serial() => fSerial
+			.signed_time() => tTime
+
+		PKCS7Error
+		
 	PKey::
+		PKeyError
+		
 		DSA
-			.new([keylen | String (PEM)]) => self, yields |p,n| when generating new
-			.public? => true|false
-			.private? => true|false
-			.to_str => String
-			.export([Cipher [, Password]]) => String (PEM)
+			.new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
+			.new_from_pem(sPEM [, sPassword])
+			.generate(fKeyLen) - yields |p,n|
+			.new_from_fixnum <=> generate
+			.public?() => bResult
+			.private?() => bResult
+			.to_str() => sHumanReadable
+			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
-			.public_key => pub.key from key
-			.to_der => String (DER)
-			.sign(Digest, String) => String
-			.sign_digest(String (dig)) => String
-			.verify(Digest, String (data), String (sig)) => true|false
-			.verify_digest(String (dig), String (sig)) => true|false
+			.public_key() => oPKey::ANY
+			.to_der() => sDER
+			.sign(oDigest::ANY, sData) => sSig
+			.sign_digest(sDigest) => sSig
+			.verify(oDigest::ANY, sData, sSig) => bResult
+			.verify_digest(sDigest, sSig) => bResult
+
+		DSAError
 			
 		RSA
-			.new([keylen | String (PEM)]) => self, yields |p,n| when generating new
-			.public? => true|false
-			.private? => true|false
-			.to_str => String
-			.export([Cipher [, Password]]) => String (PEM)
+			.new([fKeyLen|sPEM [, sPassword]]) - dispatches .new_from_pem or .generate 
+			.new_from_pem(sPEM [, sPassword])
+			.generate(fKeyLen) - yields |p,n|
+			.new_from_fixnum <=> generate
+			.public?() => bResult
+			.private?() => bResult
+			.to_str() => sHumanReadable
+			.export([oCipher::ANY [, sPassword]]) => sPEM
 			.to_pem <=> .export
-			.public_key => pub.key from key
-			.public_encrypt(String) => String
-			.public_decrypr(String) => String
-			.private_ecrypt(String) => String
-			.private_decrypt(String) => String
-			.to_der => String (DER)
-			.sign(Digest, String) => String
-			.verify(Digest, String (data), String (sig)) => true|false
+			.public_key() => oPKey::ANY
+			.public_encrypt(sData) => sEnc
+			.public_decrypt(sEnrypted) => sData
+			.private_encrypt(sData) => sEnc
+			.private_decrypt(sEncrypted) => sData
+			.to_der() => sDER
+			.sign(oDigest::ANY, sData) => sSig
+			.verify(oDigest::ANY, sData, sSig) => bResult
 
+		RSAError
+
+	Random
+		.seed(sSeed) => sSeed
+		.load_random_file(sFilename) => bResult
+		.write_random_file(sFilename) => bResult
+		.random_bytes(fLen) => sRandom
+	
+	RandomError
+	
+	SSL:: - Doc TODO!
+
+		Error
+		
 	X509::
 		Attribute
-		Certificate
-		CRL
-		Extension
-		ExtensionFactory
-		Name
-		Request
-		Revoked
-		Store
+			.new(arg) - dispatches "new_from_#{arg.type.name.downcase}"
+			.new_from_string("oid = value")
+			.new_from_array(["oid", "value"])
+			.new_from_hash({"oid"=>"oid", "value"=>"val"})
+			
+		AttributeError
+		
+		Certificate - Doc TODO!
+		
+		CertificateError
+		
+		CRL - Doc TODO!
+		
+		CRLError
+		
+		Extension - Doc TODO!
+			.new is DISABLED!
+			.to_str => string as "oid = critical, value"
+			.to_a => ary as ["oid", "value", critical], critical as bool
+			.to_h => hash as {"oid"=>"oid", "value"=>"val", "critical"=>bool}
+			
+		ExtensionFactory - Doc TODO!
+			.new(...)
+			.create_extension(*arg)
+			.create_ext_from_string(str)
+			.create_ext_from_ary(ary) => X509::Extension, ary as ["oid", "value", critical], critical as bool
+			.create_ext_from_hash(hash)
+			
+		ExtensionError
+		
+		Name - Doc TODO!
+			.new(arg) dispatches "new_from_#{arg.type.name.downcase}"
+			.new_from_string(str) => self, str as "/A=B/C=D/E=F"
+			.new_from_array(ary) => self, ary as [["A","B"],["C","D"],["E","F"]]
+			.new_from_hash(hash) => self, hash as {"A"=>"B","C"=>"D","E"=>"F"}
+			.to_str => str as "/A=B/C=D/E=F"
+			.to_a => ary as [["A","B"],["C","D"],["E","F"]]
+			.to_h => hash as {"A"=>"B","C"=>"D","E"=>"F"}
+		
+		NameError
+		
+		Request - Doc TODO!
+
+		RequestError
+		
+		Revoked - Doc TODO!
+
+		RevokedError
+		
+		Store - Doc TODO!
+
+		StoreError
 --------------------------------------------------
 
 [Examples]

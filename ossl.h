@@ -11,10 +11,15 @@
 #ifndef _OSSL_H_
 #define _OSSL_H_
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #if defined(NT)
 #  define OpenFile WINAPI_OpenFile
 #endif
 #include <errno.h>
+#include <openssl/err.h>
 #include <openssl/asn1_mac.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
@@ -24,17 +29,13 @@
 #  undef OpenFile
 #endif
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "openssl_missing.h"
 #include "ossl_version.h"
 
 /*
  * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
  */
-#if !defined(OSSL_DEBUG) && defined(RFILE)
+#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
 #  undef RFILE
 #endif
 #include <ruby.h>
@@ -77,6 +78,7 @@ extern VALUE cRandom;
 extern VALUE eRandomError;
 extern VALUE cSSLSocket;
 extern VALUE eSSLError;
+
 /* Cipher */
 extern VALUE cCipher;
 extern VALUE eCipherError;
@@ -91,7 +93,7 @@ extern VALUE ePKeyError;
 extern VALUE cRSA;
 extern VALUE eRSAError;
 extern VALUE cDSA;
-extern VALUE cDSAError;
+extern VALUE eDSAError;
 /* PKCS7 */
 extern VALUE cPKCS7;
 extern VALUE cPKCS7SignerInfo;
@@ -120,7 +122,28 @@ VALUE asn1time_to_time(ASN1_UTCTIME *);
 /*
  * ERRor messages
  */
-char *ossl_error(void);
+#define ossl_error OSSL_ErrMsg /* for compat.; DEPRECATED! */
+#define OSSL_ErrMsg() \
+	ERR_error_string(ERR_get_error(), NULL)
+
+#if defined(OSSL_DEBUG)
+#  define OSSL_Raise(klass,text) \
+	rb_raise(klass, "%s%s [in '%s', file: '%s', line: %d]", \
+			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
+#  define OSSL_Warn(text) \
+	rb_warn("%s%s [in '%s', file: '%s', line: %d]", \
+			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
+#  define OSSL_Warning(text) \
+	rb_warning("%s%s [in '%s', file: '%s', line: %d]", \
+			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
+#else
+#  define OSSL_Raise(klass,text) \
+	rb_raise(klass, "%s%s", text, OSSL_ErrMsg())
+#  define OSSL_Warn(text) \
+	rb_warn("%s%s", text, OSSL_ErrMsg())
+#  define OSSL_Warning(text) \
+	rb_warning("%s%s", text, OSSL_ErrMsg())
+#endif /*OSSL_DEBUG*/
 
 /*
  * Config
@@ -229,7 +252,7 @@ VALUE ossl_rsa_new_null();
 VALUE ossl_rsa_new(RSA *);
 RSA *ossl_rsa_get_RSA(VALUE);
 EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE);
-#endif
+#endif /*NO_RSA*/
 void Init_ossl_rsa(VALUE, VALUE, VALUE);
 
 /*
@@ -240,7 +263,7 @@ VALUE ossl_dsa_new_null();
 VALUE ossl_dsa_new(DSA *);
 DSA *ossl_dsa_get_DSA(VALUE);
 EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE);
-#endif
+#endif /*NO_RSA*/
 void Init_ossl_dsa(VALUE, VALUE, VALUE);
 
 /*
@@ -273,5 +296,5 @@ void Init_bn(VALUE);
 }
 #endif
 
-#endif
+#endif /*_OSSL_H_*/
 

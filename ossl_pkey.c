@@ -59,6 +59,8 @@ ossl_pkey_new_from_file(VALUE path)
 	EVP_PKEY *pkey = NULL;
 	VALUE obj;
 
+	Check_SafeStr(path);
+	
 	filename = RSTRING(path)->ptr;
 	if ((fp = fopen(filename, "r")) == NULL)
 		rb_raise(ePKeyError, "%s", strerror(errno));
@@ -82,7 +84,6 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 	ossl_pkey *pkeyp = NULL;
 	
 	OSSL_Check_Type(obj, cPKey);
-	
 	GetPKey(obj, pkeyp);
 
 	return pkeyp->get_EVP_PKEY(obj);
@@ -94,9 +95,6 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 static VALUE
 ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 {
-	ossl_pkey *pkeyp = NULL;
-	VALUE obj;
-	
 	if (klass == cPKey)
 		rb_raise(rb_eNotImpError, "cannot do PKey::ANY.new - it is an abstract class");
 	
@@ -109,7 +107,7 @@ ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 void
 Init_ossl_pkey(VALUE module)
 {
-	ePKeyError = rb_define_class_under(module, "Error", rb_eStandardError);
+	ePKeyError = rb_define_class_under(module, "PKeyError", rb_eStandardError);
 
 	cPKey = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cPKey, "new", ossl_pkey_s_new, -1);

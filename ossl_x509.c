@@ -87,8 +87,10 @@ ossl_x509_new_from_file(VALUE filename)
 	VALUE obj;
 
 	MakeX509(obj, x509p);
-	
+
+	Check_SafeStr(filename);
 	path = RSTRING(filename)->ptr;
+	
 	if ((fp = fopen(path, "r")) == NULL)
 		rb_raise(eX509CertificateError, "%s", strerror(errno));
 
@@ -97,6 +99,7 @@ ossl_x509_new_from_file(VALUE filename)
 
 	if (!cert)
 		rb_raise(eX509CertificateError, "%s", ossl_error());
+	
 	x509p->x509 = cert;
 
 	return obj;
@@ -108,13 +111,11 @@ ossl_x509_get_X509(VALUE obj)
 	ossl_x509 *x509p = NULL;
 	X509 *x509 = NULL;
 	
-	OSSL_Check_Type(obj, cX509Certificate);
-	
+	OSSL_Check_Type(obj, cX509Certificate);	
 	GetX509(obj, x509p);
 	
-	if (!(x509 = X509_dup(x509p->x509))) {
+	if (!(x509 = X509_dup(x509p->x509)))
 		rb_raise(eX509CertificateError, "%s", ossl_error());
-	}
 
 	return x509;
 }
@@ -151,13 +152,16 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 		case T_NIL:
 			x509 = X509_new();
 			break;
+			
 		case T_STRING:
-			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, -1))) {
+			Check_SafeStr(buffer);
+			if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
 				rb_raise(eX509CertificateError, "%s", ossl_error());
 			}
 			x509 = PEM_read_bio_X509(in, NULL, NULL, NULL);
 			BIO_free(in);
 			break;
+			
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
@@ -301,7 +305,7 @@ ossl_x509_get_serial(VALUE self)
 
 	GetX509(self, x509p);
 	
-	if (!(asn1int = X509_get_serialNumber(x509p->x509))) {
+	if (!(asn1int = X509_get_serialNumber(x509p->x509))) { /* NO DUP - don't free */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 	serial = ASN1_INTEGER_get(asn1int);
@@ -324,7 +328,7 @@ ossl_x509_set_serial(VALUE self, VALUE serial)
 		ASN1_INTEGER_free(asn1int);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
-	if (!X509_set_serialNumber(x509p->x509, asn1int)) {
+	if (!X509_set_serialNumber(x509p->x509, asn1int)) { /* DUPs asn1int - FREE it */
 		ASN1_INTEGER_free(asn1int);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
@@ -341,7 +345,7 @@ ossl_x509_get_subject(VALUE self)
 	
 	GetX509(self, x509p);
 
-	if (!(name = X509_get_subject_name(x509p->x509))) {
+	if (!(name = X509_get_subject_name(x509p->x509))) { /* NO DUP - don't free! */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 
@@ -359,9 +363,11 @@ ossl_x509_set_subject(VALUE self, VALUE subject)
 	OSSL_Check_Type(subject, cX509Name);
 	name = ossl_x509name_get_X509_NAME(subject);
 
-	if (!X509_set_subject_name(x509p->x509, name)) {
+	if (!X509_set_subject_name(x509p->x509, name)) { /* DUPs name - FREE it */
+		X509_NAME_free(name);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
+	X509_NAME_free(name);
 
 	return subject;
 }
@@ -371,11 +377,10 @@ ossl_x509_get_issuer(VALUE self)
 {
 	ossl_x509 *x509p = NULL;
 	X509_NAME *name = NULL;
-	VALUE issuer;
 	
 	GetX509(self, x509p);
 	
-	if(!(name = X509_get_issuer_name(x509p->x509))) {
+	if(!(name = X509_get_issuer_name(x509p->x509))) { /* NO DUP - don't free! */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 	
@@ -393,7 +398,8 @@ ossl_x509_set_issuer(VALUE self, VALUE issuer)
 	OSSL_Check_Type(issuer, cX509Name);
 	name = ossl_x509name_get_X509_NAME(issuer);
 	
-	if (!X509_set_issuer_name(x509p->x509, name)) {
+	if (!X509_set_issuer_name(x509p->x509, name)) { /* DUPs name - FREE it */
+		X509_NAME_free(name);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 	X509_NAME_free(name);
@@ -409,7 +415,7 @@ ossl_x509_get_not_before(VALUE self)
 
 	GetX509(self, x509p);
 
-	if (!(asn1time = X509_get_notBefore(x509p->x509))) {
+	if (!(asn1time = X509_get_notBefore(x509p->x509))) { /* NO DUP - don't free! */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 
@@ -448,7 +454,7 @@ ossl_x509_get_not_after(VALUE self)
 
 	GetX509(self, x509p);
 
-	if (!(asn1time = X509_get_notAfter(x509p->x509))) {
+	if (!(asn1time = X509_get_notAfter(x509p->x509))) { /* NO DUP - don't free! */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 
@@ -488,7 +494,7 @@ ossl_x509_get_public_key(VALUE self)
 
 	GetX509(self, x509p);
 	
-	if (!(pkey = X509_get_pubkey(x509p->x509))) {
+	if (!(pkey = X509_get_pubkey(x509p->x509))) { /* adds an reference - safe to FREE */
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 	pub_key = ossl_pkey_new(pkey);
@@ -508,7 +514,7 @@ ossl_x509_set_public_key(VALUE self, VALUE pubk)
 	
 	pkey = ossl_pkey_get_EVP_PKEY(pubk);
 	
-	if (!X509_set_pubkey(x509p->x509, pkey)) {
+	if (!X509_set_pubkey(x509p->x509, pkey)) { /* DUPs pkey - FREE it */
 		EVP_PKEY_free(pkey);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
@@ -529,7 +535,7 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 	OSSL_Check_Type(digest, cDigest);
 	
 	if (rb_funcall(key, rb_intern("private?"), 0, NULL) == Qfalse) {
-		rb_raise(eX509CertificateError, "PRIVATE key needed to sign REQ!");
+		rb_raise(eX509CertificateError, "PRIVATE key needed to sign X509 Certificate!");
 	}
 
 	pkey = ossl_pkey_get_EVP_PKEY(key);
@@ -615,7 +621,7 @@ ossl_x509_get_extensions(VALUE self)
 		return rb_ary_new();
 
 	for (i=0; i<count; i++) {
-		ext = X509_get_ext(x509p->x509, i);
+		ext = X509_get_ext(x509p->x509, i); /* NO DUP - don't free! */
 		rb_ary_push(ary, ossl_x509ext_new(ext));
 	}
 	
@@ -631,41 +637,48 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 	ossl_x509 *x509p = NULL;
 	X509_EXTENSION *ext = NULL;
 	int i = 0;
-	VALUE item;
 	
 	GetX509(self, x509p);
 
 	Check_Type(ary, T_ARRAY);
+	for (i=0; i<RARRAY(ary)->len; i++) { /* All ary's members should be X509Extension */
+		OSSL_Check_Type(RARRAY(ary)->ptr[i], cX509Extension);
+	}
 
 	sk_X509_EXTENSION_pop_free(x509p->x509->cert_info->extensions, X509_EXTENSION_free);
 	x509p->x509->cert_info->extensions = NULL;
 	
 	for (i=0; i<RARRAY(ary)->len; i++) {
-		item = RARRAY(ary)->ptr[i];
-		OSSL_Check_Type(item, cX509Extension);
-		ext = ossl_x509ext_get_X509_EXTENSION(item);
-		if (!X509_add_ext(x509p->x509, ext, -1)) {
+		ext = ossl_x509ext_get_X509_EXTENSION(RARRAY(ary)->ptr[i]);
+		
+		if (!X509_add_ext(x509p->x509, ext, -1)) { /* DUPs ext - FREE it */
+			X509_EXTENSION_free(ext);
 			rb_raise(eX509CertificateError, "%s", ossl_error());
 		}
+		X509_EXTENSION_free(ext);
 	}
 
 	return ary;
 }
 
 static VALUE 
-ossl_x509_add_extension(VALUE self, VALUE ext)
+ossl_x509_add_extension(VALUE self, VALUE extension)
 {
 	ossl_x509 *x509p = NULL;
-
+	X509_EXTENSION *ext = NULL;
+	
 	GetX509(self, x509p);
 
-	OSSL_Check_Type(ext, cX509Extension);
+	OSSL_Check_Type(extension, cX509Extension);
+	ext = ossl_x509ext_get_X509_EXTENSION(extension);
 	
-	if (!X509_add_ext(x509p->x509, ossl_x509ext_get_X509_EXTENSION(ext), -1)) {
+	if (!X509_add_ext(x509p->x509, ext, -1)) { /* DUPs ext - FREE it */
+		X509_EXTENSION_free(ext);
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
+	X509_EXTENSION_free(ext);
 
-	return ext;
+	return extension;
 }
 
 /*

@@ -38,6 +38,11 @@ p x509 = Certificate.new(File.open("./01cert.pem").read)
 p key = RSA.new(1024)
 p new = Certificate.new
 name = [['C', 'CZ'],['O','Rokos'],['CN','pokusXXX']]
+#p n = Name.new(name)
+#p n.to_h
+#p n.to_a
+#p n.to_str
+#exit
 p new.subject = Name.new(name)
 p new.issuer = Name.new(name)
 p new.not_before = Time.now
@@ -48,6 +53,10 @@ p new.version = 3
 #p new.extensions #each_with_index {|e, i| p e.to_a}
 maker = ExtensionFactory.new(nil, new) #only subject
 p ext1 = maker.create_extension(["basicConstraints","CA:FALSE,pathlen:5"])
+#p ext1.to_a
+#p ext1.to_h
+#p ext1.to_str
+#exit
 p ext2 = maker.create_extension(["nsComment","OK, man!!!"])
 ###p digest = Digest::SHA1.new(new.public_key.to_der)
 ###p ext3 = maker.create_extension(["subjectKeyIdentifier", digest.hexdigest])

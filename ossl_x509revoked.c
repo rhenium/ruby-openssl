@@ -148,7 +148,6 @@ static VALUE
 ossl_x509revoked_get_time(VALUE obj)
 {
 	ossl_x509revoked *revp = NULL;
-	ASN1_UTCTIME *asn1time = NULL;
 	
 	GetX509Revoked(obj, revp);
 

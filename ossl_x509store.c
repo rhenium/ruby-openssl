@@ -84,7 +84,6 @@ ossl_x509store_get_X509_STORE(VALUE obj)
 	ossl_x509store *storep = NULL;
 	
 	OSSL_Check_Type(obj, cX509Store);
-	
 	GetX509Store(obj, storep);
 	
 	storep->protect = 1; /* we gave out internal pointer without DUP - don't free this one */
@@ -136,9 +135,9 @@ ossl_session_db_set(void *key, VALUE data)
 		last = item;
 		item = last->next;
 	}
-	if (!(item = (ossl_session_db *)malloc(sizeof(ossl_session_db)))) {
+	if (!(item = (ossl_session_db *)OPENSSL_malloc(sizeof(ossl_session_db)))) {
 		rb_thread_critical = 0;
-		rb_raise(ePKCS7Error, "MALLOC ERROR");
+		OSSL_Raise(eX509StoreError, "");
 	}
 	item->key = key;
 	item->data = data;
@@ -356,7 +355,7 @@ ossl_x509store_verify(VALUE self, VALUE cert)
 	X509_STORE_CTX_set_cert(storep->store, x509);
 	
 	result = X509_verify_cert(storep->store);
-	/*X509_STORE_CTX_cleanup(storep->store); /*clears chain*/
+	/*X509_STORE_CTX_cleanup(storep->store); *clears chain*/
 
 	if (result == 1) return Qtrue;
 	return Qfalse;
@@ -376,7 +375,6 @@ static VALUE
 ossl_x509store_get_verify_message(VALUE self)
 {
 	ossl_x509store *storep = NULL;
-	VALUE messages;
 
 	GetX509Store(self, storep);
 
@@ -387,7 +385,6 @@ static VALUE
 ossl_x509store_get_verify_depth(VALUE self)
 {
 	ossl_x509store *storep = NULL;
-	VALUE depth;
 
 	GetX509Store(self, storep);
 
@@ -398,7 +395,6 @@ static VALUE
 ossl_x509store_get_cert(VALUE self)
 {
 	ossl_x509store *storep = NULL;
-	VALUE cert;
 
 	GetX509Store(self, storep);
 	
@@ -437,7 +433,6 @@ ossl_x509store_load_locations(VALUE self, VALUE path)
 
 	GetX509Store(self, storep);
 	
-	Check_Type(path, T_STRING);
 	Check_SafeStr(path);
 
 	if (!X509_STORE_load_locations(storep->store->ctx, NULL, RSTRING(path)->ptr)) {

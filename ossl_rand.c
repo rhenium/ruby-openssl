@@ -85,15 +85,16 @@ ossl_rand_bytes(VALUE self, VALUE len)
  * INIT
  */
 void
-Init_ossl_rand(VALUE mOSSL)
+Init_ossl_rand(VALUE module)
 {
-	rb_define_method(mOSSL, "seed", ossl_rand_seed, 1);
-	rb_define_method(mOSSL, "load_random_file", ossl_rand_load_file, 1);
-	rb_define_method(mOSSL, "write_random_file", ossl_rand_write_file, 1);
+	rb_define_method(module, "seed", ossl_rand_seed, 1);
+	rb_define_method(module, "load_random_file", ossl_rand_load_file, 1);
+	rb_define_method(module, "write_random_file", ossl_rand_write_file, 1);
 
-	eRandomError = rb_define_class_under(mOSSL, "RandomError", rb_eStandardError);
+	eRandomError = rb_define_class_under(module, "RandomError", rb_eStandardError);
 
-	cRandom = rb_define_class_under(mOSSL, "Random", rb_cObject);
+	cRandom = rb_define_class_under(module, "Random", rb_cObject);
+	
 	rb_define_method(cRandom, "seed", ossl_rand_seed, 1);
 	rb_define_method(cRandom, "load_random_file", ossl_rand_load_file, 1);
 	rb_define_method(cRandom, "write_random_file", ossl_rand_write_file, 1);

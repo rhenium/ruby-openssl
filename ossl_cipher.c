@@ -72,7 +72,6 @@ ossl_cipher_get_NID(VALUE obj)
 	ossl_cipher *ciphp = NULL;
 
 	OSSL_Check_Type(obj, cCipher);
-
 	GetCipher(obj, ciphp);
 
 	return ciphp->nid; /*EVP_CIPHER_CTX_nid(ciphp->ctx);*/
@@ -84,7 +83,6 @@ ossl_cipher_get_EVP_CIPHER(VALUE obj)
 	ossl_cipher *ciphp = NULL;
 
 	OSSL_Check_Type(obj, cCipher);
-
 	GetCipher(obj, ciphp);
 
 	return EVP_get_cipherbynid(ciphp->nid); /*EVP_CIPHER_CTX_cipher(ciphp->ctx);*/
@@ -103,9 +101,9 @@ ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 		rb_raise(rb_eNotImpError, "cannot do Cipher::ANY.new - it is an abstract class");
 
 	MakeCipher(obj, klass, ciphp);
-	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX)))) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
+	
+	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX))))
+		OSSL_Raise(eCipherError, "");
 	
 	rb_obj_call_init(obj, argc, argv);
 
@@ -135,9 +133,9 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		/*
 		RAND_add(data,i,0); where from take data?
 		if (RAND_pseudo_bytes(iv, 8) < 0) {
-			rb_raise(eCipherError, "%s", ossl_error());
+			OSSL_Raise(eCipherError, "");
 		}
-		*/
+		 */
 	} else {
 		Check_SafeStr(init_v);
 		memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
@@ -147,9 +145,8 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	cipher = EVP_get_cipherbynid(ciphp->nid);
 	EVP_BytesToKey(cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
-	if (!EVP_EncryptInit(ciphp->ctx, cipher, key, iv)) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
+	if (!EVP_EncryptInit(ciphp->ctx, cipher, key, iv))
+		OSSL_Raise(eCipherError, "");
 
 	return self;
 }
@@ -167,6 +164,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
 	Check_SafeStr(pass);
+	
 	if (NIL_P(init_v)) {
 		/*
 		 * TODO:
@@ -181,13 +179,12 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 
 	cipher = EVP_get_cipherbynid(ciphp->nid);
 	
-	/*if (!load_iv((unsigned char **)&header,&(cipher->iv[0]),8)) return(0); /* cipher = CIPHER_INFO */
+	/*if (!load_iv((unsigned char **)&header,&(cipher->iv[0]),8)) return(0); * cipher = CIPHER_INFO */
 
 	EVP_BytesToKey(cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
-	if (!EVP_DecryptInit(ciphp->ctx, cipher, key, iv)) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
+	if (!EVP_DecryptInit(ciphp->ctx, cipher, key, iv))
+		OSSL_Raise(eCipherError, "");
 
 	return self;
 }
@@ -206,12 +203,12 @@ ossl_cipher_update(VALUE self, VALUE data)
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
 	
-	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
+	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(ciphp->ctx))))
+		OSSL_Raise(eCipherError, "");
+	
 	if (!EVP_CipherUpdate(ciphp->ctx, out, &out_len, in, in_len)) {
 		OPENSSL_free(out);
-		rb_raise(eCipherError, "%s", ossl_error());
+		OSSL_Raise(eCipherError, "");
 	}
 	
 	str = rb_str_new(out, out_len);
@@ -231,12 +228,12 @@ ossl_cipher_cipher(VALUE self)
 
 	GetCipher(self, ciphp);
 	
-	if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ciphp->ctx)))) {
-		rb_raise(eCipherError, "%s", ossl_error());
-	}
+	if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ciphp->ctx))))
+		OSSL_Raise(eCipherError, "");
+		
 	if (!EVP_CipherFinal(ciphp->ctx, out, &out_len)) {
 		OPENSSL_free(out);
-		rb_raise(eCipherError, "%s", ossl_error());
+		OSSL_Raise(eCipherError, "");
 	}
 	str = rb_str_new(out, out_len);
 	OPENSSL_free(out);
@@ -300,7 +297,6 @@ ossl_des_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -315,7 +311,7 @@ ossl_rc4_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
-	VALUE mode, type;
+	VALUE mode;
 	
 	GetCipher(self, ciphp);
 
@@ -331,7 +327,6 @@ ossl_rc4_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -346,7 +341,7 @@ ossl_idea_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
-	VALUE mode, type;
+	VALUE mode;
 	
 	GetCipher(self, ciphp);
 
@@ -368,7 +363,6 @@ ossl_idea_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -413,7 +407,6 @@ ossl_rc2_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -428,7 +421,7 @@ ossl_bf_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
-	VALUE mode, type;
+	VALUE mode;
 	
 	GetCipher(self, ciphp);
 
@@ -450,7 +443,6 @@ ossl_bf_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -465,7 +457,7 @@ ossl_cast5_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
-	VALUE mode, type;
+	VALUE mode;
 	
 	GetCipher(self, ciphp);
 
@@ -487,7 +479,6 @@ ossl_cast5_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -502,7 +493,7 @@ ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
-	VALUE mode, type;
+	VALUE mode;
 	
 	GetCipher(self, ciphp);
 
@@ -524,7 +515,6 @@ ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported combination of modes");
-			break;
 	}
 	ciphp->nid = nid;
 
@@ -537,7 +527,7 @@ ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
 void 
 Init_ossl_cipher(VALUE module)
 {
-	eCipherError = rb_define_class_under(module, "Error", rb_eStandardError);
+	eCipherError = rb_define_class_under(module, "CipherError", rb_eStandardError);
 
 	cCipher = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cCipher, "new", ossl_cipher_s_new, -1);

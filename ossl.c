@@ -8,8 +8,16 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#include <openssl/err.h>
+/*#include <openssl/err.h>*/
 #include "ossl.h"
+
+/*
+ * On Windows platform there is no strptime function
+ * implementation in strptime.c
+ */
+#ifndef HAVE_STRPTIME
+#  include "./missing/strptime.c"
+#endif
 
 /*
  * Check Types
@@ -21,22 +29,6 @@ void ossl_check_type(VALUE obj, VALUE klass)
 		rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
 }
-
-/*
- * Error messages
- */
-char *ossl_error(void)
-{
-	return ERR_error_string(ERR_get_error(), NULL);
-}
-
-/*
- * On Windows platform there is no strptime function
- * implementation in strptime.c
- */
-#ifndef HAVE_STRPTIME
-char *strptime(char *buf, char *fmt, struct tm *tm);
-#endif
 
 VALUE asn1time_to_time(ASN1_UTCTIME *time)
 {
@@ -56,7 +48,7 @@ VALUE asn1time_to_time(ASN1_UTCTIME *time)
 		default:
 			rb_raise(rb_eTypeError, "unknown time format");
 	}
-	/*return rb_time_new(mktime(gmtime(mktime(&tm))), 0); /* Is this correct? */
+	/*return rb_time_new(mktime(gmtime(mktime(&tm))), 0); * Is this correct? */
 	return rb_time_new(mktime(&tm), 0); /* or this one? */
 }
 
@@ -121,4 +113,11 @@ Init_openssl()
 	Init_hmac(mOSSL);
 	Init_bn(mOSSL);
 }
+
+#if defined(OSSL_DEBUG)
+int main(int argc, char *argv[], char *env[])
+{
+	return 0;
+}
+#endif /* OSSL_DEBUG */
 

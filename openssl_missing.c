@@ -11,7 +11,6 @@
 #ifndef NO_HMAC
 
 #include <openssl/hmac.h>
-#include "openssl_missing.h"
 
 /* to hmac.[ch] */
 int
