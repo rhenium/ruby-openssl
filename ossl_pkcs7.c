@@ -612,101 +612,6 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     return data;
 }
 
-#if 0
-static VALUE
-ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
-{
-    PKCS7 *pkcs7;
-    BIO *bio, *data = NULL;
-    char buf[1024 * 4];
-    int i, result;
-    STACK_OF(PKCS7_SIGNER_INFO) *sk;
-    PKCS7_SIGNER_INFO *si;
-    X509_STORE *store;
-    X509_STORE_CTX ctx;
-    VALUE x509store, detached;
-	
-    GetPKCS7(self, pkcs7);
-    if (!PKCS7_type_is_signed(pkcs7)) {
-	ossl_raise(ePKCS7Error, "Wrong content type - PKCS7 is not SIGNED");
-    }
-    rb_scan_args(argc, argv, "11", &x509store, &detached);
-    store = GetX509StorePtr(x509store);
-    if (!NIL_P(detached)) {
-	StringValue(detached);
-	data = BIO_new_mem_buf(RSTRING(detached)->ptr, RSTRING(detached)->len);
-	if(!data){
-	    ossl_raise(ePKCS7Error, NULL);
-	}
-    }
-	
-    if (PKCS7_get_detached(pkcs7)) {
-	if (!data) {
-	    ossl_raise(ePKCS7Error, "PKCS7 is detached, data needed!");
-	}
-	bio = PKCS7_dataInit(pkcs7, data);
-    } else {
-	bio = PKCS7_dataInit(pkcs7, NULL);
-    }
-    if (!bio) {
-	if (data) {
-	    BIO_free(data);
-	}
-	ossl_raise(ePKCS7Error, NULL);
-    }
-
-    /* We have to 'read' from bio to calculate digests etc. */
-    for (;;) {
-	i = BIO_read(bio, buf, sizeof(buf));
-	if (i <= 0) break;
-    }
-    /* BIO_free(bio); - shall we? */
-
-    if (!(sk = PKCS7_get_signer_info(pkcs7))) {
-	ossl_raise(ePKCS7Error, "NO SIGNATURES ON THIS DATA");
-    }
-    for (i=0; i<sk_PKCS7_SIGNER_INFO_num(sk); i++) {
-	si = sk_PKCS7_SIGNER_INFO_value(sk, i);
-	result = PKCS7_dataVerify(store, &ctx, bio, pkcs7, si);
-	if (result <= 0) {
-	    OSSL_Debug("result < 0! (%s)", OSSL_ErrMsg());
-	    return Qfalse;
-	}
-	/* Yield signer info */
-	if (rb_block_given_p()) {
-	    rb_yield(ossl_pkcs7si_new(si));
-	}
-    }
-    
-    return Qtrue;
-}
-
-static VALUE
-ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
-{
-    PKCS7 *pkcs7;
-    EVP_PKEY *pkey;
-    X509 *x509;
-    BIO *bio;
-    VALUE str;
-    int status = 0;
-	
-    GetPKCS7(self, pkcs7);
-    pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
-    if (!(bio = PKCS7_dataDecode(pkcs7, pkey, NULL, x509))) {
-	X509_free(x509);
-	ossl_raise(ePKCS7Error, NULL);
-    }
-    X509_free(x509);
-    str = ossl_protect_membio2str(bio, &status);
-    BIO_free(bio);
-    if(status) rb_jump_tag(status);
-    
-    return str;
-}
-#endif
-
 static VALUE
 ossl_pkcs7_to_pem(VALUE self)
 {
@@ -845,10 +750,6 @@ Init_ossl_pkcs7()
     rb_define_alias(cPKCS7,  "data=", "add_data");
     rb_define_method(cPKCS7, "verify", ossl_pkcs7_verify, -1);
     rb_define_method(cPKCS7, "decrypt", ossl_pkcs7_decrypt, -1);
-#if 0
-    rb_define_method(cPKCS7, "verify_data", ossl_pkcs7_data_verify, -1);
-    rb_define_method(cPKCS7, "decode_data", ossl_pkcs7_data_decode, 2);
-#endif
     rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
     rb_define_alias(cPKCS7,  "to_s", "to_pem");
 
