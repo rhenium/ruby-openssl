@@ -15,6 +15,19 @@
 extern "C" {
 #endif
 
+/*
+ * Check the Ruby version and OpenSSL
+ * The only supported are:
+ * 	Ruby >= 1.7
+ * 	OpenSSL >= 0.9.7
+ */
+#include <version.h>
+#include <openssl/opensslv.h>
+
+#if (OPENSSL_VERSION_NUMBER < 0x00907000L) && (RUBY_VERSION_CODE < 172)
+#  error ! OSSL2 needs Ruby >= 1.7.2 and OpenSSL >= 0.9.7 its run.
+#endif
+
 #if defined(NT)
 #  define OpenFile WINAPI_OpenFile
 #endif
@@ -37,19 +50,6 @@ extern "C" {
 #  undef RFILE
 #endif
 #include <ruby.h>
-
-/*
- * Check the Ruby version and OpenSSL
- * The only supported are:
- * 	Ruby >= 1.7
- * 	OpenSSL >= 0.9.7
- */
-#include <version.h>
-#include <openssl/opensslv.h>
-
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L) && (RUBY_VERSION_CODE < 172)
-#  error ! OSSL2 needs Ruby >= 1.7.2 and OpenSSL >= 0.9.7 its run.
-#endif
 
 /*
  * Common Module

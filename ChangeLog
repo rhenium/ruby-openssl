@@ -3,6 +3,17 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue,  4 Jun 2002 17:00:36 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* README: Make a note that it's not up-to-date
+	* ossl.h: Corrected order of headers to detect Ruby < 1.7.2 and OpenSSL < 0.9.7 correctly
+
+Tue,  4 Jun 2002 15:51:57 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* cipher.[ch]: dropped public func: get_NID (because nobody needed this)
+	* digest.[ch]: ditto.
+
+Tue,  4 Jun 2002 14:20:38 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* digest.rb: fix singletons (hex)digest (Don't call super, call Digest::(hex)digest directly)
+
 Tue,  4 Jun 2002 08:53:59 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* cipher.c: Wierd class name ('ANY') renamed to Cipher
 	* digest.c: Rename ANY -> Digest

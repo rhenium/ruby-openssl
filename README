@@ -7,7 +7,10 @@ This program is licenced under the same licence as Ruby.
 
 	$Id$
 
-
+[WARNING]
+	BIG FAT NOTE:
+	This README is not-up-to-date. For news check, ChangeLog and ToDo files.
+		
 ['OpenSSL for Ruby' team members]
 	GOTOU Yuuzou <gotoyuzo@notwork.org> - SSL Socket implementation
 	Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate), maintainer
@@ -58,8 +61,8 @@ This program is licenced under the same licence as Ruby.
 	= compat tests for RSA/DSA sign/encrypt
 
 [Requirements]
-	Ruby	>= 1.6.4
-	OpenSSL >= 0.9.6b
+	Ruby	>= 1.7.2
+	OpenSSL >= 0.9.7
 
 [Instalation]
 	* Unix like systems:
