@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.19  2002/01/06 16:18:32  majkl
+	* ossl-0.1.0 released
+
 Revision 1.18  2002/01/06 16:10:37  majkl
 	* BN is (somewhat) full imp. now
 	* Config reworked (get_value, get_section)
