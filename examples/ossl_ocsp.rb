@@ -5,8 +5,8 @@ include OpenSSL
 cacert = X509::Certificate.new(File::read("0cert.pem"))
 crl    = X509::CRL.new(File::read("0crl.pem"))
 
-user          = X509::Certificate.new(File::read("1cert.pem"))
-user_key      = PKey::RSA.new(File::read("1key-plain.pem"))
+user          = X509::Certificate.new(File::read("6cert.pem"))
+user_key      = PKey::RSA.new(File::read("6key-plain.pem"))
 responder     = X509::Certificate.new(File::read("2cert.pem"))
 responder_key = PKey::RSA.new(File::read("2key-plain.pem"))
 ee            = X509::Certificate.new(File::read("3cert.pem"))
