@@ -1,3 +1,8 @@
+Thu, 03 Jul 2003 20:04:01 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* examples/gen_cert.rb: added --type option.
+	* examples/ossl_ocsp.rb: check the signature in the response.
+	* examples/ossl_ca_cert.rb: del pathlen in basicConstraints.
+
 Thu, 03 Jul 2003 12:04:33 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ocsp.c: OCSP::Respopnse#basic returns nil if no OCSP_BASICRESP given.
 	* ossl_x509name.c: X509::Name#eql?: should check type of other.

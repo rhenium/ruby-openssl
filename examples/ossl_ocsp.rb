@@ -99,6 +99,10 @@ res = OCSP::Response.new(res_der)
 p [ res.status, res.status_string ]
 if res.status ==  OCSP::RESPONSE_STATUS_SUCCESSFUL
   basic = res.basic
+  unless basic.verify([], store)
+    $stderr.puts "invalid OCSP response"
+    exit 2
+  end
   req.check_nonce(basic)
   basic.status.each{|st|
     cid, cert_status, reason, revtime, thisupd, nextupd, ext = st
@@ -112,4 +116,5 @@ if res.status ==  OCSP::RESPONSE_STATUS_SUCCESSFUL
       p [ :revtime, revtime ]
     end
   }
+  end
 end
