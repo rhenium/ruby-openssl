@@ -1,7 +1,10 @@
+Thu,  7 Nov 2002 14:02:35 +0900
+	* ossl_ssl.c: memory leak has been in ossl_sslctx_free().
+
 Mon, 28 Oct 2002 11:19:30 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Make it work under Ruby1.7.3
 
-Fri, 25 Oct 2002 03:37:42 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Fri, 25 Oct 2002 03:37:42 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: ossl_ssl_verify_callback was refined.
 
 Tue, 15 Oct 2002 18:10:17 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>

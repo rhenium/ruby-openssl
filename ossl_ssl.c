@@ -93,6 +93,7 @@ ossl_sslctx_free(ossl_sslctx_st *p)
 {
     SSL_CTX_free(p->ctx);
     p->ctx = NULL;
+    free(p);
 }
 
 static VALUE
