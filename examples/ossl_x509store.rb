@@ -61,15 +61,28 @@ certfiles = ARGV
 certs = certfiles.collect{|file| X509::Certificate.new(File.read(file)) }
 certs.each{|cert|
   puts "Cert = #{cert.subject}, serial = #{cert.serial}"
-  cert.extensions.each{|ext| p ext.to_a }
+  #cert.extensions.each{|ext| p ext.to_a }
   print "Is Cert signed by CA?..."
-  puts cert.verify(ca.public_key) ? "Yes" : "No"
+  puts cert.verify(ca.public_key) ? "OK" : "NG"
 }
 
 puts "========== Create Cert Store and Verify Certs =========="
 store = X509::Store.new
-store.purpose = X509::PURPOSE_SSL_CLIENT
-store.verify_callback = verify_cb if $VERBOSE
+#store.purpose = X509::PURPOSE_SSL_CLIENT
+#store.purpose = X509::PURPOSE_SSL_SERVER
+#store.purpose = X509::PURPOSE_NS_SSL_SERVER
+store.purpose = X509::PURPOSE_SMIME_SIGN
+#store.purpose = X509::PURPOSE_SMIME_ENCRYPT
+#store.purpose = X509::PURPOSE_CRL_SIGN
+#store.purpose = X509::PURPOSE_ANY
+#store.purpose = X509::PURPOSE_OCSP_HELPER
+#store.trust = X509::TRUST_COMPAT
+#store.trust = X509::TRUST_SSL_CLIENT
+#store.trust = X509::TRUST_SSL_SERVER
+#store.trust = X509::TRUST_EMAIL
+#store.trust = X509::TRUST_OBJECT_SIGN
+#store.trust = X509::TRUST_OCSP_SIGN
+#store.trust = X509::TRUST_OCSP_REQUEST
 store.add_cert(ca)
 #store.add_path("./cert")
 #store.add_file("./0cert.pem")
