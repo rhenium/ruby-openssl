@@ -162,6 +162,19 @@ ossl_raise(VALUE exc, const char *fmt, ...)
  * Debug
  */
 VALUE dOSSL;
+#if defined(NT)
+void ossl_debug(const char *fmt, ...)
+{
+	va_list args;
+	
+	if (dOSSL == Qtrue) {
+		fprintf(stderr, "OSSL_DEBUG: ");
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
+	}
+}
+#endif
 
 static VALUE
 ossl_debug_get(VALUE self)
