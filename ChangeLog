@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 11 Jun 2002 15:46:20 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl.h: remove <openssl/bn_lcl.h>.
+
 Tue, 11 Jun 2002 02:58:24 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* pkey.c: don't segfault when signing with public key - check added
 

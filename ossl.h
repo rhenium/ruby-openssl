@@ -38,7 +38,6 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#include <openssl/bn_lcl.h>
 #if defined(NT)
 #  undef OpenFile
 #endif
