@@ -4,16 +4,21 @@ TODO list for
 -----------------------------------------------------------------------
 OpenSSL::
   [DONE] Move all Errors as child of OpenSSLError
-  * Implement Ruby 1.8 style of creating instances (see StringIO)
+  [DONE] Implement Ruby 1.8 style of creating instances (see StringIO)
   * Detailed object inspection (ie. all params for RSA)
   * How to support HW crypto engines?
   [DONE] Rename ANY classes to uniq ones
   * Support more detailed requies (like: require 'openssl/crypto', require 'openssl/ssl')?
-  * WRITE TEST CASES!
+  * WRITE TEST CASES! [Started]
   * Use RDoc and write documentation to sources?
   * Prune openssl_missing.[ch]
-  * Add SMIME, PKCS#8
+  * Add SMIME
+  * Add PKCS#8
+  * Add PKCS#12
   * Is there any need to implement BIO? (Wrap BIO to Ruby's IO?)
+  * Add Comp?
+  * Add krb5?
+  * Add ocsp
   
   BN::
     [DONE] Move initialize to Cspace

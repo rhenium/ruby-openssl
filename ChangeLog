@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Thu, 13 Jun 2002 12:33:16 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* config.c: fix build for Windows
+
 Thu, 13 Jun 2002 00:05:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509crl.c: Fix check for X509_CRL_verify retval
 	* x509store.c: Fix mem leak in add_trusted, fix check for X509_verify_cert retval

@@ -51,14 +51,18 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 			ossl_raise(eConfigError, "");
 		}
 	}
-		
+/*
+ * FIXME
+ * Does't work for Windows?
 	if (!(conf = NCONF_new(
 #if defined(NT)
 			NCONF_WIN32()
 #else
 			NCONF_default()
 #endif
-			     ))) {
+		))) {
+ */
+	if (!(conf = NCONF_new(NULL))) {
 		ossl_raise(eConfigError, "");
 	}
 	if (!NCONF_load(conf, filename, &err_line)) {
