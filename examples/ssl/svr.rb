@@ -28,9 +28,9 @@ if verify_peer
   if ca_cert.nil?
     # no nothing
   elsif FileTest::file?(ca_cert)
-    ssl.ca_file = ca_cert
+    ctx.ca_file = ca_cert
   elsif FileTest::directory?(ce_cert)
-    ssl.ca_path = ca_cert
+    ctx.ca_path = ca_cert
   end
 end
 STDERR.print "SSLContext: #{ctx.inspect}.\n"

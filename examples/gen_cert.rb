@@ -12,7 +12,7 @@ p key = RSA.new(1024)
 p new = Certificate.new
 name = [['C', 'CZ'],['O','Ruby'],['CN','RA Officer']]
 p new.subject = Name.new(name)
-p new.issuer = Name.new(name)
+p new.issuer = ca.subject
 p new.not_before = Time.now
 p new.not_after = Time.now + (365*24*60*60)
 p new.public_key = key
@@ -36,6 +36,6 @@ puts "Enter Password:"
 p pass = gets.chop!
 
 f = File.new("./#{new.serial}key.pem", "w")
-f.write key.export(Cipher::DES.new(Cipher::EDE3, Cipher::CBC), pass)
+f.write key.export(Cipher::DES.new(:EDE3, :CBC), pass)
 f.close
 

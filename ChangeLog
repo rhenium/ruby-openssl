@@ -1,3 +1,9 @@
+Tue, 03 Jun 2003 15:46:01 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* examples/ssl/svr.rb: CTX fixes by Stef Telford <stef@chronozon.artofdns.com> (Thanks!)
+
+Mon, 02 Jun 2003 21:41:38 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* examples/gen_cert.rb: fixes by NaHi
+
 Mon, 02 Jun 2003 09:40:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: remove strptime (caused problems on Cygwin/Linux boxes). Done by NaHi <nahi@keynauts.com> (Thanks!)
 
