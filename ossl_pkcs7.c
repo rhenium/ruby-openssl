@@ -111,18 +111,15 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	StringValue(data);
 
 	pkey = GetPrivPKeyPtr(key); * NO NEED TO DUP *
-	x509 = ossl_x509_get_X509(cert);
+	x509 = GetX509CertPtr(cert); * NO NEED TO DUP *
 
 	if (!(bio = BIO_new_mem_buf(RSTRING(data)->ptr, RSTRING(data)->len))) {
-		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
 	if (!(pkcs7 = PKCS7_sign(x509, pkey, NULL, bio, 0))) {
-		X509_free(x509);
 		BIO_free(bio);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	X509_free(x509);
 	BIO_free(bio);
 	
 	WrapPKCS7(cPKC7, obj, pkcs7);
@@ -247,18 +244,15 @@ ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
 	
 	GetPKCS7(self, pkcs7);
 
-	x509 = ossl_x509_get_X509(cert);
+	x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
 	
 	if (!(ri = PKCS7_RECIP_INFO_new())) {
-		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
 	if (!PKCS7_RECIP_INFO_set(ri, x509)) {
-		X509_free(x509);
 		PKCS7_RECIP_INFO_free(ri);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	X509_free(x509);
 	
 	if (!PKCS7_add_recipient_info(pkcs7, ri)) {
 		PKCS7_RECIP_INFO_free(ri);
@@ -271,18 +265,12 @@ static VALUE
 ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
 {
 	PKCS7 *pkcs7;
-	X509 *x509;
 
 	GetPKCS7(self, pkcs7);
 
-	x509 = ossl_x509_get_X509(cert);
-
-	if (!PKCS7_add_certificate(pkcs7, x509)) { /* DUPs x509 - free it! */
-		X509_free(x509);
+	if (!PKCS7_add_certificate(pkcs7, GetX509CertPtr(cert))) { /* NO NEED TO DUP */
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	X509_free(x509);
-
 	return self;
 }
 
@@ -429,7 +417,7 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 	OSSL_Check_Type(cert, cX509Cert);
 
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-	x509 = ossl_x509_get_X509(cert);
+	x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
 
 	if (!(bio = PKCS7_dataDecode(pkcs7, pkey, NULL, x509))) {
 		X509_free(x509);
@@ -496,15 +484,12 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 	GetPKCS7si(self, p7si);
 
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
+	x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
 	md = ossl_digest_get_EVP_MD(digest);
-	x509 = ossl_x509_get_X509(cert);
 
 	if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {
-		X509_free(x509);
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	X509_free(x509);
-	
 	return self;
 }
 

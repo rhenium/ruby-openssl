@@ -179,32 +179,24 @@ ssl_ctx_setup(VALUE self)
 
     /* private key may be bundled in certificate file. */
     val = ssl_get_cert(self);
-    cert = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
+    cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED */
     val = ssl_get_key(self);
     key = NIL_P(val) ? NULL : GetPKeyPtr(val); /* NO NEED TO DUP */
 
     	if (cert && key) {
 		if (!SSL_CTX_use_certificate(p->ctx, cert)) { /* Adds a ref => Safe to FREE */
-			X509_free(cert);
 			OSSL_Raise(eSSLError, "SSL_CTX_use_certificate:");
 		}
 		if (!SSL_CTX_use_PrivateKey(p->ctx, key)) { /* Adds a ref => Safe to FREE */
-			X509_free(cert);
 			OSSL_Raise(eSSLError, "SSL_CTX_use_PrivateKey:");
 		}
 		if (!SSL_CTX_check_private_key(p->ctx)) {
-			X509_free(cert);
 			OSSL_Raise(eSSLError, "SSL_CTX_check_private_key:");
 		}
 	}
 
-	/*
-	 * Free cert, key (Used => Safe to FREE || Not used => Not needed)
-	 */
-	if (cert) X509_free(cert);
-
 	val = ssl_get_ca(self);
-	ca = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
+	ca = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED. */
 	val = ssl_get_ca_file(self);
 	ca_file = NIL_P(val) ? NULL : RSTRING(val)->ptr;
 	val = ssl_get_ca_path(self);
@@ -212,10 +204,8 @@ ssl_ctx_setup(VALUE self)
 
 	if (ca) {
 		if (!SSL_CTX_add_client_CA(p->ctx, ca)) { /* Copies X509_NAME => FREE it. */
-			X509_free(ca);
 			OSSL_Raise(eSSLError, "");
 		}
-		X509_free(ca);
 	}
 	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
 			!SSL_CTX_set_default_verify_paths(p->ctx))) {

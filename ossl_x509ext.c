@@ -28,7 +28,7 @@
 } while (0)
 
 #define MakeX509ExtFactory(klass, obj, ctx) \
-	obj = Data_Make_Struct(klass, X509V3_CTX, 0, CRYPTO_free, ctx)
+	obj = Data_Make_Struct(klass, X509V3_CTX, 0, ossl_x509extfactory_free, ctx)
 #define GetX509ExtFactory(obj, ctx) do { \
 	Data_Get_Struct(obj, X509V3_CTX, ctx); \
 	if (!ctx) { \
@@ -84,6 +84,18 @@ ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 /*
  * Ext factory
  */
+static void
+ossl_x509extfactory_free(X509V3_CTX *ctx)
+{
+	if (ctx) {
+		if (ctx->issuer_cert)	X509_free(ctx->issuer_cert);
+		if (ctx->subject_cert)	X509_free(ctx->subject_cert);
+		if (ctx->crl)		X509_CRL_free(ctx->crl);
+		if (ctx->subject_req)	X509_REQ_free(ctx->subject_req);
+		OPENSSL_free(ctx);
+	}
+}
+
 static VALUE 
 ossl_x509extfactory_s_allocate(VALUE klass)
 {
@@ -102,7 +114,7 @@ ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 
 	GetX509ExtFactory(self, ctx);
 
-	ctx->issuer_cert = ossl_x509_get_X509(cert);
+	ctx->issuer_cert = DupX509CertPtr(cert); /* DUP NEEDED */
 
 	return cert;
 }
@@ -114,7 +126,7 @@ ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 
 	GetX509ExtFactory(self, ctx);
 
-	ctx->subject_cert = ossl_x509_get_X509(cert);
+	ctx->subject_cert = DupX509CertPtr(cert); /* DUP NEEDED */
 
 	return cert;
 }

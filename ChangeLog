@@ -3,6 +3,15 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Sat,  8 Jun 2002 13:48:37 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509.h: dropped ossl_x509_get_X509(obj)
+	* x509.h: introduced GetX509CertPtr(obj), DupX509CertPtr(obj) with the same semantics as explained for *PKeyPtr
+	* pkcs7.c: use these new funcs
+	* ssl.c: ditto.
+	* x509ext.c: ditto.
+	* x509store.c: ditto.
+	* x509ext.c: fix memory leaking after GC
+
 Sat,  8 Jun 2002 11:54:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* pkey.h: dropped ossl_pkey_get_EVP_PKEY, ossl_pkey_get_private_EVP_PKEY
 	* pkey.h: added GetPKeyPtr, GetPrivPKeyPtr, DupPrivPKeyPtr

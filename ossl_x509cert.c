@@ -79,16 +79,20 @@ ossl_x509_new_from_file(VALUE filename)
 }
 
 X509 *
-ossl_x509_get_X509(VALUE obj)
+GetX509CertPtr(VALUE obj)
 {
-	X509 *x509, *new;
-	
+	X509 *x509;
 	SafeGetX509(obj, x509);
-	
-	if (!(new = X509_dup(x509))) {
-		OSSL_Raise(eX509CertError, "");
-	}
-	return new;
+	return x509;
+}
+
+X509 *
+DupX509CertPtr(VALUE obj)
+{
+	X509 *x509;
+	SafeGetX509(obj, x509);
+	CRYPTO_add(&x509->references,1,CRYPTO_LOCK_X509);
+	return x509;
 }
 
 /*

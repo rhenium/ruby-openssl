@@ -36,7 +36,8 @@ extern VALUE eX509CertError;
 
 VALUE ossl_x509_new(X509 *);
 VALUE ossl_x509_new_from_file(VALUE);
-X509 *ossl_x509_get_X509(VALUE);
+X509 *GetX509CertPtr(VALUE);
+X509 *DupX509CertPtr(VALUE);
 void Init_ossl_x509cert(void);
 
 /*

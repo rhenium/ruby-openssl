@@ -200,15 +200,11 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 	
 	GetX509Store(self, storep);
 	
-	OSSL_Check_Type(cert, cX509Cert);
-	x509 = ossl_x509_get_X509(cert);
+	x509 = DupX509CertPtr(cert); /* DUP NEEDED!!! */
 
 	if (!X509_STORE_add_cert(storep->store->ctx, x509)) {
-		X509_free(x509);
 		OSSL_Raise(eX509StoreError, "");
 	}
-	X509_free(x509);
-	
 	return cert;
 }
 
@@ -318,14 +314,11 @@ static VALUE
 ossl_x509store_verify(VALUE self, VALUE cert)
 {
 	ossl_x509store *storep = NULL;
-	X509 *x509 = NULL;
 	int result = 0;
 
 	GetX509Store(self, storep);
 
-	OSSL_Check_Type(cert, cX509Cert);
-	x509 = ossl_x509_get_X509(cert);
-	X509_STORE_CTX_set_cert(storep->store, x509);
+	X509_STORE_CTX_set_cert(storep->store, GetX509CertPtr(cert)); /* NO DUP NEEDED. */
 	
 	result = X509_verify_cert(storep->store);
 	/*X509_STORE_CTX_cleanup(storep->store); *clears chain*/
