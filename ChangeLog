@@ -1,3 +1,9 @@
+Tue, 17 Dec 2002 18:59:08 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* all files: Indent by 4 spaces, 1 tab has the width of 8 spaces.
+
+Mon,  9 Dec 2002 20:27:28 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ssl.c: the return value of SSL_read/SSL_write is int (not size_t).
+
 Sun, 10 Nov 2002 23:30:56 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.c: enhance BN so you can pass as parameter Ruby's numbers
 

@@ -39,6 +39,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_mode(o,v) rb_iv_set((o),"@verify_mode",(v))
 #define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
+#define ossl_sslctx_set_fixed(o,v)       rb_iv_set((o),"@fixed",(v))
 
 #define ossl_sslctx_get_method(o,v)      rb_iv_get((o),"@ssl_method",(v))
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
@@ -52,13 +53,14 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
+#define ossl_sslctx_get_fixed(o)         rb_iv_get((o),"@fixed")
 
 static VALUE ossl_sslctx_set_cert2(VALUE, VALUE);
 static VALUE ossl_sslctx_set_cert_file2(VALUE, VALUE);
 static VALUE ossl_sslctx_set_key2(VALUE, VALUE);
 static VALUE ossl_sslctx_set_key_file2(VALUE, VALUE);
 
-typedef struct ossl_sslctx_st_t{
+typedef struct ossl_sslctx_st_t {
     SSL_METHOD *method;
     SSL_CTX *ctx;
 } ossl_sslctx_st;
@@ -66,6 +68,7 @@ typedef struct ossl_sslctx_st_t{
 static char *ossl_sslctx_attrs[] = {
     "cert", "cert_file", "key", "key_file", "ca_cert", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth", "verify_callback", "ssl_method",
+    "fixed",
 }; 
 
 #define OSSL_SSL_METHOD_ENTRY(name) { #name, name##_method }
@@ -123,6 +126,10 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     }
     if(p->method == NULL)
         rb_raise(rb_eArgError, "unknown SSL method `%s'.", s);
+    if((p->ctx = SSL_CTX_new(p->method)) == NULL)
+        ossl_raise(eSSLError, "SSL_CTX_new:");
+    SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
+    ossl_sslctx_set_fixed(self, Qfalse);
 
     return self;
 }
@@ -189,13 +196,9 @@ ossl_sslctx_setup(VALUE self)
     int verify_mode;
     VALUE val;
 
+    if(ossl_sslctx_get_fixed(self)) return Qfalse;
+
     Data_Get_Struct(self, ossl_sslctx_st, p);
-    if(p->ctx) return Qfalse;
-
-    if((p->ctx = SSL_CTX_new(p->method)) == NULL)
-        ossl_raise(eSSLError, "SSL_CTX_new:");
-    SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
-
     /* private key may be bundled in certificate file. */
     val = ossl_sslctx_get_cert(self);
     cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED */
@@ -242,6 +245,8 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(p->ctx, NUM2LONG(val));
+
+    ossl_sslctx_set_fixed(self, Qtrue);
 
     return Qtrue;
 }
@@ -478,7 +483,7 @@ static VALUE
 ossl_ssl_read(VALUE self, VALUE len)
 {
     ossl_ssl_st *p;
-    size_t ilen, nread = 0;
+    int ilen, nread = 0;
     VALUE str;
     OpenFile *fptr;
 
@@ -516,7 +521,7 @@ static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
     ossl_ssl_st *p;
-    size_t nwrite = 0;
+    int nwrite = 0;
     OpenFile *fptr;
     FILE *fp;
 

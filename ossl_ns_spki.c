@@ -11,16 +11,16 @@
 #include "ossl.h"
 
 #define WrapSPKI(klass, obj, spki) do { \
-	if (!spki) { \
-		ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
-	} \
-	obj = Data_Wrap_Struct(klass, 0, NETSCAPE_SPKI_free, spki); \
+    if (!spki) { \
+	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
+    } \
+    obj = Data_Wrap_Struct(klass, 0, NETSCAPE_SPKI_free, spki); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
-	Data_Get_Struct(obj, NETSCAPE_SPKI, spki); \
-	if (!spki) { \
-		ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
-	} \
+    Data_Get_Struct(obj, NETSCAPE_SPKI, spki); \
+    if (!spki) { \
+	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
+    } \
 } while (0)
 
 /*
@@ -40,149 +40,147 @@ VALUE eSPKIError;
 static VALUE
 ossl_spki_s_allocate(VALUE klass)
 {
-	NETSCAPE_SPKI *spki;
-	VALUE obj;
+    NETSCAPE_SPKI *spki;
+    VALUE obj;
 	
-	if (!(spki = NETSCAPE_SPKI_new())) {
-		ossl_raise(eSPKIError, "");
-	}	
-	WrapSPKI(klass, obj, spki);
+    if (!(spki = NETSCAPE_SPKI_new())) {
+	ossl_raise(eSPKIError, "");
+    }	
+    WrapSPKI(klass, obj, spki);
 	
-	return obj;
+    return obj;
 }
 
 static VALUE
 ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 {
-	NETSCAPE_SPKI *spki;
-	VALUE buffer;
+    NETSCAPE_SPKI *spki;
+    VALUE buffer;
 	
-	if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
-		return self;
-	}
-	if (!(spki = NETSCAPE_SPKI_b64_decode(StringValuePtr(buffer), -1))) {
-		ossl_raise(eSPKIError, "");
-	}
-	NETSCAPE_SPKI_free(DATA_PTR(self));
-	DATA_PTR(self) = spki;
-
+    if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
+    }
+    if (!(spki = NETSCAPE_SPKI_b64_decode(StringValuePtr(buffer), -1))) {
+	ossl_raise(eSPKIError, "");
+    }
+    NETSCAPE_SPKI_free(DATA_PTR(self));
+    DATA_PTR(self) = spki;
+
+    return self;
 }
 
 static VALUE
 ossl_spki_to_pem(VALUE self)
 {
-	NETSCAPE_SPKI *spki;
-	char *data;
-	VALUE str;
+    NETSCAPE_SPKI *spki;
+    char *data;
+    VALUE str;
 	
-	GetSPKI(self, spki);
+    GetSPKI(self, spki);
+    if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
+	ossl_raise(eSPKIError, "");
+    }
+    str = rb_str_new2(data);
+    OPENSSL_free(data);
 
-	if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
-		ossl_raise(eSPKIError, "");
-	}
-	str = rb_str_new2(data);
-	OPENSSL_free(data);
-
-	return str;
+    return str;
 }
 
 static VALUE
 ossl_spki_print(VALUE self)
 {
-	NETSCAPE_SPKI *spki;
-	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
+    NETSCAPE_SPKI *spki;
+    BIO *out;
+    BUF_MEM *buf;
+    VALUE str;
 	
-	GetSPKI(self, spki);
-
-	if (!(out = BIO_new(BIO_s_mem()))) {
-		ossl_raise(eSPKIError, "");
-	}
-	if (!NETSCAPE_SPKI_print(out, spki)) {
-		BIO_free(out);
-		ossl_raise(eSPKIError, "");
-	}
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
+    GetSPKI(self, spki);
+    if (!(out = BIO_new(BIO_s_mem()))) {
+	ossl_raise(eSPKIError, "");
+    }
+    if (!NETSCAPE_SPKI_print(out, spki)) {
 	BIO_free(out);
+	ossl_raise(eSPKIError, "");
+    }
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
+    BIO_free(out);
 	
-	return str;
+    return str;
 }
 
 static VALUE
 ossl_spki_get_public_key(VALUE self)
 {
-	NETSCAPE_SPKI *spki;
-	EVP_PKEY *pkey;
+    NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
 
-	GetSPKI(self, spki);
-	
-	if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) { /* adds an reference */
-		ossl_raise(eSPKIError, "");
-	}
-	return ossl_pkey_new(pkey); /* NO DUP - OK */
+    GetSPKI(self, spki);
+    if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) { /* adds an reference */
+	ossl_raise(eSPKIError, "");
+    }
+
+    return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
 static VALUE
 ossl_spki_set_public_key(VALUE self, VALUE key)
 {
-	NETSCAPE_SPKI *spki;
+    NETSCAPE_SPKI *spki;
 
-	GetSPKI(self, spki);
-	
-	if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-		ossl_raise(eSPKIError, "");
-	}
-	return key;
+    GetSPKI(self, spki);
+    if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
+	ossl_raise(eSPKIError, "");
+    }
+
+    return key;
 }
 
 static VALUE
 ossl_spki_get_challenge(VALUE self)
 {
-	NETSCAPE_SPKI *spki;
+    NETSCAPE_SPKI *spki;
 
-	GetSPKI(self, spki);
+    GetSPKI(self, spki);
+    if (spki->spkac->challenge->length <= 0) {
+	OSSL_Debug("Challenge.length <= 0?");
+	return rb_str_new2("");
+    }
 
-	if (spki->spkac->challenge->length <= 0) {
-		OSSL_Debug("Challenge.length <= 0?");
-		return rb_str_new2("");
-	}
-	return rb_str_new(spki->spkac->challenge->data, spki->spkac->challenge->length);
+    return rb_str_new(spki->spkac->challenge->data,
+		      spki->spkac->challenge->length);
 }
 
 static VALUE
 ossl_spki_set_challenge(VALUE self, VALUE str)
 {
-	NETSCAPE_SPKI *spki;
+    NETSCAPE_SPKI *spki;
 
-	GetSPKI(self, spki);
-
-	StringValue(str);
-
-	if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING(str)->ptr, RSTRING(str)->len)) {
-		ossl_raise(eSPKIError, "");
-	}
-	return str;
+    GetSPKI(self, spki);
+    StringValue(str);
+    if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING(str)->ptr,
+			 RSTRING(str)->len)) {
+	ossl_raise(eSPKIError, "");
+    }
+    
+    return str;
 }
 
 static VALUE
 ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 {
-	NETSCAPE_SPKI *spki;
-	EVP_PKEY *pkey;
-	const EVP_MD *md;
+    NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
+    const EVP_MD *md;
 
-	GetSPKI(self, spki);
-	
-	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-	md = GetDigestPtr(digest);
+    GetSPKI(self, spki);
+    pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
+    md = GetDigestPtr(digest);
+    if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
+	ossl_raise(eSPKIError, "");
+    }
 
-	if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
-		ossl_raise(eSPKIError, "");
-	}
-	return self;
+    return self;
 }
 
 /*
@@ -191,19 +189,18 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 static VALUE
 ossl_spki_verify(VALUE self, VALUE key)
 {
-	NETSCAPE_SPKI *spki;
+    NETSCAPE_SPKI *spki;
 
-	GetSPKI(self, spki);
-	
-	switch (NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-		case 0:
-			return Qfalse;
-		case 1:
-			return Qtrue;
-		default:
-			ossl_raise(eSPKIError, "");
-	}
-	return Qnil; /* dummy */
+    GetSPKI(self, spki);
+    switch (NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
+    case 0:
+	return Qfalse;
+    case 1:
+	return Qtrue;
+    default:
+	ossl_raise(eSPKIError, "");
+    }
+    return Qnil; /* dummy */
 }
 
 /*
@@ -212,23 +209,23 @@ ossl_spki_verify(VALUE self, VALUE key)
 void
 Init_ossl_ns_spki()
 {
-	mNetscape = rb_define_module_under(mOSSL, "Netscape");
+    mNetscape = rb_define_module_under(mOSSL, "Netscape");
 	
-	eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);
+    eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);
 	
-	cSPKI = rb_define_class_under(mNetscape, "SPKI", rb_cObject);
+    cSPKI = rb_define_class_under(mNetscape, "SPKI", rb_cObject);
 	
-	rb_define_singleton_method(cSPKI, "allocate", ossl_spki_s_allocate, 0);
-	rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
+    rb_define_singleton_method(cSPKI, "allocate", ossl_spki_s_allocate, 0);
+    rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
 	
-	rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);
-	rb_define_alias(cSPKI, "to_s", "to_pem");
-	rb_define_method(cSPKI, "to_text", ossl_spki_print, 0);
-	rb_define_method(cSPKI, "public_key", ossl_spki_get_public_key, 0);
-	rb_define_method(cSPKI, "public_key=", ossl_spki_set_public_key, 1);
-	rb_define_method(cSPKI, "sign", ossl_spki_sign, 2);
-	rb_define_method(cSPKI, "verify", ossl_spki_verify, 1);
-	rb_define_method(cSPKI, "challenge", ossl_spki_get_challenge, 0);
-	rb_define_method(cSPKI, "challenge=", ossl_spki_set_challenge, 1);
+    rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);
+    rb_define_alias(cSPKI, "to_s", "to_pem");
+    rb_define_method(cSPKI, "to_text", ossl_spki_print, 0);
+    rb_define_method(cSPKI, "public_key", ossl_spki_get_public_key, 0);
+    rb_define_method(cSPKI, "public_key=", ossl_spki_set_public_key, 1);
+    rb_define_method(cSPKI, "sign", ossl_spki_sign, 2);
+    rb_define_method(cSPKI, "verify", ossl_spki_verify, 1);
+    rb_define_method(cSPKI, "challenge", ossl_spki_get_challenge, 0);
+    rb_define_method(cSPKI, "challenge=", ossl_spki_set_challenge, 1);
 }
 

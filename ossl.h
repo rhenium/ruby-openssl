@@ -70,21 +70,23 @@ extern VALUE eOSSLError;
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) do {\
-	if (!rb_obj_is_kind_of(obj, klass)) {\
-		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
-				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
-	}\
+  if (!rb_obj_is_kind_of(obj, klass)) {\
+    ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",\
+               rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
+  }\
 } while (0)
+
 #define OSSL_Check_Instance(obj, klass) do {\
-	if (!rb_obj_is_instance_of(obj, klass)) {\
-		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
-				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
-	}\
+  if (!rb_obj_is_instance_of(obj, klass)) {\
+    ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
+               rb_class2name(CLASS_OF(obj)), rb_class2name(klass));\
+  }\
 } while (0)
+
 #define OSSL_Check_Same_Class(obj1, obj2) do {\
-	if (!rb_obj_is_instance_of(obj1, rb_obj_class(obj2))) {\
-		ossl_raise(rb_eTypeError, "wrong argument type");\
-	}\
+  if (!rb_obj_is_instance_of(obj1, rb_obj_class(obj2))) {\
+    ossl_raise(rb_eTypeError, "wrong argument type");\
+  }\
 } while (0)
 
 /*
@@ -107,9 +109,7 @@ int string2hex(char *, int, char **, int *);
 /*
  * ERRor messages
  */
-#define OSSL_ErrMsg() \
-	ERR_reason_error_string(ERR_get_error())
-
+#define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 void ossl_raise(VALUE, const char *, ...);
 
 /*
@@ -117,30 +117,30 @@ void ossl_raise(VALUE, const char *, ...);
  */
 extern VALUE dOSSL;
 
-#if defined(NT)
+#if defined(__GNUC__) || __STDC_VERSION__ >= 199901L
+#define OSSL_Debug(fmt, ...) do { \
+  if (dOSSL == Qtrue) { \
+    fprintf(stderr, "OSSL_DEBUG: "); \
+    fprintf(stderr, fmt, ##__VA_ARGS__); \
+    fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
+  } \
+} while (0)
+
+#define OSSL_Warning(fmt, ...) do { \
+  OSSL_Debug(fmt, ##__VA_ARGS__); \
+  rb_warning(fmt, ##__VA_ARGS__); \
+} while (0)
+
+#define OSSL_Warn(fmt, ...) do { \
+  OSSL_Debug(fmt, ##__VA_ARGS__); \
+  rb_warn(fmt, ##__VA_ARGS__); \
+} while (0)
+#else
 void ossl_debug(const char *, ...);
-#  define OSSL_Debug ossl_debug
-#  define OSSL_Warning rb_warning
-#  define OSSL_Warn rb_warn
-#else /* NT */
-#  define OSSL_Debug(fmt, ...) do { \
-	if (dOSSL == Qtrue) { \
-		fprintf(stderr, "OSSL_DEBUG: "); \
-		fprintf(stderr, fmt, ##__VA_ARGS__); \
-		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
-	} \
-} while (0)
-
-#  define OSSL_Warning(fmt, ...) do { \
-	OSSL_Debug(fmt, ##__VA_ARGS__); \
-	rb_warning(fmt, ##__VA_ARGS__); \
-} while (0)
-
-#  define OSSL_Warn(fmt, ...) do { \
-	OSSL_Debug(fmt, ##__VA_ARGS__); \
-	rb_warn(fmt, ##__VA_ARGS__); \
-} while (0)
-#endif /* NT */
+#define OSSL_Debug ossl_debug
+#define OSSL_Warning rb_warning
+#define OSSL_Warn rb_warn
+#endif /* __GNUC__ || _STDC_VERSION__ >= 199901L */
 
 /*
  * Include all parts
@@ -164,4 +164,3 @@ void ossl_debug(const char *, ...);
 #endif
 
 #endif /* _OSSL_H_ */
-
