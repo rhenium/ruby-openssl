@@ -3,6 +3,12 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Mon, 10 Jun 2002 10:35:56 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.c: implemented #sign and #verify for PKey
+	* pkey.rb: deleted (funcs implemented in C-space (pkey.c))
+	* pkey_dsa.c: #sign_digest and #verify_digest renamed to #syssign #sysverify
+	* pkey_rsa.c: implemented RSA_sign, RSA_verify, but commented out until a good way of specifiing digest type will be found
+
 Sun,  9 Jun 2002 22:17:13 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509store.c: really port to Ruby 1.8 interface :-)
 	* x509store.c: #protect method dropped (useless)

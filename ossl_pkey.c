@@ -163,6 +163,65 @@ ossl_pkey_to_der(VALUE self)
 	return str;
 }
 
+static VALUE
+ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
+{
+	EVP_PKEY *pkey;
+	EVP_MD_CTX ctx;
+	const EVP_MD *md;
+	char *buf;
+	int buf_len;
+	VALUE str;
+
+	GetPKey(self, pkey);
+
+	md = ossl_digest_get_EVP_MD(digest);
+	StringValue(data);
+	
+	EVP_SignInit(&ctx, md);
+	EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+	
+	if (!(buf = OPENSSL_malloc(EVP_PKEY_size(pkey) + 16))) {
+		OSSL_Raise(ePKeyError, "");
+	}
+	if (!EVP_SignFinal(&ctx, buf, &buf_len, pkey)) {
+		OPENSSL_free(buf);
+		OSSL_Raise(ePKeyError, "");
+	}	
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
+
+	return str;
+}
+
+static VALUE
+ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
+{
+	EVP_PKEY *pkey;
+	EVP_MD_CTX ctx;
+	const EVP_MD *md;
+	int result;
+
+	GetPKey(self, pkey);
+
+	md = ossl_digest_get_EVP_MD(digest);
+	StringValue(sig);
+	StringValue(data);
+	
+	EVP_VerifyInit(&ctx, md);
+	EVP_VerifyUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+	
+	result = EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey);
+
+	if (result < 0) {
+		OSSL_Raise(ePKeyError, "");
+	}
+	if (result == 1) {
+		return Qtrue;
+	}
+	return Qfalse;
+}
+
 /*
  * INIT
  */
@@ -179,6 +238,8 @@ Init_ossl_pkey()
 	rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
 
 	rb_define_method(cPKey, "to_der", ossl_pkey_to_der, 0);
+	rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
+	rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);
 	
 	id_private_q = rb_intern("private?");
 	

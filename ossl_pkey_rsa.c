@@ -413,43 +413,57 @@ ossl_rsa_to_public_key(VALUE self)
 }
 
 /*
- * Better to implement is in Ruby space?
+ * TODO, FIXME
+ * Find some good way how to specify type
+ * Is NID_md5_sha1 OK for all? (Don't think so.)
  * 
 static VALUE
-ossl_rsa_sign(VALUE self, VALUE digest, VALUE text)
+ossl_rsa_sign(VALUE self, VALUE data)
 {
-	ossl_rsa *rsap = NULL;
-	EVP_MD_CTX ctx;
-	const EVP_MD *md = NULL;
-	char *sign = NULL;
-	int sign_len = 0;
+	EVP_PKEY *pkey;
+	char *buf;
+	int buf_len;
 	VALUE str;
 
-	GetRSA(self, rsap);
-	OSSL_Check_type(digest, cDigest);
-	text = rb_String(text);
+	GetPKeyRSA(self, pkey);
 
-	if (!(sign = OPENSSL_malloc(RSA_size(rsap->rsa)+16))) {
+	StringValue(data);
+
+	if (!RSA_PRIVATE(pkey->pkey.rsa)) {
+		rb_raise(eRSAError, "Private RSA key needed!");
+	}
+	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 		OSSL_Raise(eRSAError, "");
 	}
-
-	md = ossl_digest_get_EVP_MD(digest);
-	EVP_SignInit(&ctx, md);
-	EVP_SignUpdate(&ctx, RSTRING(text)->ptr, RSTRING(text)->len);
-	if (!EVP_SignFinal(&ctx, sign, &sign_len, pkeyp->key)) {
-		OPENSSL_free(sign);
+	if (!RSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, buf, &buf_len, pkey->pkey.rsa)) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eRSAError, "");
 	}
-	
-	str = rb_str_new(sign, sign_len);
-	OPENSSL_free(sign);
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 
 	return str;
 }
-	
+
 static VALUE
-ossl_rsa_verify(VALUE self, VALUE digest, VALUE text)
+ossl_rsa_verify(VALUE self, VALUE digest, VALUE sig)
 {
+	EVP_PKEY *pkey;
+	int ret;
+
+	GetPKeyDSA(self, pkey);
+
+	StringValue(digest);
+	StringValue(sig);
+
+	ret = RSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.rsa);
+
+	if (ret < 0) {
+		OSSL_Raise(eRSAError, "");
+	} else if (ret == 1) {
+		return Qtrue;
+	}
+	return Qfalse;
 }
  */
 
@@ -478,10 +492,11 @@ Init_ossl_rsa()
 	rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, 1);
 	/*rb_define_method(cRSA, "n", ossl_rsa_get_n, 0);*/
 /*
- * Implemented in Ruby space...
+ * TODO, FIXME
+ * Find way how to support digest types
  * 
-	rb_define_method(cRSA, "sign", ossl_rsa_sign, 2);
-	rb_define_method(cRSA, "verify", ossl_rsa_verify, 3);
+	rb_define_method(cRSA, "syssign", ossl_rsa_sign, 2);
+	rb_define_method(cRSA, "sysverify", ossl_rsa_verify, 3);
  */
 }
 

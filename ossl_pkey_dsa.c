@@ -305,7 +305,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	if (!(buf = OPENSSL_malloc(DSA_size(pkey->pkey.dsa) + 16))) {
 		OSSL_Raise(eDSAError, "");
 	}
-	if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, buf, &buf_len, pkey->pkey.dsa)) { /*type = 0*/
+	if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, buf, &buf_len, pkey->pkey.dsa)) { /* type is ignored (0) */
 		OPENSSL_free(buf);
 		OSSL_Raise(eDSAError, "");
 	}
@@ -355,8 +355,8 @@ Init_ossl_dsa()
 	rb_define_method(cDSA, "export", ossl_dsa_export, -1);
 	rb_define_alias(cDSA, "to_pem", "export");
 	rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
-	rb_define_method(cDSA, "sign_digest", ossl_dsa_sign, 1);
-	rb_define_method(cDSA, "verify_digest", ossl_dsa_verify, 2);
+	rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
+	rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
 }
 
 #else /* defined NO_DSA */
