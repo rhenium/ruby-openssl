@@ -136,6 +136,7 @@ ossl_ssl_call_verify_cb(VALUE args)
     cb = rb_ary_shift(args);
     ok = rb_ary_shift(args);
     store = rb_ary_shift(args);
+
     return rb_funcall(cb, rb_intern("call"), 2, ok, store);
 }
 
@@ -201,7 +202,7 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_cert(self);
     cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED */
     val = ossl_sslctx_get_key(self);
-    key = NIL_P(val) ? NULL : GetPKeyPtr(val); /* NO NEED TO DUP */
+    key = NIL_P(val) ? NULL : GetPKeyPtr(val); /* NO DUP NEEDED */
     if (cert && key) {
         if (!SSL_CTX_use_certificate(p->ctx, cert)) {
             /* Adds a ref => Safe to FREE */
