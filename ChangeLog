@@ -1,3 +1,28 @@
+Thu, 26 Jun 2003 06:16:21 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* cipher.h: replace ossl_cipher_get_EVP_CIPHER into GetCipherPtr
+	* cipher.c: ditto.
+	* ossl_pkey_rsa.c: use GetCipherPtr.
+	* ossl_pkey_dsa.c: use GetCipherPtr.
+	* ossl_ssl.c: SSLContext#initialize allows a Symbol as SSL type.
+	* ossl_x509store.c: set verify callback on ex_data.
+	* ossl_pkcs7.c: added some(many) features.
+	  - PKCS7::read_smime as a wrapper of SMIME_write_PKCS7
+	  - PKCS7::write_smime as a wrapper of SMIME_write_PKCS7
+	  - PKCS7::sign as a wrapper of PKCS7_sign
+	  - PKCS7::encrypt as a wrapper of PKCS7_ecnrypt
+	  - PKCS7::PKCS7#initialized disallow PKCS#7 type as argument.
+	  - PKCS7::PKCS7#type= to set PKCS#7 type.
+	    (NID_pkcs7_* can be specified by Symbol.)
+	  - PKCS7::PKCS7#type to get PKCS#7 type.
+	  - PKCS7::PKCS7#detached= to set detached.
+	  - PKCS7::PKCS7#detached? to query if the envelop is detached.
+	  - PKCS7::PKCS7#verify is as a wrapper of PKCS7_verify
+	  - PKCS7::PKCS7#decrypt is as a wrapper of PKCS7_decypt
+	  - PKCS7::PKCS7#data= is an alias of PKCS7::PKCS7#add_data
+	  - PKCS7::PKCS7#verify_data is temporarily disabled.
+	  - PKCS7::PKCS7#decode_data is temporarily disabled.
+	  - PKCS7_* constants are introduced. 
+
 Thu, 26 Jun 2003 05:48:07 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* openssl_missing.c: addded X509_STORE_{set,get}_ex_data().
 	* extconf.rb: checks X509_STORE_set_ex_data().

@@ -34,7 +34,7 @@ VALUE eCipherError;
  * PUBLIC
  */
 const EVP_CIPHER *
-ossl_cipher_get_EVP_CIPHER(VALUE obj)
+GetCipherPtr(VALUE obj)
 {
     EVP_CIPHER_CTX *ctx;
 

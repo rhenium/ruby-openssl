@@ -105,7 +105,10 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
         return self;
     }
-    s =  StringValuePtr(ssl_method);
+    if(TYPE(ssl_method) == T_SYMBOL)
+	s = rb_id2name(SYM2ID(ssl_method));
+    else
+	s =  StringValuePtr(ssl_method);
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
         if (strcmp(ossl_ssl_method_tab[i].name, s) == 0) {
             method = ossl_ssl_method_tab[i].func();

@@ -15,7 +15,7 @@ extern VALUE mCipher;
 extern VALUE cCipher;
 extern VALUE eCipherError;
 
-const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE);
+const EVP_CIPHER *GetCipherPtr(VALUE);
 void Init_ossl_cipher(void);
 
 #endif /* _OSSL_CIPHER_H_ */

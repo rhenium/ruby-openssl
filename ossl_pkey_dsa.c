@@ -217,7 +217,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     GetPKeyDSA(self, pkey);
     rb_scan_args(argc, argv, "02", &cipher, &pass);
     if (!NIL_P(cipher)) {
-	ciph = ossl_cipher_get_EVP_CIPHER(cipher);
+	ciph = GetCipherPtr(cipher);
 	if (!NIL_P(pass)) {
 	    passwd = StringValuePtr(pass);
 	}

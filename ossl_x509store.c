@@ -108,13 +108,25 @@ DEFINE_ALLOC_WRAPPER(ossl_x509store_alloc)
  * General callback for OpenSSL verify
  */
 static VALUE
+ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
+{
+    X509_STORE *store;
+
+    GetX509Store(self, store);
+    X509_STORE_set_ex_data(store, ossl_verify_cb_idx, cb);
+    rb_iv_set(self, "@verify_callback", cb);
+
+    return cb;
+}
+
+static VALUE
 ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
     GetX509Store(self, store);
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
-    rb_iv_set(self, "@verify_callback", Qnil);
+    ossl_x509store_set_vfy_cb(self, Qnil);
 
     /* last verification status */
     rb_iv_set(self, "@error", Qnil);
@@ -461,12 +473,13 @@ Init_ossl_x509store()
       X509_STORE_CTX_get_ex_new_index(0,"ossl_x509store_ex_vcb",NULL,NULL,NULL);
 
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
-    rb_attr(cX509Store, rb_intern("verify_callback"), 1, 1, Qfalse);
+    rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
     rb_attr(cX509Store, rb_intern("error"), 1, 0, Qfalse);
     rb_attr(cX509Store, rb_intern("error_string"), 1, 0, Qfalse);
     rb_attr(cX509Store, rb_intern("chain"), 1, 0, Qfalse);
     rb_define_alloc_func(cX509Store, ossl_x509store_alloc);
     rb_define_method(cX509Store, "initialize",   ossl_x509store_initialize, -1);
+    rb_define_method(cX509Store, "verify_callback=", ossl_x509store_set_vfy_cb, 1);
     rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
     rb_define_method(cX509Store, "purpose=",     ossl_x509store_set_purpose, 1);
     rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
