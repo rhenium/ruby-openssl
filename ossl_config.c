@@ -148,5 +148,6 @@ Init_ossl_config()
 	
 	rb_define_method(cConfig, "value", ossl_config_get_value, -1);
 	rb_define_method(cConfig, "section", ossl_config_get_section, 1);
+	rb_define_alias(cConfig, "[]", "section");
 }
 

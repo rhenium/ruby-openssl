@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Fri, 27 Sep 2002 09:40:43 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* config.c: added alias to Config#section as Config[]
+
 Fri, 06 Sep 2002 12:29:37 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* extconf.rb: Add some more targets when --*-debug and GCC
 
