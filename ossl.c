@@ -144,6 +144,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 		} else {
 			len += snprintf(buf + len, BUFSIZ - len, "%s", ERR_reason_error_string(e));
 		}
+		ERR_clear_error();
 	}
 	rb_exc_raise(rb_exc_new(exc, buf, len));
 }
