@@ -1,3 +1,6 @@
+Sun, 29 Jun 2003 02:57:57 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_x509ext.c: typo fixed.
+
 Sat, 28 Jun 2003 01:04:40 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509ext.[ch]: rename ossl_x509ext_get_X509_EXTENSION to DupX509ExtPtr, and use where needed.
 	* ossl_pkcs7.c: use sk_X509_pop_free() instead of sk_X509_free().

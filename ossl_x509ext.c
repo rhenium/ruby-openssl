@@ -76,7 +76,7 @@ GetX509ExtPtr(VALUE obj)
 }
 
 X509_EXTENSION *
-DupGetX509ExtPtr(VALUE obj)
+DupX509ExtPtr(VALUE obj)
 {
     X509_EXTENSION *ext, *new;
 
