@@ -3,11 +3,14 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
-Tue, 15 Oct 2002 17:27:26 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Tue, 15 Oct 2002 18:10:17 +0900
+	* ossl_ssl.c: all ssl_xxx symbols were replaced as ossl_ssl_xxx.
+
+Tue, 15 Oct 2002 17:27:26 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: pass the verify callback Proc through the SSL
 	  extention data.
 
-Sun, 13 Oct 2002 01:46:20 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Sun, 13 Oct 2002 01:46:20 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: fixed around verify callback invocation.
 	* net/protocols.rb: improved for new version.
 	* net/https.rb: ditto.
@@ -38,7 +41,7 @@ Wed, 07 Aug 2002 15:41:59 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: Drop not needed NT timeval struct
 	* ssl.c: Check_Type => OSSL_Check_Kind fixes
 
-Mon, 29 Jul 2002 06:31:50 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Mon, 29 Jul 2002 06:31:50 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* lib/openssl/buffering.rb: typo fixed (sent by Hiroshi Nakamura)
 	* lib/openssl/openssl.rb: fixed for new implementation.
 	* ossl_ssl.c: change the license (from BSDL to Ruby's).
@@ -174,7 +177,7 @@ Tue, 11 Jun 2002 13:56:24 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 Tue, 11 Jun 2002 13:39:45 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* digest.c: Added #size method (return len is in BYTEs)
 
-Tue, 11 Jun 2002 15:46:20 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+Tue, 11 Jun 2002 15:46:20 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl.h: remove <openssl/bn_lcl.h>.
 
 Tue, 11 Jun 2002 02:58:24 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
