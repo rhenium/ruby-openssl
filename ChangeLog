@@ -1,5 +1,6 @@
 Fri, 04 Jul 2003 23:56:09 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/c_rehash.rb: Run as a manager of cert store directory.
+	* examples/gen_ca_cert.rb: Pass DN as a command line parameter.
 
 Fri, 04 Jul 2003 23:51:52 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/cert_store.rb: Renamed to cert_store_view.rb.

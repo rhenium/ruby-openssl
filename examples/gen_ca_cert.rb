@@ -19,6 +19,17 @@ passwd_cb = Proc.new{|flag|
   pass
 }
 
+def usage
+  myname = File::basename($0)
+  $stderr.puts <<EOS
+Usage: #{myname} name
+  name ... ex. /C=JP/O=RRR/OU=CA/CN=NaHi/emailAddress=nahi@example.org
+EOS
+  exit
+end
+
+name_str = ARGV.shift or usage
+
 $stdout.sync = true
 
 print "Generating CA key: "
@@ -26,7 +37,7 @@ key = PKey::RSA.new(2048){ putc "." }
 putc "\n"
 
 cert = X509::Certificate.new
-name = [['C','CZ'],['O','Ruby'],['CN','RubyCA']]
+name = name_str.scan(/\/([^\/]+)/).collect { |i| i[0].split("=") }
 cert.subject = cert.issuer = X509::Name.new(name)
 cert.not_before = Time.now
 cert.not_after = Time.now + 2 * 365 * 24 * 60 * 60
@@ -34,7 +45,7 @@ cert.public_key = key
 cert.serial = 0
 cert.version = 2 # X509v3
 
-key_usage = [ "cRLSign", "keyCertSign" ]
+key_usage = ["cRLSign", "keyCertSign"]
 ext = []
 ef = X509::ExtensionFactory.new
 ef.subject_certificate = cert
