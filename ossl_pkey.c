@@ -9,81 +9,64 @@
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
-#include "ossl_pkey.h"
-
-#define GetPKey(obj, pkeyp) do {\
-	Data_Get_Struct(obj, ossl_pkey, pkeyp);\
-	if (!pkeyp->get_EVP_PKEY) rb_raise(ePKeyError, "not initialized!");\
-} while (0)
 
 /*
  * Classes
  */
-ID id_private_q;
+VALUE mPKey;
 VALUE cPKey;
 VALUE ePKeyError;
-
-/*
- * Struct
- * see ossl_pkey.h
- */
+ID id_private_q;
 
 /*
  * Public
  */
 VALUE
-ossl_pkey_new(EVP_PKEY *key)
+ossl_pkey_new(EVP_PKEY *pkey)
 {
-	if (!key)
+	if (!pkey) {
 		rb_raise(ePKeyError, "Cannot make new key from NULL.");
-	
-	switch (key->type) {
+	}
+	switch (EVP_PKEY_type(pkey->type)) {
 #if !defined(OPENSSL_NO_RSA)
 		case EVP_PKEY_RSA:
-			return ossl_rsa_new(key->pkey.rsa);
+			return ossl_rsa_new(pkey);
 #endif
 #if !defined(OPENSSL_NO_DSA)
 		case EVP_PKEY_DSA:
-			return ossl_dsa_new(key->pkey.dsa);
+			return ossl_dsa_new(pkey);
 #endif
 #if !defined(OPENSSL_NO_DH)
 		case EVP_PKEY_DH:
-			return ossl_dh_new(key->pkey.dh);
+			return ossl_dh_new(pkey);
 #endif
+		default:
+			rb_raise(ePKeyError, "unsupported key type");
 	}
-	
-	rb_raise(ePKeyError, "unsupported key type");
-	return Qnil;
+	return Qnil; /* not reached */
 }
 
 VALUE
 ossl_pkey_new_from_file(VALUE filename)
 {
-	FILE *fp = NULL;
-	EVP_PKEY *pkey = NULL;
+	FILE *fp;
+	EVP_PKEY *pkey;
 	VALUE obj;
 
-	filename = rb_str_to_str(filename);
-	Check_SafeStr(filename);
+	SafeStringValue(filename);
 	
-	if ((fp = fopen(RSTRING(filename)->ptr, "r")) == NULL)
+	if (!(fp = fopen(StringValuePtr(filename), "r"))) {
 		rb_raise(ePKeyError, "%s", strerror(errno));
-
-	/*
-	 * MR:
-	 * How about PublicKeys from file?
-	 * pkey = PEM_read_PublicKey(fp, NULL, NULL, NULL);
-	 * MISSING IN OPENSSL
-	 */
+	}
 	/*
 	 * Will we handle user passwords?
 	 */
 	pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
 	
-	if (!pkey)
+	if (!pkey) {
 		OSSL_Raise(ePKeyError, "");
-
+	}
 	obj = ossl_pkey_new(pkey);
 	EVP_PKEY_free(pkey);
 
@@ -93,45 +76,92 @@ ossl_pkey_new_from_file(VALUE filename)
 EVP_PKEY *
 ossl_pkey_get_EVP_PKEY(VALUE obj)
 {
-	ossl_pkey *pkeyp = NULL;
+	EVP_PKEY *pkey;
 	
-	OSSL_Check_Type(obj, cPKey);
+	SafeGetPKey(obj, pkey);
 
-	GetPKey(obj, pkeyp);
-
-	return pkeyp->get_EVP_PKEY(obj);
+	obj = ossl_pkey_new(pkey);
+	
+	GetPKey(obj, pkey);
+	
+	return pkey;
 }
 
 /*
  * Private
  */
 static VALUE
-ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
+ossl_pkey_s_allocate(VALUE klass)
 {
-	if (klass == cPKey)
-		rb_raise(rb_eNotImpError, "cannot do PKey::PKey.new - it is an abstract class");
+	EVP_PKEY *pkey;
+	VALUE obj;
+
+	if (!(pkey = EVP_PKEY_new())) {
+		OSSL_Raise(ePKeyError, "");
+	}
+	WrapPKey(klass, obj, pkey);
 	
-	return Qnil;
+	return obj;
+}
+
+static VALUE
+ossl_pkey_initialize(VALUE self)
+{
+	if (rb_obj_is_instance_of(self, cPKey)) {
+		rb_raise(rb_eNotImpError, "OpenSSL::PKey::PKey is an abstract class.");
+	} else {
+		rb_warn("PKey#initialize called! Something sucks here...");
+	}
+	return self;
+}
+
+static VALUE
+ossl_pkey_to_der(VALUE self)
+{
+	EVP_PKEY *pkey = NULL;
+	X509_PUBKEY *key = NULL;
+	VALUE str;
+	
+	GetPKey(self, pkey);
+	
+	if (!(key = X509_PUBKEY_new())) {
+		OSSL_Raise(ePKeyError, "");
+	}
+	if (!X509_PUBKEY_set(&key, pkey)) {
+		X509_PUBKEY_free(key);
+		OSSL_Raise(ePKeyError, "");
+	}
+
+	str = rb_str_new(key->public_key->data, key->public_key->length);
+	X509_PUBKEY_free(key);
+
+	return str;
 }
 
 /*
  * INIT
  */
 void
-Init_ossl_pkey(VALUE module)
+Init_ossl_pkey()
 {
-	id_private_q = rb_intern("private?");
+	mPKey = rb_define_module_under(mOSSL, "PKey");
 	
-	ePKeyError = rb_define_class_under(module, "PKeyError", eOSSLError);
+	ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 
-	cPKey = rb_define_class_under(module, "PKey", rb_cObject);
-	rb_define_singleton_method(cPKey, "new", ossl_pkey_s_new, -1);
+	cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
+	
+	rb_define_singleton_method(cPKey, "allocate", ossl_pkey_s_allocate, 0);
+	rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
+
+	rb_define_method(cPKey, "to_der", ossl_pkey_to_der, 0);
+	
+	id_private_q = rb_intern("private?");
 	
 	/*
 	 * INIT rsa, dsa
 	 */
-	Init_ossl_rsa(module, cPKey, ePKeyError);
-	Init_ossl_dsa(module, cPKey, ePKeyError);
-	Init_ossl_dh(module, cPKey, ePKeyError);
+	Init_ossl_rsa();
+	Init_ossl_dsa();
+	Init_ossl_dh();
 }
 

@@ -13,6 +13,7 @@
 /*
  * Classes
  */
+VALUE mRandom;
 VALUE eRandomError;
 
 /*

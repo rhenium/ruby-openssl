@@ -26,6 +26,7 @@
 /*
  * Classes
  */
+VALUE mNetscape;
 VALUE cSPKI;
 VALUE eSPKIError;
 

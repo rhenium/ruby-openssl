@@ -55,29 +55,11 @@ extern "C" {
  * Common Module
  */
 extern VALUE mOSSL;
-extern VALUE   mPKey;
-extern VALUE   mSSL;
 
 /*
  * Common Error Class
  */
-VALUE eOSSLError;
-
-/*
- * Classes
- */
-extern VALUE cSSLSocket;
-extern VALUE eSSLError;
-/* PKey */
-extern ID id_private_q;
-extern VALUE cPKey;
-extern VALUE ePKeyError;
-extern VALUE cRSA;
-extern VALUE eRSAError;
-extern VALUE cDSA;
-extern VALUE eDSAError;
-extern VALUE cDH;
-extern VALUE eDHError;
+extern VALUE eOSSLError;
 
 /*
  * CheckTypes
@@ -125,48 +107,8 @@ int string2hex(char *, int, char **, int *);
 #endif /* OSSL_DEBUG */
 
 /*
- * PKey
+ * Include all parts
  */
-VALUE ossl_pkey_new(EVP_PKEY *);
-VALUE ossl_pkey_new_from_file(VALUE);
-EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE);
-void Init_ossl_pkey(VALUE);
-
-/*
- * RSA
- */
-#if !defined(OPENSSL_NO_RSA)
-VALUE ossl_rsa_new(RSA *);
-RSA *ossl_rsa_get_RSA(VALUE);
-EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE);
-#endif /* NO_RSA */
-void Init_ossl_rsa(VALUE, VALUE, VALUE);
-
-/*
- * DSA
- */
-#if !defined(OPENSSL_NO_DSA)
-VALUE ossl_dsa_new(DSA *);
-DSA *ossl_dsa_get_DSA(VALUE);
-EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE);
-#endif /* NO_DSA */
-void Init_ossl_dsa(VALUE, VALUE, VALUE);
-
-/*
- * DH
- */
-#if !defined(OPENSSL_NO_DH)
-VALUE ossl_dh_new(DH *);
-DH *ossl_dh_get_DH(VALUE);
-EVP_PKEY *ossl_dh_get_EVP_PKEY(VALUE);
-#endif /* NO_DH */
-void Init_ossl_dh(VALUE, VALUE, VALUE);
-
-/*
- * SSL
- */
-void Init_ossl_ssl(VALUE);
-
 #include "openssl_missing.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
@@ -175,14 +117,9 @@ void Init_ossl_ssl(VALUE);
 #include "ossl_hmac.h"
 #include "ossl_ns_spki.h"
 #include "ossl_pkcs7.h"
-/*
- * TODO
 #include "ossl_pkey.h"
- */
 #include "ossl_rand.h"
-/*
 #include "ossl_ssl.h"
- */
 #include "ossl_version.h"
 #include "ossl_x509.h"
 

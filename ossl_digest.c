@@ -30,6 +30,7 @@
 /*
  * Classes
  */
+VALUE mDigest;
 VALUE cDigest;
 VALUE eDigestError;
 

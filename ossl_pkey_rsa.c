@@ -11,16 +11,12 @@
 #if !defined(OPENSSL_NO_RSA)
 
 #include "ossl.h"
-#include "ossl_pkey.h"
 
-#define MakeRSA(obj, rsap) do {\
-	obj = Data_Make_Struct(cRSA, ossl_rsa, 0, ossl_rsa_free, rsap);\
-	rsap->pkey.get_EVP_PKEY = ossl_rsa_get_EVP_PKEY;\
-} while (0)
-
-#define GetRSA(obj, rsap) do {\
-	Data_Get_Struct(obj, ossl_rsa, rsap);\
-	if (!rsap->rsa) rb_raise(eRSAError, "not initialized!");\
+#define GetPKeyRSA(obj, pkey) do { \
+	GetPKey(obj, pkey); \
+	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) { /* PARANOIA? */ \
+		rb_raise(rb_eRuntimeError, "THIS IS NOT A RSA!") ; \
+	} \
 } while (0)
 
 #define RSA_PRIVATE(rsa) ((rsa)->p && (rsa)->q)
@@ -32,126 +28,56 @@ VALUE cRSA;
 VALUE eRSAError;
 
 /*
- * Struct
- */
-typedef struct ossl_rsa_st {
-	ossl_pkey pkey;
-	RSA *rsa;
-} ossl_rsa;
-
-static void
-ossl_rsa_free(ossl_rsa *rsap)
-{
-	if (rsap) {
-		if (rsap->rsa) RSA_free(rsap->rsa);
-		rsap->rsa = NULL;
-		free(rsap);
-	}
-}
-
-/*
  * Public
  */
-VALUE
-ossl_rsa_new(RSA *rsa)
+static VALUE
+rsa_instance(VALUE klass, RSA *rsa)
 {
-	ossl_rsa *rsap = NULL;
-	RSA *new = NULL;
+	EVP_PKEY *pkey;
 	VALUE obj;
-
-	if (!rsa)
-		new = RSA_new();
-	else new = (RSA_PRIVATE(rsa)) ? RSAPrivateKey_dup(rsa) : RSAPublicKey_dup(rsa);
-
-	if (!new)
-		OSSL_Raise(eRSAError, "");
 	
-	MakeRSA(obj, rsap);
-	rsap->rsa = new;
+	if (!rsa) {
+		return Qfalse;
+	}
+	if (!(pkey = EVP_PKEY_new())) {
+		return Qfalse;
+	}
+	if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
+		EVP_PKEY_free(pkey);
+		return Qfalse;
+	}
+	WrapPKey(klass, obj, pkey);
 	
 	return obj;
 }
 
-RSA *
-ossl_rsa_get_RSA(VALUE obj)
+VALUE
+ossl_rsa_new(EVP_PKEY *pkey)
 {
-	ossl_rsa *rsap = NULL;
-	RSA *rsa = NULL;
+	RSA *rsa;
+	VALUE obj;
+
+	if (pkey && EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) {
+		rb_raise(rb_eTypeError, "Not a RSA key!");
+	}
+	if (!pkey) { /* all errs handled by rsa_instance */
+		rsa = RSA_new();
+	} else {
+		rsa = (RSA_PRIVATE(pkey->pkey.rsa)) ? RSAPrivateKey_dup(pkey->pkey.rsa) : RSAPublicKey_dup(pkey->pkey.rsa);
+	}
 	
-	OSSL_Check_Type(obj, cRSA);
-	GetRSA(obj, rsap);
-
-	rsa = (RSA_PRIVATE(rsap->rsa)) ? RSAPrivateKey_dup(rsap->rsa) : RSAPublicKey_dup(rsap->rsa);
+	obj = rsa_instance(cRSA, rsa);
 	
-	if (!rsa)
-		OSSL_Raise(eRSAError, "");
-	
-	return rsa;
-}
-
-EVP_PKEY *
-ossl_rsa_get_EVP_PKEY(VALUE obj)
-{
-	RSA *rsa = NULL;
-	EVP_PKEY *pkey = NULL;
-
-	rsa = ossl_rsa_get_RSA(obj);
-
-	if (!(pkey = EVP_PKEY_new())) {
+	if (obj == Qfalse) {
 		RSA_free(rsa);
 		OSSL_Raise(eRSAError, "");
 	}
-
-	if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-		RSA_free(rsa);
-		EVP_PKEY_free(pkey);
-		OSSL_Raise(eRSAError, "");
-	}
-
-	return pkey;
+	return obj;
 }
 
 /*
  * Private
  */
-static VALUE
-ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
-{
-	ossl_rsa *rsap = NULL;
-	RSA *rsa = NULL;
-	BIO *in = NULL;
-	char *passwd = NULL;
-	VALUE buffer, pass, obj;
-	
-	rb_scan_args(argc, argv, "11", &buffer, &pass);
-	
-	buffer = rb_String(buffer);
-	
-	if (!NIL_P(pass)) {
-		pass = rb_String(pass);
-		passwd = RSTRING(pass)->ptr;
-	}
-	/* else passwd = NULL; */
-
-	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
-		OSSL_Raise(eRSAError, "");
-	}
-	if (!(rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL))) {
-		BIO_reset(in);
-		
-		if (!(rsa = PEM_read_bio_RSAPrivateKey(in, NULL, NULL, passwd))) {
-			BIO_free(in);
-			OSSL_Raise(eRSAError, "Neither PUB key nor PRIV key:");
-		}
-	}
-	BIO_free(in);
-
-	MakeRSA(obj, rsap);
-	rsap->rsa = rsa;
-	
-	return obj;
-}
-
 /*
  * CB for yielding when generating RSA data
  */
@@ -167,35 +93,80 @@ ossl_rsa_generate_cb(int p, int n, void *arg)
 	rb_yield(ary);
 }
 
+static RSA *
+rsa_generate(int size)
+{
+	void (*cb)(int, int, void *) = NULL;
+	
+	if (rb_block_given_p()) {
+		cb = ossl_rsa_generate_cb;
+	}
+
+	return RSA_generate_key(size, RSA_F4, cb, NULL);
+}
+
 static VALUE
 ossl_rsa_s_generate(VALUE klass, VALUE size)
 {
-	ossl_rsa *rsap = NULL;
-	RSA *rsa = NULL;
-	void (*cb)(int, int, void *) = NULL;
-	VALUE obj;
-	
-	Check_Type(size, T_FIXNUM);
-	
-	if (rb_block_given_p())
-		cb = ossl_rsa_generate_cb;
+	RSA *rsa = rsa_generate(FIX2INT(size)); /* err handled by rsa_instance */
+	VALUE obj = rsa_instance(klass, rsa);
 
-	if (!(rsa = RSA_generate_key(FIX2INT(size), RSA_F4, cb, NULL))) { /* arg to cb = NULL */
+	if (obj == Qfalse) {
+		RSA_free(rsa);
 		OSSL_Raise(eRSAError, "");
 	}
-
-	MakeRSA(obj, rsap);
-	rsap->rsa = rsa;
-	
 	return obj;
+}
+
+static VALUE
+ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
+{
+	EVP_PKEY *pkey;
+	RSA *rsa;
+	BIO *in;
+	char *passwd = NULL;
+	VALUE buffer, pass;
+	
+	GetPKey(self, pkey);
+	
+	rb_scan_args(argc, argv, "11", &buffer, &pass);
+
+	if (FIXNUM_P(buffer)) {
+		if (!(rsa = rsa_generate(FIX2INT(buffer)))) {
+			OSSL_Raise(eRSAError, "");
+		}
+	} else {
+		StringValue(buffer);
+
+		if (!NIL_P(pass)) {
+			passwd = StringValuePtr(pass);
+		}
+		if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
+			OSSL_Raise(eRSAError, "");
+		}
+		if (!(rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL))) {
+			BIO_reset(in);
+
+			if (!(rsa = PEM_read_bio_RSAPrivateKey(in, NULL, NULL, passwd))) {
+				BIO_free(in);
+				OSSL_Raise(eRSAError, "Neither PUB key nor PRIV key:");
+			}
+		}
+		BIO_free(in);
+	}
+	if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
+		RSA_free(rsa);
+		OSSL_Raise(eRSAError, "");
+	}
+	return self;
 }
 
 static VALUE
 ossl_rsa_is_public(VALUE self)
 {
-	ossl_rsa *rsap = NULL;
+	EVP_PKEY *pkey;
 
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 	
 	/*
 	 * SURPRISE! :-))
@@ -207,24 +178,24 @@ ossl_rsa_is_public(VALUE self)
 static VALUE
 ossl_rsa_is_private(VALUE self)
 {
-	ossl_rsa *rsap = NULL;
+	EVP_PKEY *pkey;
 	
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 	
-	return (RSA_PRIVATE(rsap->rsa)) ? Qtrue : Qfalse;
+	return (RSA_PRIVATE(pkey->pkey.rsa)) ? Qtrue : Qfalse;
 }
 
 static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
-	ossl_rsa *rsap = NULL;
-	BIO *out = NULL;
-	BUF_MEM *buf = NULL;
+	EVP_PKEY *pkey;
+	BIO *out;
+	BUF_MEM *buf;
 	const EVP_CIPHER *ciph = NULL;
 	char *passwd = NULL;
 	VALUE cipher, pass, str;
 
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
 	rb_scan_args(argc, argv, "02", &cipher, &pass);
 
@@ -232,26 +203,23 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 		ciph = ossl_cipher_get_EVP_CIPHER(cipher);
 		
 		if (!NIL_P(pass)) {
-			pass = rb_String(pass);
-			passwd = RSTRING(pass)->ptr;
+			passwd = StringValuePtr(pass);
 		}
 	}
 	if (!(out = BIO_new(BIO_s_mem()))) {
 		OSSL_Raise(eRSAError, "");
 	}
-	
-	if (RSA_PRIVATE(rsap->rsa)) {
-		if (!PEM_write_bio_RSAPrivateKey(out, rsap->rsa, ciph, NULL, 0, NULL, passwd)) {
+	if (RSA_PRIVATE(pkey->pkey.rsa)) {
+		if (!PEM_write_bio_RSAPrivateKey(out, pkey->pkey.rsa, ciph, NULL, 0, NULL, passwd)) {
 			BIO_free(out);
 			OSSL_Raise(eRSAError, "");
 		}
 	} else {
-		if (!PEM_write_bio_RSAPublicKey(out, rsap->rsa)) {
+		if (!PEM_write_bio_RSAPublicKey(out, pkey->pkey.rsa)) {
 			BIO_free(out);
 			OSSL_Raise(eRSAError, "");
 		}
 	}
-
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
 	BIO_free(out);
@@ -262,117 +230,109 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 {
-	ossl_rsa *rsap = NULL;
-	char *enc_text = NULL;
-	int len = 0, size = 0;
-	VALUE enc;
+	EVP_PKEY *pkey;
+	char *buf;
+	int buf_len;
+	VALUE str;
 	
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
-	buffer = rb_String(buffer);
+	StringValue(buffer);
 	
-	size = RSA_size(rsap->rsa);
-	
-	if (!(enc_text = OPENSSL_malloc(size + 16))) {
+	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 		OSSL_Raise(eRSAError, "");
 	}
-	if ((len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		OPENSSL_free(enc_text);
+	if ((buf_len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, buf, pkey->pkey.rsa, RSA_PKCS1_PADDING)) < 0) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eRSAError, "");
 	}
-	enc = rb_str_new(enc_text, len);
-	OPENSSL_free(enc_text);
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 
-	return enc;
+	return str;
 }
 
 static VALUE
 ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 {
-	ossl_rsa *rsap = NULL;
-	char *txt = NULL;
-	int len = 0, size = 0;
-	VALUE text;
+	EVP_PKEY *pkey;
+	char *buf;
+	int buf_len;
+	VALUE str;
 
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
-	buffer = rb_String(buffer);
+	StringValue(buffer);
 	
-	size = RSA_size(rsap->rsa);
-	
-	if (!(txt = OPENSSL_malloc(size + 16))) {
+	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 		OSSL_Raise(eRSAError, "");
 	}
-	if ((len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		OPENSSL_free(txt);
+	if ((buf_len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, buf, pkey->pkey.rsa, RSA_PKCS1_PADDING)) < 0) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eRSAError, "");
 	}
-	text = rb_str_new(txt, len);
-	OPENSSL_free(txt);
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 
-	return text;
+	return str;
 }
 
 static VALUE
 ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 {
-	ossl_rsa *rsap = NULL;
-	char *enc_text = NULL;
-	int len = 0, size = 0;
-	VALUE enc;
+	EVP_PKEY *pkey;
+	char *buf;
+	int buf_len;
+	VALUE str;
 	
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
-	if (!RSA_PRIVATE(rsap->rsa)) {
+	if (!RSA_PRIVATE(pkey->pkey.rsa)) {
 		rb_raise(eRSAError, "PRIVATE key needed for this operation!");
 	}
 	
-	buffer = rb_String(buffer);
+	StringValue(buffer);
 	
-	size = RSA_size(rsap->rsa);
-	
-	if (!(enc_text = OPENSSL_malloc(size + 16))) {
+	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 		OSSL_Raise(eRSAError, "Memory alloc error");
 	}
-	if ((len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		OPENSSL_free(enc_text);
+	if ((buf_len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, buf, pkey->pkey.rsa, RSA_PKCS1_PADDING)) < 0) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eRSAError, "");
 	}
-	enc = rb_str_new(enc_text, len);
-	OPENSSL_free(enc_text);
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 
-	return enc;
+	return str;
 }
 
 static VALUE
 ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 {
-	ossl_rsa *rsap = NULL;
-	char *txt = NULL;
-	int len = 0, size = 0;
-	VALUE text;
+	EVP_PKEY *pkey;
+	char *buf;
+	int buf_len;
+	VALUE str;
 
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
-	if (!RSA_PRIVATE(rsap->rsa)) {
+	if (!RSA_PRIVATE(pkey->pkey.rsa)) {
 		rb_raise(eRSAError, "Private RSA key needed!");
 	}
-	
-	buffer = rb_String(buffer);
-	
-	size = RSA_size(rsap->rsa);
 
-	if (!(txt = OPENSSL_malloc(size + 16))) {
+	StringValue(buffer);
+	
+	if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 		OSSL_Raise(eRSAError, "Memory alloc error");
 	}
-	if ((len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		OPENSSL_free(txt);
+	if ((buf_len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, buf, pkey->pkey.rsa, RSA_PKCS1_PADDING)) < 0) {
+		OPENSSL_free(buf);
 		OSSL_Raise(eRSAError, "");
 	}
-	text = rb_str_new(txt, len);
-	OPENSSL_free(txt);
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
 
-	return text;
+	return str;
 }
 
 /*
@@ -406,42 +366,6 @@ ossl_rsa_get_n(VALUE self)
 }
  */
 
-static VALUE
-ossl_rsa_to_der(VALUE self)
-{
-	RSA *rsa = NULL;
-	EVP_PKEY *pkey = NULL;
-	X509_PUBKEY *key = NULL;
-	VALUE str;
-	
-	rsa = ossl_rsa_get_RSA(self);
-
-	if (!(pkey = EVP_PKEY_new())) {
-		RSA_free(rsa);
-		OSSL_Raise(eRSAError, "");
-	}
-	if (!EVP_PKEY_assign_RSA(pkey, rsa)) { /* NO DUP - don't free! */
-		RSA_free(rsa);
-		EVP_PKEY_free(pkey);
-		OSSL_Raise(eRSAError, "");
-	}
-	if (!(key = X509_PUBKEY_new())) {
-		EVP_PKEY_free(pkey);
-		OSSL_Raise(eRSAError, "");
-	}
-	if (!X509_PUBKEY_set(&key, pkey)) { /* safe to FREE pkey??? */
-		EVP_PKEY_free(pkey);
-		X509_PUBKEY_free(key);
-		OSSL_Raise(eRSAError, "");
-	}
-
-	str = rb_str_new(key->public_key->data, key->public_key->length);
-	/* EVP_PKEY_free(pkey) = this does X509_PUBKEY_free?? */
-	X509_PUBKEY_free(key);
-
-	return str;
-}
-
 /*
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
@@ -450,21 +374,20 @@ ossl_rsa_to_der(VALUE self)
 static VALUE
 ossl_rsa_to_text(VALUE self)
 {
-	ossl_rsa *rsap = NULL;
-	BIO *out = NULL;
-	BUF_MEM *buf = NULL;
+	EVP_PKEY *pkey;
+	BIO *out;
+	BUF_MEM *buf;
 	VALUE str;
 
-	GetRSA(self, rsap);
+	GetPKeyRSA(self, pkey);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
 		OSSL_Raise(eRSAError, "");
 	}
-	if (!RSA_print(out, rsap->rsa, 0)) { //offset = 0
+	if (!RSA_print(out, pkey->pkey.rsa, 0)) { //offset = 0
 		BIO_free(out);
 		OSSL_Raise(eRSAError, "");
 	}
-	
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
 	BIO_free(out);
@@ -478,17 +401,19 @@ ossl_rsa_to_text(VALUE self)
 static VALUE
 ossl_rsa_to_public_key(VALUE self)
 {
-	ossl_rsa *rsap1 = NULL, *rsap2 = NULL;
+	EVP_PKEY *pkey;
+	RSA *rsa;
 	VALUE obj;
 	
-	GetRSA(self, rsap1);
+	GetPKeyRSA(self, pkey);
 
-	MakeRSA(obj, rsap2);
-	
-	if (!(rsap2->rsa = RSAPublicKey_dup(rsap1->rsa))) {
+	rsa = RSAPublicKey_dup(pkey->pkey.rsa); /* err check performed by rsa_instance */
+	obj = rsa_instance(CLASS_OF(self), rsa);
+
+	if (obj == Qfalse) {
+		RSA_free(rsa);
 		OSSL_Raise(eRSAError, "");
 	}
-	
 	return obj;
 }
 
@@ -537,15 +462,15 @@ ossl_rsa_verify(VALUE self, VALUE digest, VALUE text)
  * INIT
  */
 void
-Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+Init_ossl_rsa()
 {
 	eRSAError = rb_define_class_under(mPKey, "RSAError", ePKeyError);
 
 	cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
-	rb_define_singleton_method(cRSA, "new_from_pem", ossl_rsa_s_new_from_pem, -1);
 	rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, 1);
-	rb_define_alias(CLASS_OF(cRSA), "new_from_fixnum", "generate");
+	rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
+	
 	rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
 	rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);
 	rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);
@@ -557,7 +482,6 @@ Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 	rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, 1);
 	rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, 1);
 	/*rb_define_method(cRSA, "n", ossl_rsa_get_n, 0);*/
-	rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
 /*
  * Implemented in Ruby space...
  * 
@@ -567,10 +491,10 @@ Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 }
 
 #else /* defined NO_RSA */
-#	warning >>> OpenSSL is compiled without RSA support <<<
+#  warning >>> OpenSSL is compiled without RSA support <<<
 
 void
-Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+Init_ossl_rsa()
 {
 	rb_warning("OpenSSL is compiled without RSA support");
 }

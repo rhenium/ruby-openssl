@@ -54,6 +54,7 @@
 /* 
  * Classes
  */
+VALUE mPKCS7;
 VALUE cPKCS7;
 VALUE cPKCS7SignerInfo;
 VALUE ePKCS7Error;

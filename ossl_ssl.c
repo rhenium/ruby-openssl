@@ -70,6 +70,7 @@ static VALUE ssl_set_key_file2(VALUE, VALUE);
 /*
  * Classes
  */
+VALUE mSSL;
 VALUE cSSLSocket;
 VALUE eSSLError;
 
@@ -608,15 +609,17 @@ ssl_set_key_file2(VALUE self, VALUE v)
 }
 
 void
-Init_ossl_ssl(VALUE module)
+Init_ossl_ssl()
 {
     int i;
 
+	mSSL = rb_define_module_under(mOSSL, "SSL");
+	
     /* class SSLError */
-    eSSLError = rb_define_class_under(module, "SSLError", eOSSLError);
+    eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
 
     /* class SSLSocket */
-    cSSLSocket = rb_define_class_under(module, "SSLSocket", rb_cObject);
+    cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_singleton_method(cSSLSocket, "new", ssl_s_new, -1);
     rb_define_method(cSSLSocket, "initialize",   ssl_initialize, -1);
     rb_define_method(cSSLSocket, "__connect",    ssl_connect, 0);
@@ -640,7 +643,7 @@ Init_ossl_ssl(VALUE module)
         rb_attr(cSSLSocket, rb_intern(ssl_attr_readers[i]), 1, 0, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
 
-#define ssl_def_const(x) rb_define_const(module, #x, INT2FIX(SSL_##x))
+#define ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
 
     ssl_def_const(VERIFY_NONE);
     ssl_def_const(VERIFY_PEER);

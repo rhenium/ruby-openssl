@@ -11,16 +11,12 @@
 #if !defined(OPENSSL_NO_DH)
 
 #include "ossl.h"
-#include "ossl_pkey.h"
 
-#define MakeDH(obj, dhp) do {\
-	obj = Data_Make_Struct(cDH, ossl_dh, 0, ossl_dh_free, dhp);\
-	dhp->pkey.get_EVP_PKEY = ossl_dh_get_EVP_PKEY;\
-} while (0)
-
-#define GetDH(obj, dhp) do {\
-	Data_Get_Struct(obj, ossl_dh, dhp);\
-	if (!dhp->dh) rb_raise(eDHError, "not initialized!");\
+#define GetPKeyDH(obj, pkey) do { \
+	GetPKey(obj, pkey); \
+	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
+		rb_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
+	} \
 } while (0)
 
 #define DH_PRIVATE(dh) ((dh)->priv_key)
@@ -32,113 +28,56 @@ VALUE cDH;
 VALUE eDHError;
 
 /*
- * Struct
- */
-typedef struct ossl_dh_st {
-	ossl_pkey pkey;
-	DH *dh;
-} ossl_dh;
-
-static void
-ossl_dh_free(ossl_dh *dhp)
-{
-	if (dhp) {
-		if (dhp->dh) DH_free(dhp->dh);
-		dhp->dh = NULL;
-		free(dhp);
-	}
-}
-
-/*
  * Public
  */
-VALUE
-ossl_dh_new(DH *dh)
+static VALUE
+dh_instance(VALUE klass, DH *dh)
 {
-	ossl_dh *dhp = NULL;
-	DH *new = NULL;
+	EVP_PKEY *pkey;
 	VALUE obj;
-
-	if (!dh)
-		new = DH_new();
-	else new = DHparams_dup(dh);
-
-	if (!new)
-		OSSL_Raise(eDHError, "");
 	
-	MakeDH(obj, dhp);
-	dhp->dh = new;
-
+	if (!dh) {
+		return Qfalse;
+	}
+	if (!(pkey = EVP_PKEY_new())) {
+		return Qfalse;
+	}
+	if (!EVP_PKEY_assign_DH(pkey, dh)) {
+		EVP_PKEY_free(pkey);
+		return Qfalse;
+	}
+	WrapPKey(klass, obj, pkey);
+	
 	return obj;
 }
 
-DH *
-ossl_dh_get_DH(VALUE obj)
-{
-	ossl_dh *dhp = NULL;
-	DH *dh = NULL;
-	
-	OSSL_Check_Kind(obj, cDH);
-	GetDH(obj, dhp);
-
-	dh = DHparams_dup(dhp->dh);
-	
-	if (!dh)
-		OSSL_Raise(eDHError, "");
-	
-	return dh;
-}
-
-EVP_PKEY *
-ossl_dh_get_EVP_PKEY(VALUE obj)
+VALUE
+ossl_dh_new(EVP_PKEY *pkey)
 {
 	DH *dh = NULL;
-	EVP_PKEY *pkey = NULL;
+	VALUE obj;
 
-	dh = ossl_dh_get_DH(obj);
+	if (pkey && EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
+		rb_raise(rb_eTypeError, "Not a DH key!");
+	}
+	if (!pkey) { /* all errs handled by dh_instance */
+		dh = DH_new();
+	} else {
+		dh = DHparams_dup(dh);
+	}
 
-	if (!(pkey = EVP_PKEY_new())) {
+	obj = dh_instance(cDH, dh);
+	
+	if (obj == Qfalse) {
 		DH_free(dh);
 		OSSL_Raise(eDHError, "");
 	}
-
-	if (!EVP_PKEY_assign_DH(pkey, dh)) { /* NO DUP - don't free! */
-		DH_free(dh);
-		EVP_PKEY_free(pkey);
-		OSSL_Raise(eDHError, "");
-	}
-
-	return pkey;
+	return obj;
 }
 
 /*
  * Private
  */
-static VALUE
-ossl_dh_s_new_from_pem(VALUE klass, VALUE buffer)
-{
-	ossl_dh *dhp = NULL;
-	DH *dh = NULL;
-	BIO *in = NULL;
-	VALUE obj;
-	
-	buffer = rb_String(buffer);
-	
-	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len)))
-		OSSL_Raise(eDHError, "");
-
-	if (!(dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL))) {
-		BIO_free(in);
-		OSSL_Raise(eDHError, "");
-	}
-	BIO_free(in);
-	
-	MakeDH(obj, dhp);
-	dhp->dh = dh;
-	
-	return obj;
-}
-
 /*
  * CB for yielding when generating DH params
  */
@@ -154,76 +93,126 @@ ossl_dh_generate_cb(int p, int n, void *arg)
 	rb_yield(ary);
 }
 
-static VALUE
-ossl_dh_s_generate(VALUE klass, VALUE size, VALUE gen)
+static DH *
+dh_generate(int size, int gen)
 {
-	ossl_dh *dhp = NULL;
-	DH *dh = NULL;
+	DH *dh;
 	void (*cb)(int, int, void *) = NULL;
-	VALUE obj;
-	
-	Check_Type(size, T_FIXNUM);
-	
-	if (rb_block_given_p())
-		cb = ossl_dh_generate_cb;
 
-	if (!(dh = DH_generate_parameters(FIX2INT(size), FIX2INT(gen), cb, NULL))) { /* arg to cb = NULL */
-		OSSL_Raise(eDHError, "");
+	if (rb_block_given_p()) {
+		cb = ossl_dh_generate_cb;
+	}
+	if (!(dh = DH_generate_parameters(size, gen, cb, NULL))) { /* arg to cb = NULL */
+		return 0;
 	}
 	if (!DH_generate_key(dh)) {
 		DH_free(dh);
-		OSSL_Raise(eDHError, "");
+		return 0;
+	}
+	return dh;
+}
+
+static VALUE
+ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
+{
+	DH *dh ;
+	int g = 2;
+	VALUE size, gen, obj;
+	
+	if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
+		g = FIX2INT(gen);
 	}
 	
-	MakeDH(obj, dhp);
-	dhp->dh = dh;
-	
+	dh = dh_generate(FIX2INT(size), g);
+	obj = dh_instance(klass, dh);
+
+	if (obj == Qfalse) {
+		DH_free(dh);
+		OSSL_Raise(eDHError, "");
+	}
 	return obj;
+}
+
+static VALUE
+ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
+{
+	EVP_PKEY *pkey;
+	DH *dh;
+	int g = 2;
+	BIO *in;
+	VALUE buffer, gen;
+
+	GetPKeyDH(self, pkey);
+	
+	rb_scan_args(argc, argv, "11", &buffer, &gen);
+	
+	if (FIXNUM_P(buffer)) {
+		if (!NIL_P(gen)) {
+			g = FIX2INT(gen);
+		}
+		if (!(dh = dh_generate(FIX2INT(buffer), g))) {
+			OSSL_Raise(eDHError, "");
+		}
+	} else {
+		StringValue(buffer);
+
+		if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
+			OSSL_Raise(eDHError, "");
+		}
+		if (!(dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL))) {
+			BIO_free(in);
+			OSSL_Raise(eDHError, "");
+		}
+		BIO_free(in);
+	}
+	if (!EVP_PKEY_assign_DH(pkey, dh)) {
+		DH_free(dh);
+		OSSL_Raise(eRSAError, "");
+	}
+	return self;
 }
 
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-	ossl_dh *dhp = NULL;
+	EVP_PKEY *pkey;
 
-	GetDH(self, dhp);
+	GetPKeyDH(self, pkey);
 	
 	/*
 	 * Do we need to check dhp->dh->public_pkey?
 	 * return Qtrue;
 	 */
-	return (dhp->dh->pub_key) ? Qtrue : Qfalse;
+	return (pkey->pkey.dh->pub_key) ? Qtrue : Qfalse;
 }
 
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-	ossl_dh *dhp = NULL;
+	EVP_PKEY *pkey;
+
+	GetPKeyDH(self, pkey);
 	
-	GetDH(self, dhp);
-	
-	return (DH_PRIVATE(dhp->dh)) ? Qtrue : Qfalse;
+	return (DH_PRIVATE(pkey->pkey.dh)) ? Qtrue : Qfalse;
 }
 
 static VALUE
 ossl_dh_export(VALUE self)
 {
-	ossl_dh *dhp = NULL;
-	BIO *out = NULL;
-	BUF_MEM *buf = NULL;
+	EVP_PKEY *pkey;
+	BIO *out;
+	BUF_MEM *buf;
 	VALUE str;
 
-	GetDH(self, dhp);
+	GetPKeyDH(self, pkey);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
 		OSSL_Raise(eDHError, "");
 	}
-	
-	if (!PEM_write_bio_DHparams(out, dhp->dh)) {
+	if (!PEM_write_bio_DHparams(out, pkey->pkey.dh)) {
 		BIO_free(out);
 		OSSL_Raise(eDHError, "");
 	}
-
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
 	BIO_free(out);
@@ -239,21 +228,20 @@ ossl_dh_export(VALUE self)
 static VALUE
 ossl_dh_to_text(VALUE self)
 {
-	ossl_dh *dhp = NULL;
-	BIO *out = NULL;
-	BUF_MEM *buf = NULL;
+	EVP_PKEY *pkey;
+	BIO *out;
+	BUF_MEM *buf;
 	VALUE str;
 
-	GetDH(self, dhp);
+	GetPKeyDH(self, pkey);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
 		OSSL_Raise(eDHError, "");
 	}
-	if (!DHparams_print(out, dhp->dh)) {
+	if (!DHparams_print(out, pkey->pkey.dh)) {
 		BIO_free(out);
 		OSSL_Raise(eDHError, "");
 	}
-	
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
 	BIO_free(out);
@@ -267,17 +255,19 @@ ossl_dh_to_text(VALUE self)
 static VALUE
 ossl_dh_to_public_key(VALUE self)
 {
-	ossl_dh *dhp1 = NULL, *dhp2 = NULL;
+	EVP_PKEY *pkey;
+	DH *dh;
 	VALUE obj;
 	
-	GetDH(self, dhp1);
+	GetPKeyDH(self, pkey);
 
-	MakeDH(obj, dhp2);
-	
-	if (!(dhp2->dh = DHparams_dup(dhp1->dh))) {
+	dh = DHparams_dup(pkey->pkey.dh); /* err check perfomed by dh_instance */
+	obj = dh_instance(CLASS_OF(self), dh);
+
+	if (obj == Qfalse) {
+		DH_free(dh);
 		OSSL_Raise(eDHError, "");
 	}
-
 	return obj;
 }
 
@@ -285,15 +275,14 @@ ossl_dh_to_public_key(VALUE self)
  * INIT
  */
 void
-Init_ossl_dh(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+Init_ossl_dh()
 {
 	eDHError = rb_define_class_under(mPKey, "DHError", ePKeyError);
 
 	cDH = rb_define_class_under(mPKey, "DH", cPKey);
 	
-	rb_define_singleton_method(cDH, "new_from_pem", ossl_dh_s_new_from_pem, 1);
-	rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, 2);
-	rb_define_alias(CLASS_OF(cDH), "new_from_fixnum", "generate");
+	rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);
+	rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
 
 	rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
 	rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
@@ -304,10 +293,10 @@ Init_ossl_dh(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 }
 
 #else /* defined NO_DH */
-#	warning >>> OpenSSL is compiled without DH support <<<
+#  warning >>> OpenSSL is compiled without DH support <<<
 
 void
-Init_ossl_dh(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+Init_ossl_dh()
 {
 	rb_warning("OpenSSL is compiled without DH support");
 }

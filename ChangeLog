@@ -3,6 +3,11 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Thu,  6 Jun 2002 02:28:25 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ssl.h: NEW (bits from ossl.h)
+	* ossl.h: is now tidy
+	* pkey*.[ch]: big internal rewrite and cleanup for (DH|DSA|RSA) as well as for PKey (EVP_PKEY is now wrapped - so no extra structs!) NEEDS TO BE TESTED!!!
+
 Wed,  5 Jun 2002 12:17:18 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* rand.h: NEW (bits from ossl.h)
 	* rand.c: port & cleanup
@@ -20,7 +25,8 @@ Wed,  5 Jun 2002 10:14:54 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: helper function 'string2hex'
 	* hmac.c: use 'string2hex'
 	* digest.c: ditto.
-	* hmac:c: cleanup
+	* hmac.c: cleanup
+	* hmac.c: renamed #hmac to #digest and #hexhmac to #hexdigest
 
 Tue,  4 Jun 2002 23:26:07 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* bn.c: cleanup (remove oddly initialized vars)

@@ -123,14 +123,9 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 }
 
 /*
- * Modules
+ * main module
  */
 VALUE mOSSL;
-VALUE   mDigest;
-VALUE   mNetscape;
-VALUE   mPKey;
-VALUE   mRandom;
-VALUE   mSSL;
 
 /*
  * OpenSSLError < StandardError
@@ -146,7 +141,6 @@ Init_openssl()
 #if defined(OSSL_DEBUG)
 	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
 #endif
-	
 	/*
 	 * Init all digests, ciphers
 	 */
@@ -154,11 +148,9 @@ Init_openssl()
 	ERR_load_crypto_strings();
 
 	/*
-	 * Universe of Modules
+	 * Init main module
 	 */
 	mOSSL = rb_define_module("OpenSSL");
-	mPKey = rb_define_module_under(mOSSL, "PKey");
-	mSSL = rb_define_module_under(mOSSL, "SSL");
 	
 	/*
 	 * Constants
@@ -182,9 +174,9 @@ Init_openssl()
 	Init_ossl_hmac();
 	Init_ossl_ns_spki();
 	Init_ossl_pkcs7();
-	Init_ossl_pkey(mPKey);
+	Init_ossl_pkey();
 	Init_ossl_rand();
-	Init_ossl_ssl(mSSL);
+	Init_ossl_ssl();
 	Init_ossl_x509();
 }
 
