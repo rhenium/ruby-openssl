@@ -19,43 +19,75 @@ extern "C" {
  * These functions are not included in headers of OPENSSL <= 0.9.6b
  */
 
-/* to pem.h */
-#if !defined(OPENSSL_NO_DSA)
+#if !defined(HAVE_PEM_READ_BIO_DSAPUBLICKEY)
 # define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
         (char *(*)())d2i_DSAPublicKey,PEM_STRING_DSA_PUBLIC,bp,(char **)x,cb,u)
+#endif
+
+#if !defined(HAVE_PEM_WRITE_BIO_DSAPUBLICKEY)
 # define PEM_write_bio_DSAPublicKey(bp,x) \
 	PEM_ASN1_write_bio((int (*)())i2d_DSAPublicKey,\
 		PEM_STRING_DSA_PUBLIC,\
 		bp,(char *)x, NULL, NULL, 0, NULL, NULL)
-#endif /* NO_DSA */
+#endif
 
-/* to x509.h */
-#if !defined(OPENSSL_NO_DSA)
+#if !defined(HAVE_DSAPRIVATEKEY_DUP)
 # define DSAPrivateKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPrivateKey, \
 	(char *(*)())d2i_DSAPrivateKey,(char *)dsa)
+#endif
+
+#if !defined(HAVE_DSAPUBLICKEY_DUP)
 # define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPublicKey, \
 	(char *(*)())d2i_DSAPublicKey,(char *)dsa)
-#endif /* NO_DSA */
+#endif
 
+#if !defined(HAVE_X509_REVOKED_DUP)
 # define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((int (*)())i2d_X509_REVOKED, \
 	(char *(*)())d2i_X509_REVOKED, (char *)rev)
-
-/* to pkcs7.h */
-#define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \
-	(char *(*)())d2i_PKCS7_SIGNER_INFO, (char *)si)
-#define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
-	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
-
-#if !defined(OPENSSL_NO_HMAC)
-#if !defined(HAVE_HMAC_CTX_COPY)
-int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
-#endif /* HAVE_HMAC_CTX_COPY */
-#endif /* NO_HMAC */
-
-#if !defined(HAVE_X509_STORE_SET_EX_DATA)
-int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
-void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
 #endif
+
+#if !defined(HAVE_PKCS7_SIGNER_INFO_DUP)
+#  define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \
+	(char *(*)())d2i_PKCS7_SIGNER_INFO, (char *)si)
+#endif
+
+#if !defined(HAVE_PKCS7_RECIP_INFO_DUP)
+#  define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((int (*)())i2d_PKCS7_RECIP_INFO, \
+	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
+#endif
+
+int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
+void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
+int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
+EVP_MD_CTX *EVP_MD_CTX_create(void);
+int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx);
+void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
+
+#if !defined(HAVE_EVP_CIPHER_NAME)
+#  define EVP_CIPHER_name(e) OBJ_nid2sn(EVP_CIPHER_nid(e))
+#endif
+
+#if !defined(HAVE_EVP_MD_NAME)
+#  define EVP_MD_name(e) OBJ_nid2sn(EVP_MD_type(e))
+#endif
+
+void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
+void HMAC_CTX_init(HMAC_CTX *ctx);
+void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+
+#if !defined(HAVE_PKCS7_IS_DETACHED)
+#  define PKCS7_is_detached(p7) (PKCS7_type_is_signed(p7) && PKCS7_get_detached(p7))
+#endif
+
+#if !defined(HAVE_PKCS7_TYPE_IS_ENCRYPTED)
+#  define PKCS7_type_is_encrypted(a) (OBJ_obj2nid((a)->type) == NID_pkcs7_encrypted)
+#endif
+
+int X509_CRL_set_version(X509_CRL *x, long version);
+int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name);
+int X509_CRL_sort(X509_CRL *c);
+int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev);
+int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
 
 #if defined(__cplusplus)
 }

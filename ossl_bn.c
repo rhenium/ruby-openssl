@@ -372,8 +372,10 @@ ossl_bn_div(VALUE self, VALUE other)
 	WrapBN(CLASS_OF(self), obj, result);			\
 	return obj;						\
     }
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
 BIGNUM_3c(mod_add);
 BIGNUM_3c(mod_sub);
+#endif
 BIGNUM_3c(mod_mul);
 BIGNUM_3c(mod_exp);
 
@@ -647,10 +649,12 @@ Init_ossl_bn()
     rb_define_method(cBN, "%", ossl_bn_mod, 1);
     /* nnmod */
 
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     rb_define_method(cBN, "mod_add", ossl_bn_mod_add, 2);
     rb_define_method(cBN, "mod_sub", ossl_bn_mod_sub, 2);
-    rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 2);
+#endif
     rb_define_method(cBN, "mod_sqr", ossl_bn_mod_sqr, 1);
+    rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 2);
     rb_define_method(cBN, "**", ossl_bn_exp, 1);
     rb_define_method(cBN, "mod_exp", ossl_bn_mod_exp, 2);
     rb_define_method(cBN, "gcd", ossl_bn_gcd, 1);

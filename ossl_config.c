@@ -45,15 +45,23 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
     char *filename;
     VALUE path, obj;
 
-    if (rb_scan_args(argc, argv, "01", &path) == 1) {
+    if (rb_scan_args(argc, argv, 
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+		"01"
+#else
+		"10"
+#endif
+		, &path) == 1) {
 	SafeStringValue(path);
 	filename = RSTRING(path)->ptr;
     }
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     else {
 	if (!(filename = CONF_get1_default_config_file())) {
 	    ossl_raise(eConfigError, NULL);
 	}
     }
+#endif
 /*
  * FIXME
  * Does't work for Windows?

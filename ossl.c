@@ -292,6 +292,7 @@ OSSL_SK2ARY(x509crl, X509_CRL)
 /*
  * our default PEM callback
  */
+#if defined(HAVE_PEM_DEF_CALLBACK)
 static VALUE
 ossl_pem_passwd_cb0(VALUE flag)
 {	
@@ -312,7 +313,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
     if (pwd || !rb_block_given_p())
 	return PEM_def_callback(buf, max_len, flag, pwd);
 
-    while(1){
+    while (1) {
 	/*
 	 * when the flag is nonzero, this passphrase
 	 * will be used to perform encryption; otherwise it will
@@ -335,6 +336,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
     }
     return len;
 }
+#endif
 
 /*
  * Verify callback

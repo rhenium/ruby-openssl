@@ -128,6 +128,12 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+    rb_iv_set(self, "@flags", INT2NUM(0));
+    rb_iv_set(self, "@purpose", INT2NUM(0));
+    rb_iv_set(self, "@trust", INT2NUM(0));
+#endif
+
     /* last verification status */
     rb_iv_set(self, "@error", Qnil);
     rb_iv_set(self, "@error_string", Qnil);
@@ -139,10 +145,14 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509store_set_flags(VALUE self, VALUE flags)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
 
     GetX509Store(self, store);
     X509_STORE_set_flags(store, NUM2LONG(flags));
+#else
+    rb_iv_set(self, "@flags", flags);
+#endif
 
     return flags;
 }
@@ -150,10 +160,14 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
 static VALUE
 ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
-
+    
     GetX509Store(self, store);
     X509_STORE_set_purpose(store, NUM2LONG(purpose));
+#else
+    rb_iv_set(self, "@purpose", purpose);
+#endif
 
     return purpose;
 }
@@ -161,10 +175,14 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 static VALUE
 ossl_x509store_set_trust(VALUE self, VALUE trust)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
 
     GetX509Store(self, store);
     X509_STORE_set_trust(store, NUM2LONG(trust));
+#else
+    rb_iv_set(self, "@trust", trust);
+#endif
 
     return trust;
 }
@@ -327,10 +345,17 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     SafeGetX509Store(store, x509st);
     if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
     if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
         sk_X509_pop_free(x509s, X509_free);
         ossl_raise(eX509StoreError, NULL);
     }
+#else
+    X509_STORE_CTX_init(ctx, x509st, x509, x509s);
+    X509_STORE_CTX_set_flags(ctx, NUM2INT(rb_iv_get(store, "@flags")));
+    X509_STORE_CTX_set_purpose(ctx, NUM2INT(rb_iv_get(store, "@purpose")));
+    X509_STORE_CTX_set_trust(ctx, NUM2INT(rb_iv_get(store, "@trust")));
+#endif
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
 
@@ -433,12 +458,16 @@ ossl_x509stctx_get_curr_cert(VALUE self)
 static VALUE
 ossl_x509stctx_get_curr_crl(VALUE self)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE_CTX *ctx;
 
     GetX509StCtx(self, ctx);
     if(!ctx->current_crl) return Qnil;
 
     return ossl_x509crl_new(ctx->current_crl);
+#else
+    return Qnil;
+#endif
 }
 
 static VALUE
@@ -450,6 +479,39 @@ ossl_x509stctx_cleanup(VALUE self)
     X509_STORE_CTX_cleanup(ctx);
 
     return self;
+}
+
+static VALUE
+ossl_x509stctx_set_flags(VALUE self, VALUE flags)
+{
+    X509_STORE_CTX *store;
+
+    GetX509StCtx(self, store);
+    X509_STORE_CTX_set_flags(store, NUM2LONG(flags));
+
+    return flags;
+}
+
+static VALUE
+ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
+{
+    X509_STORE_CTX *store;
+
+    GetX509StCtx(self, store);
+    X509_STORE_CTX_set_purpose(store, NUM2LONG(purpose));
+
+    return purpose;
+}
+
+static VALUE
+ossl_x509stctx_set_trust(VALUE self, VALUE trust)
+{
+    X509_STORE_CTX *store;
+
+    GetX509StCtx(self, store);
+    X509_STORE_CTX_set_trust(store, NUM2LONG(trust));
+
+    return trust;
 }
 
 /*
@@ -492,5 +554,8 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(x509stctx,"current_crl", ossl_x509stctx_get_curr_crl, 0);
     rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
+    rb_define_method(x509stctx,"flags=",      ossl_x509stctx_set_flags, 1);
+    rb_define_method(x509stctx,"purpose=",    ossl_x509stctx_set_purpose, 1);
+    rb_define_method(x509stctx,"trust=",      ossl_x509stctx_set_trust, 1);
 
 }

@@ -310,13 +310,16 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
 static VALUE
 ossl_cipher_set_padding(VALUE self, VALUE padding)
 {
+#if defined(HAVE_ST_FLAGS)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
 
     if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
 		ossl_raise(eCipherError, NULL);
-
+#else
+    rb_notimplement();
+#endif
     return padding;
 }
 

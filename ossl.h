@@ -24,9 +24,11 @@ extern "C" {
 #include <version.h>
 #include <openssl/opensslv.h>
 
+/*
 #if (OPENSSL_VERSION_NUMBER < 0x00907000L)
 #  error ! This version of OSSL needs OpenSSL >= 0.9.7 for its run!
 #endif
+ */
 
 #if defined(NT) || defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
@@ -38,7 +40,9 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#include <openssl/ocsp.h>
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+#  include <openssl/ocsp.h>
+#endif
 #if defined(NT) || defined(_WIN32)
 #  undef OpenFile
 #endif
@@ -115,7 +119,11 @@ STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 /*
  * our default PEM callback
  */
+#if defined(HAVE_PEM_DEF_CALLBACK)
 int ossl_pem_passwd_cb(char *, int, int, void *);
+#else
+#  define ossl_pem_passwd_cb NULL
+#endif
 
 /*
  * ERRor messages
