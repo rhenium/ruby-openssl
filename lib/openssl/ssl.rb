@@ -20,6 +20,14 @@ module OpenSSL
   module SSL
     class SSLSocket
       include Buffering
+
+      def addr
+        @io.addr
+      end
+
+      def peeraddr
+        @io.peeraddr
+      end
     end
   end
 end

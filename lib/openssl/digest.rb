@@ -19,34 +19,26 @@
 #require 'openssl'
 
 module OpenSSL
-module Digest
+  module Digest
 
-[
-  "DSS",
-  "DSS1",
-  "MD2",
-  "MD4",
-  "MD5",
-  "MDC2",
-  "RIPEMD160",
-  "SHA",
-  "SHA1"
-].each do |digest|
-  eval(<<-EOD)
-    class #{digest} < Digest
-      def initialize(str=nil)
-        super(\"#{digest}\", str)
-      end
-      def #{digest}::digest(data)
-        Digest::digest(\"#{digest}\", data)
-      end
-      def #{digest}::hexdigest(data)
-        Digest::hexdigest(\"#{digest}\", data)
-      end
-    end
-  EOD
-end
+    %w(DSS DSS1 MD2 MD4 MD5 MDC2 RIPEMD160 SHA SHA1).each{|diges|
+      eval(<<-EOD)
+        class #{digest} < Digest
+          def initialize(str=nil)
+            super(\"#{digest}\", str)
+          end
 
-end # Digest
+          def #{digest}::digest(data)
+            Digest::digest(\"#{digest}\", data)
+          end
+
+          def #{digest}::hexdigest(data)
+            Digest::hexdigest(\"#{digest}\", data)
+          end
+        end
+      EOD
+    }
+
+  end # Digest
 end # OpenSSL
 

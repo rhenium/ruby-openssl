@@ -19,44 +19,34 @@
 #require 'openssl'
 
 module OpenSSL
-module Cipher
+  module Cipher
+    %w(AES Cast5 BF DES Idea RC2 RC4 RC5).each{|cipher|
+      eval(<<-EOD)
+        class #{cipher} < Cipher
+          def initialize(*args)
+            args = args.join('-')
+            if args.size == 0
+              super(\"#{cipher}\")
+            else
+              super(\"#{cipher}-#\{args\}\")
+            end
+          end
+        end
+      EOD
+    }
 
-[
-  "AES",
-  "Cast5",
-  "BF",
-  "DES",
-  "Idea",
-  "RC2",
-  "RC4",
-  "RC5"
-].each do |cipher|
-  eval(<<-EOD)
-    class #{cipher} < Cipher
-      def initialize(*args)
-        args = args.join('-')
-        if args.size == 0
-	  super(\"#{cipher}\")
-	else
-	  super(\"#{cipher}-#\{args\}\")
-	end
+    class Cipher
+      def random_key
+        str = OpenSSL::Random.random_bytes(self.key_len)
+        self.key = str
+        return str
+      end
+
+      def random_iv
+        str = OpenSSL::Random.random_bytes(self.iv_len)
+        self.iv = str
+        return str
       end
     end
-  EOD
-end
-
-	class Cipher
-		def random_key
-			str = OpenSSL::Random.random_bytes(self.key_len)
-			self.key = str
-			return str
-		end
-		def random_iv
-			str = OpenSSL::Random.random_bytes(self.iv_len)
-			self.iv = str
-			return str
-		end
-	end
-
-end # Cipher
+  end # Cipher
 end # OpenSSL

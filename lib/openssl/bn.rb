@@ -19,11 +19,9 @@
 #require 'openssl'
 
 module OpenSSL
-
-class BN
-  include Comparable
-end # BN
-
+  class BN
+    include Comparable
+  end # BN
 end # OpenSSL
 
 ##

@@ -28,35 +28,35 @@ require 'openssl'
 require 'net/ftp'
 
 module OpenSSL
-	module SSL
-		class SSLSocket
-			def addr
-				return @io.addr
-			end
-				
-			def peeraddr
-				return @io.peeraddr
-			end
+  module SSL
+    class SSLSocket
+      def addr
+        return @io.addr
+      end
+        
+      def peeraddr
+        return @io.peeraddr
+      end
 
-			def closed?
-				return @io.closed?
-			end
-		end
-	end
+      def closed?
+        return @io.closed?
+      end
+    end
+  end
 end
 
 module Net
-	class FTPTLS < FTP
-		def login(user = "anonymous", passwd = nil, acct = nil)
-			 ctx = OpenSSL::SSL::SSLContext.new('SSLv23')
-			 ctx.key = nil
-			 ctx.cert = nil
-			 voidcmd("AUTH TLS")
-			 @sock = OpenSSL::SSL::SSLSocket.new(@sock, ctx)
-			 @sock.connect
-			 super(user, passwd, acct)
-			 voidcmd("PBSZ 0")
-		end
-	end
+  class FTPTLS < FTP
+    def login(user = "anonymous", passwd = nil, acct = nil)
+       ctx = OpenSSL::SSL::SSLContext.new('SSLv23')
+       ctx.key = nil
+       ctx.cert = nil
+       voidcmd("AUTH TLS")
+       @sock = OpenSSL::SSL::SSLSocket.new(@sock, ctx)
+       @sock.connect
+       super(user, passwd, acct)
+       voidcmd("PBSZ 0")
+    end
+  end
 end
 
