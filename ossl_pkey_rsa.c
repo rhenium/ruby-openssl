@@ -417,7 +417,6 @@ ossl_rsa_to_public_key(VALUE self)
     return obj;
 }
 
-#if 0
 /*
  * TODO, FIXME
  * Find some good way how to specify type
@@ -427,20 +426,26 @@ static VALUE
 ossl_rsa_sign(VALUE self, VALUE data)
 {
     EVP_PKEY *pkey;
-    char *buf;
-    int buf_len;
+    char *m, *buf;
+    int m_len, buf_len;
+    int type = 0;
     VALUE str;
 
+    if (0 && rb_obj_is_kind_of(self, cDigest)) {
+    } else {
+        StringValue(data);
+        m = RSTRING(data)->ptr;
+        m_len = RSTRING(data)->len;
+    }
+
     GetPKeyRSA(self, pkey);
-    StringValue(data);
     if (!RSA_PRIVATE(pkey->pkey.rsa)) {
 	ossl_raise(eRSAError, "Private RSA key needed!");
     }
     if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
 	ossl_raise(eRSAError, "");
     }
-    if (!RSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, buf,
-		  &buf_len, pkey->pkey.rsa)) {
+    if (!RSA_sign(type, m, m_len, buf, &buf_len, pkey->pkey.rsa)) {
 	OPENSSL_free(buf);
 	ossl_raise(eRSAError, "");
     }
@@ -450,6 +455,7 @@ ossl_rsa_sign(VALUE self, VALUE data)
     return str;
 }
 
+#if 0
 static VALUE
 ossl_rsa_verify(VALUE self, VALUE sig, VALUE data)
 {
@@ -501,6 +507,15 @@ ossl_rsa_blinding_off(VALUE self)
 }
  */
 
+OSSL_PKEY_BN(rsa, n);
+OSSL_PKEY_BN(rsa, e);
+OSSL_PKEY_BN(rsa, d);
+OSSL_PKEY_BN(rsa, p);
+OSSL_PKEY_BN(rsa, q);
+OSSL_PKEY_BN(rsa, dmp1);
+OSSL_PKEY_BN(rsa, dmq1);
+OSSL_PKEY_BN(rsa, iqmp);
+
 /*
  * INIT
  */
@@ -525,6 +540,15 @@ Init_ossl_rsa()
     rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, 1);
     rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, 1);
     rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, 1);
+
+    DEF_OSSL_PKEY_BN(cRSA, rsa, n);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, e);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, d);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, p);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, q);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, dmp1);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, dmq1);
+    DEF_OSSL_PKEY_BN(cRSA, rsa, iqmp);
 
     rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
 
