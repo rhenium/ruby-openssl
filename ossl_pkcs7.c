@@ -213,19 +213,18 @@ ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
 }
 
 static VALUE
-ossl_pkcs7_add_signer(VALUE self, VALUE signer, VALUE key)
+ossl_pkcs7_add_signer(VALUE self, VALUE signer)
 {
     PKCS7 *pkcs7;
     PKCS7_SIGNER_INFO *p7si;
-    EVP_PKEY *pkey;
 	
     GetPKCS7(self, pkcs7);
     OSSL_Check_Kind(signer, cPKCS7SignerInfo);
-    pkey = DupPrivPKeyPtr(key);
-    /* DUP needed to make PKCS7_add_signer GCsafe */
+
     p7si = ossl_pkcs7si_get_PKCS7_SIGNER_INFO(signer);
-    p7si->pkey = pkey;
-    
+
+    /* NO DUP needed: PKCS7_SIGNER_INFO_set increments the
+       reference-count of the underlying pkey. */
     if (!PKCS7_add_signer(pkcs7, p7si)) {
 	PKCS7_SIGNER_INFO_free(p7si);
 	ossl_raise(ePKCS7Error, "Could not add signer.");
@@ -563,7 +562,7 @@ Init_ossl_pkcs7()
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, 1);
     rb_define_copy_func(cPKCS7, ossl_pkcs7_copy);
 	
-    rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 2);
+    rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 1);
     rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);
     rb_define_method(cPKCS7, "cipher=", ossl_pkcs7_set_cipher, 1);
     rb_define_method(cPKCS7, "add_recipient", ossl_pkcs7_add_recipient, 1);

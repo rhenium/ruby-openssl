@@ -216,7 +216,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_passwd_cb(self);
     if(!NIL_P(val)){
-        SSL_CTX_set_default_passwd_cb_userbata(ctx, val);
+        SSL_CTX_set_default_passwd_cb_userdata(ctx, val);
         SSL_CTX_set_default_passwd_cb(ctx, ossl_ssl_passwd_cb);
     }
 

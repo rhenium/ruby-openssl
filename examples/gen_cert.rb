@@ -5,18 +5,25 @@ include OpenSSL
 include X509
 include PKey
 
-p ca = Certificate.new(File.open("./0cert.pem").read)
-p ca_key = RSA.new(File.open("./0key.pem").read)
+usage = "#{$0} cn ca_cert_file ca_key_file serial"
+
+cn = ARGV.shift or raise usage
+ca_cert_file = ARGV.shift or raise usage
+ca_key_file = ARGV.shift or raise usage
+serial = ARGV.shift or raise usage
+
+p ca = Certificate.new(File.open(ca_cert_file).read)
+p ca_key = RSA.new(File.open(ca_key_file).read)
 
 p key = RSA.new(1024)
 p new = Certificate.new
-name = [['C', 'CZ'],['O','Ruby'],['CN','RA Officer']]
+name = [['C', 'CZ'],['O','Ruby'],['CN',cn]]
 p new.subject = Name.new(name)
 p new.issuer = ca.subject
 p new.not_before = Time.now
 p new.not_after = Time.now + (365*24*60*60)
 p new.public_key = key
-p new.serial = 1
+p new.serial = serial.to_i
 p new.version = 2
 ef = ExtensionFactory.new
 ef.subject_certificate = new
