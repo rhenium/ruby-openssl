@@ -1,6 +1,8 @@
+Thu, 19 Jun 2003 20:58:01 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* example/gen_*.rb: passwd_cb improved.
+
 Thu, 19 Jun 2003 20:16:11 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
-	* ossl.c: should protect allback Proc not to jump over
-	  the library's stack ftame.
+	* ossl.c: should protect allback Proc not to jump over the library's stack ftame.
 
 Thu, 19 Jun 2003 12:00:00 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* examples/gen_crl.rb: Allow to publish empty CRL

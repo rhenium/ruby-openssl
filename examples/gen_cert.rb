@@ -1,42 +1,54 @@
 #!/usr/bin/env ruby
 
 require 'openssl'
-include OpenSSL
-include X509
-include PKey
+require 'getopts'
 
-$stdout.sync = true
+include OpenSSL
+
+passwd_cb = Proc.new{|flag|
+  print "Enter password: "
+  pass = $stdin.gets.chop!
+
+  # when the flag is true, this passphrase
+  # will be used to perform encryption; otherwise it will
+  # be used to perform decryption.
+  if flag
+    print "Verify password: "
+    pass2 = $stdin.gets.chop!
+    raise "verify failed." if pass != pass2
+  end
+  pass
+}
 
 def usage
-  $stderr.puts "Usage: #{File::basename($0)} serialNumber commonName"
+  myname = File::basename($0)
+  $stderr.puts "Usage: #{myname} [-c ca_cert] [-k ca_key] serial cn"
   exit
 end
+
+getopts nil, "c:", "k:"
 
 num = ARGV.shift or usage()
 cn = ARGV.shift  or usage()
 ARGV.empty?      or usage()
 
+$stdout.sync = true
 
-ca_file = (ARGV.shift or "./0cert.pem")
+ca_file = $OPT_c || "./0cert.pem"
 puts "Reading CA cert (from #{ca_file})"
-ca = Certificate.new(File.read(ca_file))
+ca = X509::Certificate.new(File.read(ca_file))
 
-ca_key_file = (ARGV.shift or "./0key-plain.pem")
+ca_key_file = $OPT_k || "./0key-plain.pem"
 puts "Reading CA key (from #{ca_key_file})"
-ca_key = RSA.new(File.read(ca_key_file)) {
-  print "Enter password: "
-  gets.chop!
-}
+ca_key = PKey::RSA.new(File.read(ca_key_file), &passwd_cb)
 
 print "Generating key: "
-key = RSA.new(1024) do
-  putc "."
-end
+key = PKey::RSA.new(1024){ putc "." }
 putc "\n"
 
-cert = Certificate.new
+cert = X509::Certificate.new
 name = [['C', 'CZ'],['O', 'Ruby'],['CN', cn]]
-cert.subject = Name.new(name)
+cert.subject = X509::Name.new(name)
 cert.issuer = ca.subject
 cert.not_before = Time.now
 cert.not_after = Time.now + 365 * 24 * 60 * 60
@@ -44,7 +56,7 @@ cert.public_key = key
 cert.serial = num.to_i
 cert.version = 2 # X509v3
 
-ef = ExtensionFactory.new
+ef = X509::ExtensionFactory.new
 ef.subject_certificate = cert
 ef.issuer_certificate = ca
 ext1 = ef.create_extension("basicConstraints","CA:FALSE")
@@ -69,24 +81,7 @@ end
 key_file = "./#{cert.serial}key.pem"
 puts "Writing #{key_file}."
 File.open(key_file, "w") do |f|
-  pem = key.export(Cipher::DES.new(:EDE3, :CBC)) do |verify|
-    pass = ""
-    while true
-      print "Enter key password: "
-      pass = gets.chop!
-      if verify
-	print "Verify key password: "
-	pass2 = gets.chop!
-      else
-	pass2 = pass
-      end
-      break if pass == pass2
-      puts "Passwords do NOT match - try it again..."
-    end
-    pass
-  end
-  f << pem
+  f << key.export(Cipher::DES.new(:EDE3, :CBC), &passwd_cb)
 end
 
 puts "DONE."
-
