@@ -28,8 +28,9 @@ class TC_Config < Test::Unit::TestCase
   end
   def test_config
     assert_instance_of(Hash, @c.section("CA_default"), "section")
-    assert_instance_of(String, @c.value(nil, "HOME"), "value")
-    assert_instance_of(String, @c.value("CA_default", "default_days"), "value")
+    assert_instance_of(String, @c.value("HOME"), "value")
+    assert_equal(@c.value("HOME"), @c.value(nil, "HOME"), "value")
+    assert_kind_of(Integer, @c.value("CA_default", "default_days").to_i, "value")
   end
   def tear_down
     @c = nil

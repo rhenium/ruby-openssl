@@ -70,9 +70,9 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 
 	if (!NCONF_load(conf, filename, &err_line)) {
 		if (err_line <= 0) {
-			ossl_raise(eConfigError, "wrong config file %s", filename);
+			ossl_raise(eConfigError, "wrong config file (%s)", filename);
 		} else {
-			ossl_raise(eConfigError, "error on line %ld in config file %s", \
+			ossl_raise(eConfigError, "error on line %ld in config file \"%s\"", \
 					err_line, filename);
 		}
 	}
@@ -82,14 +82,17 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 }
 
 static VALUE
-ossl_config_get_value(VALUE self, VALUE section, VALUE item)
+ossl_config_get_value(int argc, VALUE *argv, VALUE self)
 {
 	CONF *conf;
+	VALUE section, item;
 	char *sect = NULL, *str;
 	
 	GetConfig(self, conf);
 	
-	if (!NIL_P(section)) {
+	if (rb_scan_args(argc, argv, "11", &section, &item) == 1) {
+		item = section;
+	} else if (!NIL_P(section)) {
 		sect = StringValuePtr(section);
 	}
 	if (!(str = NCONF_get_string(conf, sect, StringValuePtr(item)))) {
@@ -143,7 +146,7 @@ Init_ossl_config()
 	rb_define_singleton_method(cConfig, "load", ossl_config_s_load, -1);
 	rb_define_alias(CLASS_OF(cConfig), "new", "load");
 	
-	rb_define_method(cConfig, "value", ossl_config_get_value, 2);
+	rb_define_method(cConfig, "value", ossl_config_get_value, -1);
 	rb_define_method(cConfig, "section", ossl_config_get_section, 1);
 }
 

@@ -17,7 +17,7 @@
 int
 HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 {
-	if (in == NULL) {
+	if (!out || !in) {
         	/* HMACerr(HMAC_CTX_COPY,HMAC_R_INPUT_NOT_INITIALIZED); */
         	return 0;
     	}

@@ -129,13 +129,10 @@ static VALUE
 ossl_spki_set_public_key(VALUE self, VALUE key)
 {
 	NETSCAPE_SPKI *spki;
-	EVP_PKEY *pkey;
 
 	GetSPKI(self, spki);
 	
-	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-
-	if (!NETSCAPE_SPKI_set_pubkey(spki, pkey)) {
+	if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
 		ossl_raise(eSPKIError, "");
 	}
 	return key;
@@ -148,10 +145,11 @@ ossl_spki_get_challenge(VALUE self)
 
 	GetSPKI(self, spki);
 
-	if (spki->spkac->challenge->length > 0) {
-		return rb_str_new(spki->spkac->challenge->data, spki->spkac->challenge->length);
+	if (spki->spkac->challenge->length <= 0) {
+		OSSL_Debug("Challenge.length <= 0?");
+		return rb_str_new2("");
 	}
-	return rb_str_new2("");
+	return rb_str_new(spki->spkac->challenge->data, spki->spkac->challenge->length);
 }
 
 static VALUE
@@ -194,14 +192,11 @@ static VALUE
 ossl_spki_verify(VALUE self, VALUE key)
 {
 	NETSCAPE_SPKI *spki;
-	EVP_PKEY *pkey;
 	int result;
 
 	GetSPKI(self, spki);
 	
-	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-
-	if ((result = NETSCAPE_SPKI_verify(spki, pkey)) < 0) {
+	if ((result = NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) < 0) { /* NO NEED TO DUP */
 		ossl_raise(eSPKIError, "");
 	}
 	if (result > 0) {
