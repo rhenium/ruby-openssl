@@ -1,3 +1,7 @@
+Thu, 11 Jul 2003 02:33:59 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* ossl_x509req.c: Add Request#signature_algorithm.
+	* ossl_x509crl.c: eX509CertError -> eX509CRLError.
+
 Thu, 11 Jul 2003 02:30:55 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/gen_csr.rb: Add 'key' option to specify keypair file.
 	  We need this feature for creating cross certificate.

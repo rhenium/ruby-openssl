@@ -264,6 +264,29 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
 }
 
 static VALUE 
+ossl_x509req_get_signature_algorithm(VALUE self)
+{
+    X509_REQ *req;
+    BIO *out;
+    BUF_MEM *buf;
+    VALUE str;
+
+    GetX509Req(self, req);
+	
+    if (!(out = BIO_new(BIO_s_mem()))) {
+	ossl_raise(eX509ReqError, NULL);
+    }
+    if (!i2a_ASN1_OBJECT(out, req->sig_alg->algorithm)) {
+	BIO_free(out);
+	ossl_raise(eX509ReqError, NULL);
+    }
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
+    BIO_free(out);
+    return str;
+}
+
+static VALUE 
 ossl_x509req_get_public_key(VALUE self)
 {
     X509_REQ *req;
@@ -414,6 +437,7 @@ Init_ossl_x509req()
     rb_define_method(cX509Req, "version=", ossl_x509req_set_version, 1);
     rb_define_method(cX509Req, "subject", ossl_x509req_get_subject, 0);
     rb_define_method(cX509Req, "subject=", ossl_x509req_set_subject, 1);
+    rb_define_method(cX509Req, "signature_algorithm", ossl_x509req_get_signature_algorithm, 0);
     rb_define_method(cX509Req, "public_key", ossl_x509req_get_public_key, 0);
     rb_define_method(cX509Req, "public_key=", ossl_x509req_set_public_key, 1);
     rb_define_method(cX509Req, "sign", ossl_x509req_sign, 2);

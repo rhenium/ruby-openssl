@@ -64,7 +64,7 @@ ossl_x509crl_new(X509_CRL *crl)
     VALUE obj;
 
     tmp = crl ? X509_CRL_dup(crl) : X509_CRL_new();
-    if(!tmp) ossl_raise(eX509CertError, NULL);
+    if(!tmp) ossl_raise(eX509CRLError, NULL);
     WrapX509CRL(cX509CRL, obj, tmp);
         
     return obj;
@@ -183,11 +183,11 @@ ossl_x509crl_get_signature_algorithm(VALUE self)
     GetX509CRL(self, crl);
 	
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509CertError, NULL);
+	ossl_raise(eX509CRLError, NULL);
     }
     if (!i2a_ASN1_OBJECT(out, crl->sig_alg->algorithm)) {
 	BIO_free(out);
-	ossl_raise(eX509CertError, NULL);
+	ossl_raise(eX509CRLError, NULL);
     }
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
