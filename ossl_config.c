@@ -41,7 +41,7 @@ static VALUE
 ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 {
     CONF *conf;
-    long err_line;
+    long err_line = -1;
     char *filename;
     VALUE path, obj;
 
@@ -61,12 +61,17 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
     OSSL_Debug("Loading file: %s", filename);
 
     if (!NCONF_load(conf, filename, &err_line)) {
+	char tmp[255];
+
+	memcpy(tmp, filename, strlen(filename)>=sizeof(tmp)?sizeof(tmp):strlen(filename));
+	tmp[sizeof(tmp)-1] = '\0';
 	OPENSSL_free(filename);
+	
 	if (err_line <= 0) {
-	    ossl_raise(eConfigError, "wrong config file (%s)", filename);
+	    ossl_raise(eConfigError, "wrong config file (%s)", tmp);
 	} else {
 	    ossl_raise(eConfigError, "error on line %ld in config file \"%s\"",
-		       err_line, filename);
+		       err_line, tmp);
 	}
     }
     OPENSSL_free(filename);
