@@ -10,6 +10,7 @@
  */
 #if !defined(NO_HMAC) && !defined(OPENSSL_NO_HMAC)
 
+#include <string.h>
 #include <openssl/hmac.h>
 
 /* to hmac.[ch] */

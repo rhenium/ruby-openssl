@@ -36,6 +36,14 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifdef WIN32
+#define strncasecmp _strnicmp
+#else
+#ifndef HAVE_STRNCASECMP
+#  include "./strncasecmp.c"
+#endif
+#endif
+
 /*
 #if !defined(WIN32)
 #  include "common/config.h"
@@ -85,9 +93,8 @@ strptime(char *buf, char *fmt, struct tm *tm)
 {
         char    c,
                 *ptr;
-        int     i,
+        int     i, j,
                 len;
-
         ptr = fmt;
         while (*ptr != 0) {
                 if (*buf == 0)
@@ -182,7 +189,7 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         if (!isdigit(*buf))
                                 return 0;
 
-                        for (i = 0; *buf != 0 && isdigit(*buf); buf++) {
+                        for (j=0,i = 0; *buf != 0 && isdigit(*buf) && j<2; j++,buf++) {
                                 i *= 10;
                                 i += *buf - '0';
                         }
@@ -206,7 +213,7 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         if (!isdigit(*buf))
                                 return 0;
 
-                        for (i = 0; *buf != 0 && isdigit(*buf); buf++) {
+                        for (j=0,i = 0; *buf != 0 && isdigit(*buf) && j<2; j++,buf++) {
                                 i *= 10;
                                 i += *buf - '0';
                         }
@@ -273,7 +280,7 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         if (!isdigit(*buf))
                                 return 0;
 
-                        for (i = 0; *buf != 0 && isdigit(*buf); buf++) {
+                        for (j=0,i = 0; *buf != 0 && isdigit(*buf) && j<2; j++,buf++) {
                                 i *= 10;
                                 i += *buf - '0';
                         }
@@ -314,7 +321,7 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         if (!isdigit(*buf))
                                 return 0;
 
-                        for (i = 0; *buf != 0 && isdigit(*buf); buf++) {
+                        for (j=0,i = 0; *buf != 0 && isdigit(*buf) && j<2; j++,buf++) {
                                 i *= 10;
                                 i += *buf - '0';
                         }
@@ -336,15 +343,16 @@ strptime(char *buf, char *fmt, struct tm *tm)
                         if (!isdigit(*buf))
                                 return 0;
 
-                        for (i = 0; *buf != 0 && isdigit(*buf); buf++) {
+                        for (j=0,i = 0; *buf != 0 && isdigit(*buf) && j<((c=='Y')?4:2); j++,buf++) {
                                 i *= 10;
                                 i += *buf - '0';
                         }
-                        if (c == 'Y')
+                        
+			if (c == 'Y')
                                 i -= 1900;
 			else if (c < 69) /*c=='y', 00-68 is for 20xx, the rest is for 19xx*/
 				i += 100;
-				
+
                         if (i < 0)
                                 return 0;
 

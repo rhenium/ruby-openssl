@@ -57,12 +57,13 @@ asn1time_to_time(ASN1_UTCTIME *time)
 
 	switch(time->type) {
 		case V_ASN1_UTCTIME:
-			if (!strptime(time->data, "%y%m%d%H%M%S", &tm)) {
+			rb_warn("UTCTIME: %s", time->data);
+			if (!strptime(time->data, "%y%m%d%H%M%SZ", &tm)) {
 				rb_raise(rb_eTypeError, "bad UTCTIME format");
 			}
 			break;
 		case V_ASN1_GENERALIZEDTIME:
-			if (!strptime(time->data, "%Y%m%d%H%M%S", &tm)) {
+			if (!strptime(time->data, "%Y%m%d%H%M%SZ", &tm)) {
 				rb_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
 			}
 			break;
