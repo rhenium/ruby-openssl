@@ -191,9 +191,9 @@ ossl_sslctx_setup(VALUE self)
     ca_file = NIL_P(val) ? NULL : StringValuePtr(val);
     val = ossl_sslctx_get_ca_path(self);
     ca_path = NIL_P(val) ? NULL : StringValuePtr(val);
-    if ((!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path) ||
-         !SSL_CTX_set_default_verify_paths(ctx))) {
-        rb_warning("can't set verify locations");
+    if(ca_file || ca_path){
+	if (!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path))
+	    rb_warning("can't set verify locations");
     }
 
     val = ossl_sslctx_get_verify_mode(self);
