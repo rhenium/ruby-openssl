@@ -29,7 +29,7 @@ VALUE cSSLSocket;
  */
 #define ossl_sslctx_set_cert(o,v)        rb_iv_set((o),"@cert",(v))
 #define ossl_sslctx_set_key(o,v)         rb_iv_set((o),"@key",(v))
-#define ossl_sslctx_set_ca_cert(o,v)     rb_iv_set((o),"@ca_cert",(v))
+#define ossl_sslctx_set_client_ca(o,v)   rb_iv_set((o),"@client_ca",(v))
 #define ossl_sslctx_set_ca_file(o,v)     rb_iv_set((o),"@ca_file",(v))
 #define ossl_sslctx_set_ca_path(o,v)     rb_iv_set((o),"@ca_path",(v))
 #define ossl_sslctx_set_timeout(o,v)     rb_iv_set((o),"@timeout",(v))
@@ -41,7 +41,7 @@ VALUE cSSLSocket;
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
-#define ossl_sslctx_get_ca_cert(o)       rb_iv_get((o),"@ca_cert")
+#define ossl_sslctx_get_client_ca(o)     rb_iv_get((o),"@client_ca")
 #define ossl_sslctx_get_ca_file(o)       rb_iv_get((o),"@ca_file")
 #define ossl_sslctx_get_ca_path(o)       rb_iv_get((o),"@ca_path")
 #define ossl_sslctx_get_timeout(o)       rb_iv_get((o),"@timeout")
@@ -52,7 +52,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_cert_store(o)    rb_iv_get((o),"@cert_store")
 
 static char *ossl_sslctx_attrs[] = {
-    "cert", "key", "ca_cert", "ca_file", "ca_path",
+    "cert", "key", "client_ca", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
     "verify_callback", "options", "cert_store",
 };
@@ -143,11 +143,11 @@ static VALUE
 ossl_sslctx_setup(VALUE self)
 {
     SSL_CTX *ctx;
-    X509 *cert = NULL, *ca_cert = NULL;
+    X509 *cert = NULL, *client_ca = NULL;
     X509_STORE *store;
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
-    int verify_mode;
+    int i, verify_mode;
     VALUE val;
 
     if(OBJ_FROZEN(self)) return Qnil;
@@ -178,13 +178,24 @@ ossl_sslctx_setup(VALUE self)
         }
     }
 
-    val = ossl_sslctx_get_ca_cert(self);
-    ca_cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED. */
-    if (ca_cert){
-        if (!SSL_CTX_add_client_CA(ctx, ca_cert)){
-            /* Copies X509_NAME => FREE it. */
-            ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+    val = ossl_sslctx_get_client_ca(self);
+    if(!NIL_P(val)){
+	if(TYPE(val) == T_ARRAY){
+	    for(i = 0; i < RARRAY(val)->len; i++){
+		client_ca = GetX509CertPtr(RARRAY(val)->ptr[i]);
+        	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
+		    /* Copies X509_NAME => FREE it. */
+        	    ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+        	}
+	    }
         }
+	else{
+	    client_ca = GetX509CertPtr(val); /* NO DUP NEEDED. */
+            if (!SSL_CTX_add_client_CA(ctx, client_ca)){
+		/* Copies X509_NAME => FREE it. */
+        	ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+            }
+	}
     }
 
     val = ossl_sslctx_get_ca_file(self);

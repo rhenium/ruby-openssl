@@ -1,3 +1,7 @@
+Mon, 30 Jun 2003 04:32:40 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_ssl.c: @ca_cert is renamed to @client_ca;
+	  and an Array can be specified to this.
+
 Mon, 30 Jun 2003 01:24:27 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* examples/ssl/wget.rb: follows current SSLSocket.
 	* examples/ssl/example.rb: callback should print isser and subject instead of PEM.
