@@ -1,3 +1,13 @@
+/*
+ * $Id$
+ * 'OpenSSL for Ruby' project
+ * Copyright (C) 2001-2003  Michal Rokos <michal@rokos.homeip.net>
+ * All rights reserved.
+ */
+/*
+ * This program is licenced under the same licence as Ruby.
+ * (See the file 'LICENCE'.)
+ */
 #if !defined(_OSSL_RUBY_MISSING_H_)
 #define _OSS_RUBY_MISSING_H_
 
