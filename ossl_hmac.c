@@ -71,7 +71,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 }
 
 static VALUE
-ossl_hmac_copy_object(VALUE self, VALUE other)
+ossl_hmac_copy(VALUE self, VALUE other)
 {
     HMAC_CTX *ctx1, *ctx2;
     
@@ -202,7 +202,7 @@ Init_ossl_hmac()
     rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
     
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
-    rb_define_method(cHMAC, "copy_object", ossl_hmac_copy_object, 1);
+    rb_define_copy_func(cHMAC, ossl_hmac_copy);
 
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
     rb_define_alias(cHMAC, "<<", "update");

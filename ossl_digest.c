@@ -79,7 +79,7 @@ ossl_digest_initialize(VALUE self, VALUE str)
 }
 
 static VALUE
-ossl_digest_copy_object(VALUE self, VALUE other)
+ossl_digest_copy(VALUE self, VALUE other)
 {
     EVP_MD_CTX *ctx1, *ctx2;
     
@@ -201,22 +201,6 @@ ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
 }
 
 static VALUE
-ossl_digest_clone(VALUE self)
-{
-    EVP_MD_CTX *ctx, *other;
-    VALUE obj;
-
-    GetDigest(self, ctx);
-    obj = rb_obj_alloc(CLASS_OF(self));
-    GetDigest(obj, other);
-    if (!EVP_MD_CTX_copy(other, ctx)) {
-	ossl_raise(eDigestError, "");
-    }
-
-    return obj;
-}
-
-static VALUE
 ossl_digest_equal(VALUE self, VALUE other)
 {
     EVP_MD_CTX *ctx;
@@ -279,10 +263,9 @@ Init_ossl_digest()
     rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 2);
 	
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, 1);
-    rb_define_method(cDigest, "copy_object", ossl_digest_copy_object, 1);
     rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     
-    rb_define_method(cDigest, "clone",  ossl_digest_clone, 0);
+    rb_define_copy_func(cDigest, ossl_digest_copy);
     
     rb_define_method(cDigest, "digest", ossl_digest_digest, 0);
     rb_define_method(cDigest, "hexdigest", ossl_digest_hexdigest, 0);

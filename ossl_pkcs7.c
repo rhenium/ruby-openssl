@@ -179,7 +179,7 @@ ossl_pkcs7_initialize(VALUE self, VALUE arg)
 }
 
 static VALUE
-ossl_pkcs7_copy_object(VALUE self, VALUE other)
+ossl_pkcs7_copy(VALUE self, VALUE other)
 {
     PKCS7 *a, *b, *pkcs7;
 
@@ -561,7 +561,7 @@ Init_ossl_pkcs7()
      */
     rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, 1);
-    rb_define_method(cPKCS7, "copy_object", ossl_pkcs7_copy_object, 1);
+    rb_define_copy_func(cPKCS7, ossl_pkcs7_copy);
 	
     rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 2);
     rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);

@@ -1,3 +1,6 @@
+Wed, 21 May 2003 21:14:28 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* fix-up copy_dup_framework for latest Ruby source
+
 Sun, 18 May 2003 19:56:20 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* OSSL 0.2.0-pre1 released
 

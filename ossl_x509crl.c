@@ -112,7 +112,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_x509crl_copy_object(VALUE self, VALUE other)
+ossl_x509crl_copy(VALUE self, VALUE other)
 {
     X509_CRL *a, *b, *crl;
 	
@@ -465,7 +465,7 @@ Init_ossl_x509crl()
 	
     rb_define_alloc_func(cX509CRL, ossl_x509crl_alloc);
     rb_define_method(cX509CRL, "initialize", ossl_x509crl_initialize, -1);
-    rb_define_method(cX509CRL, "copy_object", ossl_x509crl_copy_object, 1);
+    rb_define_copy_func(cX509CRL, ossl_x509crl_copy);
     
     rb_define_method(cX509CRL, "version", ossl_x509crl_get_version, 0);
     rb_define_method(cX509CRL, "version=", ossl_x509crl_set_version, 1);

@@ -88,7 +88,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     return self;
 }
 static VALUE
-ossl_cipher_copy_object(VALUE self, VALUE other)
+ossl_cipher_copy(VALUE self, VALUE other)
 {
     EVP_CIPHER_CTX *ctx1, *ctx2;
 	
@@ -344,7 +344,9 @@ Init_ossl_cipher(void)
 
     rb_define_alloc_func(cCipher, ossl_cipher_alloc);
     rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
-    rb_define_method(cCipher, "copy_object", ossl_cipher_copy_object, 1);
+
+    rb_define_copy_func(cCipher, ossl_cipher_copy);
+
     rb_define_method(cCipher, "reset", ossl_cipher_reset, 0);
 
     rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);

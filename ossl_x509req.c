@@ -123,7 +123,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_x509req_copy_object(VALUE self, VALUE other)
+ossl_x509req_copy(VALUE self, VALUE other)
 {
     X509_REQ *a, *b, *req;
 	
@@ -405,7 +405,7 @@ Init_ossl_x509req()
 	
     rb_define_alloc_func(cX509Req, ossl_x509req_alloc);
     rb_define_method(cX509Req, "initialize", ossl_x509req_initialize, -1);
-    rb_define_method(cX509Req, "copy_object", ossl_x509req_copy_object, 1);
+    rb_define_copy_func(cX509Req, ossl_x509req_copy);
 	
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);
     rb_define_alias(cX509Req, "to_s", "to_pem");

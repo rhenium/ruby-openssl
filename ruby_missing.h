@@ -52,9 +52,19 @@
 							\
 	return obj;					\
     }
-#  define rb_define_alloc_func(klass,func) \
+#  define rb_define_alloc_func(klass, func) \
     rb_define_singleton_method(klass, "new", func##_wrapper, -1)
 #endif
 
+#if RUBY_VERSION_CODE >= 180
+#  if RUBY_RELEASE_CODE < 20030517
+#    define rb_define_copy_func(klass, func) \
+	rb_define_method(klass, "copy_object", func, 1)
+#  else
+#    define rb_define_copy_func(klass, func) \
+	rb_define_method(klass, "initialize_copy", func, 1)
+#  endif
 #endif
+
+#endif /* _OSS_RUBY_MISSING_H_ */
 

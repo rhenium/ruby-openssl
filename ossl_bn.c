@@ -630,8 +630,8 @@ Init_ossl_bn()
     rb_define_alloc_func(cBN, ossl_bn_alloc);
     rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
 	
+    rb_define_copy_func(cBN, ossl_bn_copy);
     rb_define_method(cBN, "copy", ossl_bn_copy, 1);
-    rb_define_method(cBN, "copy_object", ossl_bn_copy, 1);
 
     /* swap (=coerce?) */
 
