@@ -66,7 +66,17 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 }
 
 X509_EXTENSION *
-ossl_x509ext_get_X509_EXTENSION(VALUE obj)
+GetX509ExtPtr(VALUE obj)
+{
+    X509_EXTENSION *ext;
+
+    SafeGetX509Ext(obj, ext);
+
+    return ext;
+}
+
+X509_EXTENSION *
+DupGetX509ExtPtr(VALUE obj)
 {
     X509_EXTENSION *ext, *new;
 
