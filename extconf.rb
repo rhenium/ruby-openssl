@@ -64,11 +64,11 @@ EOD
 end
 
 if have_header("openssl/crypto.h") and 
-    have_library(CRYPTOLIB, nil) and
-    have_library(SSLLIB, nil) #"SSLv23_method")
+    have_library(CRYPTOLIB, "OpenSSL_add_all_algorithms") and 
+    have_library(SSLLIB, "SSLv23_method")
   create_makefile("openssl")
   puts "Done."
 else
-  puts "Makefile wasn't created."
+  puts "Makefile wasn't created. Fix the errors above."
 end
 
