@@ -96,6 +96,22 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 	}
 	return self;
 }
+static VALUE
+ossl_cipher_become(VALUE self, VALUE other)
+{
+	ossl_cipher *ciphp1, *ciphp2;
+	
+	rb_check_frozen(self);
+	
+	if (self == other) return self;
+
+	GetCipher(self, ciphp1);
+	SafeGetCipher(other, ciphp2);
+
+	ciphp1->cipher = ciphp2->cipher;
+
+	return self;
+}
 
 static VALUE
 ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
@@ -284,7 +300,8 @@ Init_ossl_cipher(void)
 	
 	rb_define_singleton_method(cCipher, "allocate", ossl_cipher_s_allocate, 0);
 	rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
-	
+
+	rb_define_method(cCipher, "become", ossl_cipher_become, 1);
 	rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
 	rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
 	rb_define_method(cCipher, "update", ossl_cipher_update, 1);

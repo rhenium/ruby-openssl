@@ -488,25 +488,13 @@ BIGNUM_NUM(num_bytes);
 BIGNUM_NUM(num_bits);
 
 static VALUE
-ossl_bn_dup(VALUE self)
-{
-	BIGNUM *bn, *new;
-	VALUE obj;
-	
-	GetBN(self, bn);
-
-	if (!(new = BN_dup(bn))) {
-		ossl_raise(eBNError, "");
-	}
-	WrapBN(CLASS_OF(self), obj, new);
-
-	return obj;
-}
-
-static VALUE
 ossl_bn_copy(VALUE self, VALUE other)
 {
 	BIGNUM *bn1, *bn2;
+
+	rb_check_frozen(self);
+	
+	if (self == other) return self;
 
 	GetBN(self, bn1);
 	SafeGetBN(other, bn2);
@@ -613,8 +601,8 @@ Init_ossl_bn()
 	rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
 	
 	rb_define_method(cBN, "copy", ossl_bn_copy, 1);
-	rb_define_method(cBN, "dup", ossl_bn_dup, 0);
-
+	rb_define_alias(cBN, "become", "copy");
+	
 	/* swap (=coerce?) */
 
 	rb_define_method(cBN, "num_bytes", ossl_bn_num_bytes, 0);

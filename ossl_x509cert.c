@@ -147,23 +147,24 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_x509_become(VALUE copy, VALUE orig)
+ossl_x509_become(VALUE self, VALUE other)
 {
-	X509 *x509;
+	X509 *a, *b, *x509;
 	
-	if (copy == orig) return copy;
+	rb_check_frozen(self);
 
-	rb_check_frozen(copy);
+	if (self == other) return self;
 
-	OSSL_Check_Same_Class(copy, orig);
-
-	if (!(x509 = X509_dup(DATA_PTR(orig)))) {
+	GetX509(self, a);
+	SafeGetX509(other, b);
+	
+	if (!(x509 = X509_dup(b))) {
 		ossl_raise(eX509CertError, "");
 	}
-	X509_free(DATA_PTR(copy));
-	DATA_PTR(copy) = x509;
+	X509_free(a);
+	DATA_PTR(self) = x509;
 	
-	return copy;
+	return self;
 }
 
 static VALUE 

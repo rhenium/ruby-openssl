@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Thu, 05 Sep 2002 13:07:18 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: added #become method for Ruby 1.7.3 dup, clone interface
+	* cipher.c: ditto.
+
 Thu, 05 Sep 2002 12:16:10 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: clear OpenSSL error in ossl_raise
 

@@ -140,6 +140,7 @@ class TC_BN < Test::Unit::TestCase
     bn2 = BN::new("0")
 
     assert(bn1.dup == bn1, "dup")
+    assert(bn1.clone == bn1, "clone")
     assert(bn2.copy(bn1) == bn1, "copy")
   end
   def test_cmp

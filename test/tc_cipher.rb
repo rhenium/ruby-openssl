@@ -49,6 +49,10 @@ class TC_Cipher < Test::Unit::TestCase
     assert_kind_of(Fixnum, @c1.key_len, "key_len")
     assert_kind_of(Fixnum, @c1.iv_len, "iv_len")
   end
+  def test_dup
+    assert_equal(@c1.name, @c1.dup.name, "dup")
+    assert_equal(@c1.name, @c1.clone.name, "clone")
+  end
   def tear_down
     @c1 = @c2 = nil
   end
