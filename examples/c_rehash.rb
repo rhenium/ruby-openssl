@@ -8,27 +8,64 @@ class CHashDir
 
   def initialize(dirpath)
     @dirpath = dirpath
-    @fingerprint_cache = @cert_cache = nil
+    @fingerprint_cache = @cert_cache = @crl_cache = nil
   end
 
   def hash_dir(silent = false)
+    # ToDo: Should lock the directory...
     @silent = silent
     @fingerprint_cache = Hash.new
     @cert_cache = Hash.new
+    @crl_cache = Hash.new
     do_hash_dir
   end
 
-  def each
-    @cert_cache.each do |name_hash, certs|
-      yield(certs)
+  def get_certs(name = nil)
+    if name
+      @cert_cache[hash_name(name)]
+    else
+      @cert_cache.values.flatten
     end
   end
 
-  def get_certs(name)
-    @cert_cache[hash_name(name)]
+  def get_crls(name = nil)
+    if name
+      @crl_cache[hash_name(name)]
+    else
+      @crl_cache.values.flatten
+    end
+  end
+
+  def delete_crl(crl)
+    File.unlink(crl_filename(crl))
+    hash_dir(true)
+  end
+
+  def add_crl(crl)
+    File.open(crl_filename(crl), "w") do |f|
+      f << crl.to_pem
+    end
+    hash_dir(true)
+  end
+
+  def load_pem_file(filepath)
+    str = File.read(filepath)
+    begin
+      OpenSSL::X509::Certificate.new(str)
+    rescue
+      begin
+	OpenSSL::X509::CRL.new(str)
+      rescue
+	nil
+      end
+    end
   end
 
 private
+
+  def crl_filename(crl)
+    path(hash_name(crl.issuer)) + '.pem'
+  end
 
   def do_hash_dir
     Dir.chdir(@dirpath) do
@@ -51,19 +88,6 @@ private
     Dir.entries(".").each do |entry|
       next unless /^[\da-f]+\.r{0,1}\d+$/ =~ entry
       File.unlink(entry) if FileTest.symlink?(entry)
-    end
-  end
-
-  def load_pem_file(filepath)
-    str = File.open(filepath).read
-    begin
-      OpenSSL::X509::Certificate.new(str)
-    rescue
-      begin
-	OpenSSL::X509::CRL.new(str)
-      rescue
-	nil
-      end
     end
   end
 
@@ -93,7 +117,7 @@ private
 	STDERR.puts("WARNING: Skipping duplicate CRL #{org_filename}")
       end
     else
-      (@cert_cache[name_hash] ||= []) << path(filepath)
+      (@crl_cache[name_hash] ||= []) << path(filepath)
     end
   end
 
@@ -119,7 +143,7 @@ private
       File.symlink(from, to)
     rescue
       File.open(to, "w") do |f|
-	f << File.open(from).read
+	f << File.read(from)
       end
     end
   end

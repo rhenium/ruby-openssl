@@ -1,3 +1,6 @@
+Fri, 04 Jul 2003 23:56:09 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/c_rehash.rb: Run as a manager of cert store directory.
+
 Fri, 04 Jul 2003 23:51:52 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/cert_store.rb: Renamed to cert_store_view.rb.
 	* examples/cert_store_view.rb: Added.
