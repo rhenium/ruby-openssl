@@ -29,8 +29,7 @@ VALUE eX509StoreError;
 /*
  * General callback for OpenSSL verify
  */
-int 
-ossl_x509store_verify_cb(int, X509_STORE_CTX *);
+int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
 
 /*
  * Struct
@@ -46,8 +45,8 @@ ossl_x509store_free(ossl_x509store *storep)
 	if (storep) {
 		if (storep->store && storep->protect == 0)
 			X509_STORE_CTX_free(storep->store);
-		else
-			storep->store = NULL;
+		
+		storep->store = NULL;
 		free(storep);
 	}
 }
@@ -215,37 +214,33 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 	return cert;
 }
 
-/*
- * DOESN'T WORK!!!
- * I have to walk X509_OBJECTS in storep->store
 static VALUE
-ossl_x509store_get_chain(obj)
-	VALUE obj;
+ossl_x509store_get_chain(VALUE self)
 {
-	 ossl_x509store *storep = NULL;
-	X509_STORE_CTX ctx;
+	ossl_x509store *storep = NULL;
 	X509 *x509 = NULL;
 	int i, num;
-	VALUE ary, cert;
+	VALUE ary;
 
 	GetX509Store(self, storep);
 
-	X509_STORE_CTX_init(&ctx, storep->store, NULL, NULL);
-	X509_verify_cert(&ctx);
-	num = sk_X509_num(ctx.chain);
-	rb_bug("chain=%d", num);
+	num = sk_X509_num(storep->store->chain);
 	
-	if (num < 0) return rb_ary_new();
+	if (num < 0) {
+		rb_warning("certs in chain < 0???");
+		return rb_ary_new();
+	}
+	
 	ary = rb_ary_new2(num);
+	
 	for(i=0; i<num; i++) {
-		x509 = sk_X509_value(ctx.chain, i);
-		cert = ossl_x509_new(x509);
-		rb_ary_push(ary, cert);
+		x509 = sk_X509_value(storep->store->chain, i);
+		rb_ary_push(ary, ossl_x509_new(x509));
+		X509_free(x509);
 	}
 	
 	return ary;
 }
- */
 
 static VALUE 
 ossl_x509store_add_crl(VALUE self, VALUE crlst)
@@ -268,38 +263,6 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 	return crlst;
 }
 
-/*
- * No need for
-static VALUE
-ossl_x509store_add(VALUE self, VALUE arg)
-{
-	ossl_x509store *storep = NULL;
-	X509 *x509 = NULL;
-	X509_CRL *crl = NULL;
-
-	GetX509Store(self, storep);
-
-	switch (OSSL_TYPE(arg)) {
-		case T_OSSL_X509CRL:
-			crl = ossl_x509crl_get_X509_CRL(arg);
-			if (!X509_STORE_add_crl(storep->store, crl)) {
-				rb_raise(eX509StoreError, "%s", ossl_error());
-			}
-			break;
-		case T_OSSL_X509:
-			x509 = ossl_x509_get_X509(arg);
-			if (!X509_STORE_add_cert(storep->store, x509)) {
-				rb_raise(eX509StoreError, "%s", ossl_error());
-			}
-			break;
-		default:
-			rb_raise(rb_eTypeError, "unsupported type");
-	}
-	
-	return obj;
-}
- */
-
 static VALUE 
 ossl_x509store_call_verify_cb_proc(VALUE args)
 {
@@ -321,7 +284,7 @@ ossl_x509store_verify_false(VALUE dummy)
 	return Qfalse;
 }
 
-int 
+int MS_CALLBACK
 ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
 	VALUE proc, store_ctx, args, ret = Qnil;
@@ -333,15 +296,23 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 	
 	if (!NIL_P(proc)) {
 		store_ctx = ossl_x509store_new(ctx);
-		rb_funcall(store_ctx, rb_intern("protect"), 0, NULL); /* called default by ossl_..new */
+		/* rb_funcall(store_ctx, rb_intern("protect"), 0, NULL); -- called default by ossl_..new */
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, proc);
 		rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
 		rb_ary_store(args, 2, store_ctx);
 		ret = rb_rescue(ossl_x509store_call_verify_cb_proc, args, ossl_x509store_verify_false, Qnil);
+		
+		if (ret == Qtrue) {
+			ok = 1;
+			ctx->error = X509_V_OK;
+		} else {
+			ok = 0;
+			ctx->error = X509_V_ERR_CERT_REJECTED;
+		}
 	}
 
-	return (ret == Qtrue) ? 1 : 0;
+	return ok;
 }
 
 static VALUE 
@@ -481,17 +452,14 @@ Init_ossl_x509store(VALUE module)
 	rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
 	rb_define_method(cX509Store, "verify_callback=", ossl_x509store_set_verify_cb, 1);
 	
-/*
- * DOESN'T WORK! :-(( - BUT NOW WILL! :-))
-	rb_define_method(cX509Store, "chain", ossl_x509store_get_chain, 0);
- */
 	rb_define_method(cX509Store, "add_trusted", ossl_x509store_add_trusted, 1);
 	rb_define_method(cX509Store, "add_crl", ossl_x509store_add_crl, 1);
-	/*rb_define_method(cX509Store, "<<", ossl_x509store_add, 1);*/
+	
 	rb_define_method(cX509Store, "verify", ossl_x509store_verify, 1);
 	rb_define_method(cX509Store, "verify_status", ossl_x509store_get_verify_status, 0);
 	rb_define_method(cX509Store, "verify_message", ossl_x509store_get_verify_message, 0);
 	rb_define_method(cX509Store, "verify_depth", ossl_x509store_get_verify_depth, 0);
+	rb_define_method(cX509Store, "chain", ossl_x509store_get_chain, 0);
 	rb_define_method(cX509Store, "cert", ossl_x509store_get_cert, 0);
 	rb_define_method(cX509Store, "protect", ossl_x509store_protect, 0);
 	rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);

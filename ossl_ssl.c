@@ -139,21 +139,27 @@ ssl_false(VALUE dummy)
 static int MS_CALLBACK
 ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
-	VALUE x509stc, args, ret;
-
-	ret = (ok) ? Qtrue : Qfalse;
+	VALUE x509stc, args, ret = Qnil;
 
 	if (!NIL_P(ssl_verify_callback_proc)) {
 		x509stc = ossl_x509store_new(ctx);
 		rb_funcall(x509stc, rb_intern("protect"), 0, NULL);
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, ssl_verify_callback_proc);
-		rb_ary_store(args, 1, ret);
+		rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
 		rb_ary_store(args, 2, x509stc);
 		ret = rb_rescue(ssl_call_callback_proc, args, ssl_false, Qnil);
+
+		if (ret == Qtrue) {
+			ok = 1;
+			ctx->error = X509_V_OK;
+		} else {
+			ok = 0;
+			ctx->error = X509_V_ERR_CERT_REJECTED;
+		}
 	}
 
-	return (ret == Qtrue) ? 1 : 0;
+	return ok;
 }
 
 static void

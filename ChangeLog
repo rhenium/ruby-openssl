@@ -4,6 +4,10 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.23  2002/01/10 19:32:23  majkl
+	* fixed and improved verify_callbacks in ossl_(ssl|x509store).c
+	* enhanced ossl_x509store.rb examples
+
 Revision 1.22  2002/01/10 17:33:16  majkl
 	* OpenSSL::Cipher::BITx constant == x (so BIT40 = 40,...)
 

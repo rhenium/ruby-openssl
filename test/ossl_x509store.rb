@@ -4,23 +4,73 @@ require 'openssl'
 include OpenSSL
 include X509
 
+verify_cb = Proc.new {|ok, x509_store|
+  puts "\t\t====begin Verify===="
+  puts "\t\tOK = #{ok}"
+  puts "\t\tchecking #{x509_store.cert.subject.to_str}"
+  puts "\t\tstatus = #{x509_store.verify_status} - that is \"#{x509_store.verify_message}\""
+  puts "\t\t==== end Verify===="
+  #raise "SOME ERROR!" # Cert will be rejected
+  #false # Cert will be rejected
+  #true # Cert is OK
+  ok # just throw 'ok' through
+}
+							  
 p ca = Certificate.new(File.open("./cacert.pem").read)
-p cakey = ca.public_key
+puts "CA = #{ca.subject.to_str}, serial = #{ca.serial}"
+cakey = ca.public_key
+
 p cert = Certificate.new(File.open("./01cert.pem").read)
-p key = cert.public_key
-p cert.serial
-#cert2 = Certificate.new(File.open("./02cert.pem").read)
+puts "Cert = #{cert.subject.to_str}, serial = #{cert.serial}"
+key = cert.public_key
+
 p crl = CRL.new(File.open("./01crl.pem").read)
-p crl.verify cakey
-p crl.revoked[0].serial
-#p ca.issuer.to_str
-#p ca.subject.to_str
-#p cert.subject.to_str
-#p cert.issuer.to_str
+print "Is CRL signed by CA?..."
+if crl.verify cakey
+  puts "Yes - OK!"
+else
+  puts "NO - Strange... Let's stop."
+  exit
+end
+
+puts "In CRL there are serials:"
+crl.revoked.each {|revoked|
+  puts "> #{revoked.serial} - revoked at #{revoked.time}"
+}
+
 p store = Store.new
-#p store.add_trusted ca # :-))
-p store.add_trusted cert # :-((
-#p store.add_trusted cert2 # :-((
-p store.add_crl crl #CRL does NOT have affect on validity in current OpenSSL <= 0.9.6b !!!
-p store.verify cert
+
+##
+# Uncomment to see what is checked...
+store.verify_callback = verify_cb
+
+store.add_trusted ca
+
+puts "===================="
+puts "Is CERT OK?..."
+if store.verify cert
+  puts "Yes - we didn't add CRL to store!"
+  puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
+else
+  puts "NO - HEY, this is error!"
+  puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
+end
+
+puts "Let's add CRL..."
+ store.add_crl crl #CRL does NOT have affect on validity in current OpenSSL <= 0.9.6c !!!
+
+puts "===================="
+puts "Is CERT still OK?..."
+if store.verify cert
+  puts "Yes - HEY, this is bug! OpenSSL <= 0.9.6c doesn't care about CRL in Store :-(((("
+  puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
+else
+  puts "No - now it works!"
+  puts "\t\t(status = #{store.verify_status} - that is \"#{store.verify_message}\")"
+end
+
+puts "Trusted certs:"
+store.chain.each_with_index {|cert, i|
+	puts "> #{i} --- #{cert.subject.to_str}"
+}
 

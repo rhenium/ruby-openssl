@@ -26,11 +26,11 @@
 #define CBC	0x8000
 #define EDE	0x0001
 #define EDE3	0x0002
-#define BIT40	0x0028 /*40*/
-#define BIT64	0x0040 /*64*/
-#define BIT128	0x0080 /*128*/
-#define BIT192	0x00C0 /*192*/
-#define BIT256	0x0100 /*256*/
+#define BIT40	0x0028 /*==  40*/
+#define BIT64	0x0040 /*==  64*/
+#define BIT128	0x0080 /*== 128*/
+#define BIT192	0x00C0 /*== 192*/
+#define BIT256	0x0100 /*== 256*/
 
 /*
  * Classes
