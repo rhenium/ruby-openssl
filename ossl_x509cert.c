@@ -594,6 +594,40 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
     return extension;
 }
 
+static VALUE
+ossl_x509_inspect(VALUE self)
+{
+    VALUE str;
+    char *cname = rb_class2name(rb_obj_class(self));
+
+    str = rb_str_new2("#<");
+    rb_str_cat2(str, cname);
+    rb_str_cat2(str, " ");
+
+    rb_str_cat2(str, "subject=");
+    rb_str_append(str, rb_inspect(ossl_x509_get_subject(self)));
+    rb_str_cat2(str, ", ");
+
+    rb_str_cat2(str, "issuer=");
+    rb_str_append(str, rb_inspect(ossl_x509_get_issuer(self)));
+    rb_str_cat2(str, ", ");
+
+    rb_str_cat2(str, "serial=");
+    rb_str_append(str, rb_inspect(ossl_x509_get_serial(self)));
+    rb_str_cat2(str, ", ");
+
+    rb_str_cat2(str, "not_before=");
+    rb_str_append(str, rb_inspect(ossl_x509_get_not_before(self)));
+    rb_str_cat2(str, ", ");
+
+    rb_str_cat2(str, "not_after=");
+    rb_str_append(str, rb_inspect(ossl_x509_get_not_after(self)));
+
+    str = rb_str_cat2(str, ">");
+
+    return str;
+}
+
 /*
  * INIT
  */
@@ -632,5 +666,6 @@ Init_ossl_x509cert()
     rb_define_method(cX509Cert, "extensions", ossl_x509_get_extensions, 0);
     rb_define_method(cX509Cert, "extensions=", ossl_x509_set_extensions, 1);
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
+    rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
 }
 

@@ -1,3 +1,6 @@
+Sat, 14 Jun 2003 12:14:26 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_x509cert.c: X509::Certificate#inspect.
+
 Sat, 14 Jun 2003 02:11:13 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: support password callback.
 	* ossl_x509store.c:
