@@ -1,3 +1,6 @@
+Sun, 18 May 2003 19:56:20 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* OSSL 0.2.0-pre1 released
+
 Sun, 18 May 2003 16:27:39 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* ssl.c: Unwrap SSL_CTX and SSL
 	* x509store.c: Use {get|set}_ex instead of my DB for CallBacks
