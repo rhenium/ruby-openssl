@@ -203,7 +203,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	
     if (e) {
 	if (dOSSL == Qtrue) { /* FULL INFO */
-	    len += snprintf(buf + len, BUFSIZ - len, "%s",
+	    len += snprintf(buf+len, BUFSIZ-len, "%s",
 			    ERR_error_string(e, NULL));
 	} else {
 	    len += snprintf(buf + len, BUFSIZ - len, "%s",
@@ -274,6 +274,7 @@ Init_openssl()
      */
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
+    SSL_load_error_strings();
 
     /*
      * Init main module
