@@ -1,6 +1,14 @@
 class CAConfig
-  NAME = [['C','JP'],['O', 'RRR'], ['OU','CA']]
-  CERT_DAYS = 60
+  NAME = [['C','JP'],['O', 'JIN.GR.JP'], ['OU', 'RRR']]
+  CA_CERT_DAYS = 5 * 365
+  CA_RSA_KEY_LENGTH = 2048
+
+  CERT_DAYS = 365
+  CERT_KEY_LENGTH_MIN = 1024
+  CERT_KEY_LENGTH_MAX = 2048
+  CDP_LOCATION = 'URI:http://rrr.jin.gr.jp/crl/client.crl'
+  OCSP_LOCATION = 'URI:http://rrr.jin.gr.jp/ocsp'
+
   BASE_DIR = "/home/ca/ruby"
   KEYPAIR_FILE = "#{BASE_DIR}/private/cakeypair.pem"
   CERT_FILE = "#{BASE_DIR}/cacert.pem"

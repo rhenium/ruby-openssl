@@ -8,25 +8,26 @@ include OpenSSL
 $stdout.sync = true
 
 print "Generating CA keypair: "
-keypair = PKey::RSA.new(2048){ putc "." }
+keypair = PKey::RSA.new(CAConfig::CA_RSA_KEY_LENGTH) { putc "." }
 putc "\n"
 
 cert = X509::Certificate.new
-name = CAConfig::NAME.dup << ['CN','RubyCA']
+name = CAConfig::NAME.dup << ['CN','CA']
 cert.subject = cert.issuer = X509::Name.new(name)
 cert.not_before = Time.now
-cert.not_after = Time.now + 60 * 24 * 60 * 60
+cert.not_after = Time.now + CAConfig::CA_CERT_DAYS * 24 * 60 * 60
 cert.public_key = keypair.public_key
-cert.serial = 0x1000
+cert.serial = 0x0
 cert.version = 2 # X509v3
 
+key_usage = ["cRLSign", "keyCertSign"]
 ef = X509::ExtensionFactory.new
 ef.subject_certificate = cert
 ef.issuer_certificate = cert # we needed subjectKeyInfo inside, now we have it
 ext1 = ef.create_extension("basicConstraints","CA:TRUE", true)
 ext2 = ef.create_extension("nsComment","Ruby/OpenSSL Generated Certificate")
 ext3 = ef.create_extension("subjectKeyIdentifier", "hash")
-ext4 = ef.create_extension("keyUsage", "cRLSign,keyCertSign")
+ext4 = ef.create_extension("keyUsage", key_usage.join(","), true)
 cert.extensions = [ext1, ext2, ext3, ext4]
 ext0 = ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
 cert.add_extension(ext0)
