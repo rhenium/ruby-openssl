@@ -11,12 +11,10 @@
 #if !defined(_OSSL_VERSION_H_)
 #define _OSSL_VERSION_H_
 
-/*
- * Release
+#if 1 /* Release */
 #define OSSL_VERSION "0.2.0-pre3"
- * is based on
- */
+#else /* based on */
 #define OSSL_VERSION "OSSL2 - CVS SNAPSHOT ($Date$)"
+#endif
 
 #endif /* _OSSL_VERSION_H_ */
-
