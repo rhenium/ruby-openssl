@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 26 Jun 2002 16:14:42 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509name.c: added method #cmp (aka <=>)
+
 Wed, 26 Jun 2002 15:28:03 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509name.c: port to new Ruby interface, dropped 'self dipathing' (Only allowed param is Array or nil), fixed the reason why TC failed
 	* x509.rb: dropped 'self dispatching'

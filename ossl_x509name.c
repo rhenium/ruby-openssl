@@ -164,6 +164,46 @@ ossl_x509name_to_a(VALUE self)
 	return ary;
 }
 
+#if 0
+static VALUE
+ossl_x509name_digest(VALUE self, VALUE digest)
+{
+	X509_NAME *name;
+	const EVP_MD *md;
+	VALUE str;
+	
+	GetX509Name(self, name);
+
+	md = GetDigestPtr(digest);
+	
+	ALLOC!
+		
+	if (!X509_NAME_digest(name, md, buf, &buf_len)) {
+		ossl_raise(eX509NameError, "");
+	}
+	str = rb_str_new(buf, buf_len);
+	OPENSSL_free(buf);
+	
+	return str;
+}
+#endif
+
+static VALUE
+ossl_x509name_cmp(VALUE self, VALUE other)
+{
+	X509_NAME *name1, *name2;
+	int result;
+
+	GetX509Name(self, name1);
+	SafeGetX509Name(other, name2);
+
+	result = X509_NAME_cmp(name1, name2);
+	
+	if (result < 0) return INT2FIX(-1);
+	if (result > 1) return INT2FIX(1);
+	return INT2FIX(0);
+}
+
 /*
  * INIT
  */
@@ -179,5 +219,8 @@ Init_ossl_x509name()
 	
 	rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
 	rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
+
+	rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
+	rb_define_alias(cX509Name, "<=>", "cmp");
 }
 
