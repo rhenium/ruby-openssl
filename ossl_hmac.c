@@ -13,7 +13,7 @@
 #include "ossl.h"
 
 #define MakeHMAC(obj, ctx) \
-    obj = Data_Make_Struct(cHMAC, HMAC_CTX, 0, CRYPTO_free, ctx)
+    obj = Data_Make_Struct(cHMAC, HMAC_CTX, 0, ossl_hmac_free, ctx)
 #define GetHMAC(obj, ctx) do { \
     Data_Get_Struct(obj, HMAC_CTX, ctx); \
     if (!ctx) { \
@@ -38,6 +38,13 @@ VALUE eHMACError;
 /*
  * Private
  */
+static void
+ossl_hmac_free(HMAC_CTX *ctx)
+{
+	HMAC_CTX_cleanup(ctx);
+	free(ctx);
+}
+
 static VALUE
 ossl_hmac_alloc(VALUE klass)
 {
