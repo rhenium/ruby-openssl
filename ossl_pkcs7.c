@@ -98,7 +98,7 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     BIO *in, *out;
     PKCS7 *pkcs7;
     VALUE ret, data;
-    int status;
+    int status = 0;
 
     in = ossl_obj2bio(arg);
     out = NULL;
@@ -127,7 +127,7 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     BIO *in;
     PKCS7 *p7;
     VALUE str;
-    int flg, status;
+    int flg, status = 0;
 
     rb_scan_args(argc, argv, "12", &pkcs7, &data, &flags);
     SafeGetPKCS7(pkcs7, p7);
@@ -159,7 +159,7 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
     EVP_PKEY *pkey;
     BIO *in;
     STACK_OF(X509) *x509s;
-    int flg, status;
+    int flg, status = 0;
     PKCS7 *pkcs7;
     VALUE ret;
 
@@ -197,7 +197,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     STACK_OF(X509) *x509s;
     BIO *in;
     const EVP_CIPHER *ciph;
-    int flg, status;
+    int flg, status = 0;
     VALUE ret;
     PKCS7 *p7;
 
@@ -494,7 +494,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     VALUE certs, store, indata, flags;
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
-    int flg, ok, status;
+    int flg, ok, status = 0;
     BIO *in, *out;
     PKCS7 *p7;
     VALUE ret, data;
@@ -542,7 +542,7 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
     PKCS7 *p7;
     BIO *out;
     VALUE str;
-    int status;
+    int status = 0;
 
     rb_scan_args(argc, argv, "21", &pkey, &cert, &flags);
     GetPKCS7(self, p7);
@@ -674,7 +674,7 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
     X509 *x509;
     BIO *bio;
     VALUE str;
-    int status;
+    int status = 0;
 	
     GetPKCS7(self, pkcs7);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
@@ -698,7 +698,7 @@ ossl_pkcs7_to_pem(VALUE self)
     PKCS7 *pkcs7;
     BIO *out;
     VALUE str;
-    int status;
+    int status = 0;
 	
     GetPKCS7(self, pkcs7);
     if (!(out = BIO_new(BIO_s_mem()))) {

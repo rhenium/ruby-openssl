@@ -1,5 +1,6 @@
 Sun, 29 Jun 2003 04:02:01 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: SMIME_read_PKCS7 returns content only if the envelope is detached.
+	* ossl_pkcs7.c: the 3rd argument of rb_protect should be cleared.
 
 Sun, 29 Jun 2003 03:24:13 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* examples/ossl_pkcs7.rb: new sample

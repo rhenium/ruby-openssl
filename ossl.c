@@ -280,7 +280,7 @@ ossl_pem_passwd_cb0(VALUE flag)
 int
 ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 {
-    int len, status;
+    int len, status = 0;
     VALUE rflag, pass;
     
     if (pwd || !rb_block_given_p())
@@ -327,7 +327,7 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
     VALUE proc, rctx, ret;
     struct ossl_verify_cb_args args;
-    int state;
+    int state = 0;
 
     proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_verify_cb_idx);
     if ((void*)proc == 0)
@@ -524,6 +524,7 @@ Init_openssl()
     Init_ossl_rand();
     Init_ossl_ssl();
     Init_ossl_x509();
+    Init_ossl_ocsp();
 }
 
 #if defined(OSSL_DEBUG)

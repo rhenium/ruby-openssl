@@ -20,7 +20,7 @@ key    = key3
 
 # flags
 flags = 0
-flags |= PKCS7::DETACHED
+#flags |= PKCS7::DETACHED
 
 # cerate PKCS#7 signed message
 pkcs7 = PKCS7::sign(cert, key, data, [cacert], flags)
@@ -29,9 +29,9 @@ smime = PKCS7::write_smime(pkcs7, data, flags)
 print smime
 
 # load S/MIME message
+p 1
 pkcs7 = PKCS7::read_smime(smime)
 p [ pkcs7.type, pkcs7.detached? ]
-p pkcs7.data
 
 # create certificate store and verify
 store = X509::Store.new
@@ -43,6 +43,7 @@ store.verify_callback = lambda{|ok, ctx|
   ok
 }
 p pkcs7.verify([cert], store, data, flags)
+p pkcs7.data
 
 # create PKCS#7 encrypted message
 flags = 0
@@ -53,6 +54,6 @@ p [ pkcs7.type ]
 puts PKCS7::write_smime(pkcs7, data, flags)
 
 # decrypt
-p pkcs7.decrypt(key1, cert1, flags)
-p pkcs7.decrypt(key2, cert2, flags)
-p pkcs7.decrypt(key3, cert3, flags)
+p pkcs7.decrypt(key1, cert1, flags).size
+p pkcs7.decrypt(key2, cert2, flags).size
+p pkcs7.decrypt(key3, cert3, flags).size
