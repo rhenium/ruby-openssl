@@ -28,6 +28,10 @@ module OpenSSL
       def peeraddr
         @io.peeraddr
       end
+
+      def closed?
+        @io.closed?
+      end
     end
   end
 end

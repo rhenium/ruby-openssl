@@ -27,24 +27,6 @@ require 'socket'
 require 'openssl'
 require 'net/ftp'
 
-module OpenSSL
-  module SSL
-    class SSLSocket
-      def addr
-        return @io.addr
-      end
-        
-      def peeraddr
-        return @io.peeraddr
-      end
-
-      def closed?
-        return @io.closed?
-      end
-    end
-  end
-end
-
 module Net
   class FTPTLS < FTP
     def login(user = "anonymous", passwd = nil, acct = nil)
@@ -59,4 +41,3 @@ module Net
     end
   end
 end
-
