@@ -37,6 +37,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
 #define ossl_sslctx_set_options(o,v)     rb_iv_set((o),"@options",(v))
+#define ossl_sslctx_set_cert_store(o,v)  rb_iv_set((o),"@cert_store",(v))
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
@@ -47,7 +48,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
-#define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
+#define ossl_sslctx_get_cert_store(o)    rb_iv_get((o),"@cert_store")
 
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "ca_cert", "ca_file", "ca_path",
