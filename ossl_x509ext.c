@@ -13,15 +13,15 @@
 #define MakeX509Ext(obj, extp) {\
 	obj = Data_Make_Struct(cX509Extension, ossl_x509ext, 0, ossl_x509ext_free, extp);\
 }
-
+#define GetX509Ext_unsafe(obj, extp) Data_Get_Struct(obj, ossl_x509ext, extp)
 #define GetX509Ext(obj, extp) {\
-	Data_Get_Struct(obj, ossl_x509ext, extp);\
+	GetX509Ext_unsafe(obj, extp);\
+	if (!extp->extension) rb_raise(eX509ExtensionError, "not initialized!");\
 }
 
 #define MakeX509ExtFactory(obj, extfactoryp) {\
 	obj = Data_Make_Struct(cX509ExtensionFactory, ossl_x509extfactory, 0, ossl_x509extfactory_free, extfactoryp);\
 }
-
 #define GetX509ExtFactory(obj, extfactoryp) {\
 	Data_Get_Struct(obj, ossl_x509extfactory, extfactoryp);\
 }
@@ -45,15 +45,18 @@ typedef struct ossl_x509extfactory_st {
 } ossl_x509extfactory;
 
 
-static void ossl_x509ext_free(ossl_x509ext *extp)
+static void 
+ossl_x509ext_free(ossl_x509ext *extp)
 {
 	if (extp) {
 		if (extp->extension) X509_EXTENSION_free(extp->extension);
+		extp->extension = NULL;
 		free(extp);
 	}
 }
 
-static void ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
+static void 
+ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
 {
 	if (extfactoryp) {
 		free(extfactoryp);
@@ -61,9 +64,10 @@ static void ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
 }
 
 /*
- * public
+ * Public
  */
-VALUE ossl_x509ext_new2(X509_EXTENSION *ext)
+VALUE 
+ossl_x509ext_new2(X509_EXTENSION *ext)
 {
 	ossl_x509ext *extp = NULL;
 	X509_EXTENSION *new = NULL;
@@ -78,7 +82,8 @@ VALUE ossl_x509ext_new2(X509_EXTENSION *ext)
 	return obj;
 }
 
-X509_EXTENSION *ossl_x509ext_get_X509_EXTENSION(VALUE obj)
+X509_EXTENSION *
+ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 {
 	ossl_x509ext *extp = NULL;
 
@@ -87,19 +92,25 @@ X509_EXTENSION *ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 }
 
 /*
- * private
+ * Private
  */
-static VALUE ossl_x509extfactory_s_new(int argc, VALUE *argv, VALUE klass)
+/*
+ * Extension factory
+ */
+static VALUE 
+ossl_x509extfactory_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 	VALUE obj;
 	
 	MakeX509ExtFactory(obj, extfactoryp);
 	rb_obj_call_init(obj, argc, argv);
+
 	return obj;
 }
 
-static VALUE ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
+static VALUE 
+ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 
@@ -111,7 +122,8 @@ static VALUE ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 	return cert;
 }
 
-static VALUE ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
+static VALUE 
+ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 
@@ -123,7 +135,8 @@ static VALUE ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 	return cert;
 }
 
-static VALUE ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
+static VALUE 
+ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 
@@ -135,7 +148,8 @@ static VALUE ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 	return req;
 }
 
-static VALUE ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
+static VALUE 
+ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 
@@ -147,7 +161,8 @@ static VALUE ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 	return crl;
 }
 
-static VALUE ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE 
+ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 	VALUE issuer_cert, subject_cert, subject_req, crl;
@@ -194,7 +209,8 @@ X509_NAME *str_to_x509ext(VALUE str)
  * ["ln", "critical,value"] or the same for sn
  * ["ln", "value"] => not critical
  */
-X509_EXTENSION *ary_to_x509ext(VALUE ary, X509V3_CTX *ctx)
+X509_EXTENSION *
+ary_to_x509ext(VALUE ary, X509V3_CTX *ctx)
 {
 	X509_EXTENSION *ext = NULL;
 	int nid = NID_undef;
@@ -238,7 +254,8 @@ X509_EXTENSION *ary_to_x509ext(VALUE ary, X509V3_CTX *ctx)
 	return ext;
 }
 
-static VALUE ossl_x509extfactory_create_extension(int argc, VALUE *argv, VALUE self)
+static VALUE 
+ossl_x509extfactory_create_extension(int argc, VALUE *argv, VALUE self)
 {
 	ossl_x509extfactory *extfactoryp = NULL;
 	ossl_x509ext *extp = NULL;
@@ -282,7 +299,11 @@ static VALUE ossl_x509extfactory_create_extension(int argc, VALUE *argv, VALUE s
 	return obj;
 }
 
-static VALUE ossl_x509ext_to_str(VALUE obj)
+/*
+ * Extension
+ */
+static VALUE 
+ossl_x509ext_to_str(VALUE obj)
 {
 	ossl_x509ext *extp = NULL;
 	BIO *out = NULL;
@@ -314,7 +335,8 @@ static VALUE ossl_x509ext_to_str(VALUE obj)
 	return str;
 }
 
-static VALUE ossl_x509ext_to_a(VALUE obj)
+static VALUE 
+ossl_x509ext_to_a(VALUE obj)
 {
 	ossl_x509ext *extp = NULL;
 	BIO *out = NULL;
@@ -348,12 +370,15 @@ static VALUE ossl_x509ext_to_a(VALUE obj)
 	return ary;
 }
 
-void Init_ossl_x509ext(VALUE mX509)
+/*
+ * INIT
+ */
+void Init_ossl_x509ext(VALUE module)
 {
 
-	eX509ExtensionError = rb_define_class_under(mX509, "ExtensionError", rb_eStandardError);
+	eX509ExtensionError = rb_define_class_under(module, "ExtensionError", rb_eStandardError);
 
-	cX509ExtensionFactory = rb_define_class_under(mX509, "ExtensionFactory", rb_cObject);
+	cX509ExtensionFactory = rb_define_class_under(module, "ExtensionFactory", rb_cObject);
 	rb_define_singleton_method(cX509ExtensionFactory, "new", ossl_x509extfactory_s_new, -1);
 	rb_define_method(cX509ExtensionFactory, "initialize", ossl_x509extfactory_initialize, -1);
 	rb_define_method(cX509ExtensionFactory, "issuer_certificate=", ossl_x509extfactory_set_issuer_cert, 1);
@@ -362,7 +387,7 @@ void Init_ossl_x509ext(VALUE mX509)
 	rb_define_method(cX509ExtensionFactory, "crl=", ossl_x509extfactory_set_crl, 1);
 	rb_define_method(cX509ExtensionFactory, "create_extension", ossl_x509extfactory_create_extension, -1);
 	
-	cX509Extension = rb_define_class_under(mX509, "Extension", rb_cObject);
+	cX509Extension = rb_define_class_under(module, "Extension", rb_cObject);
 	rb_undef_method(CLASS_OF(cX509Extension), "new");
 /*
 	rb_define_singleton_method(cX509Extension, "new", ossl_x509ext_s_new, -1);

@@ -164,11 +164,11 @@ ossl_hmac_hexhmac(VALUE self)
  * INIT
  */
 void
-Init_hmac(VALUE mOSSL)
+Init_hmac(VALUE module)
 {
-	eHMACError = rb_define_class_under(mOSSL, "HMACError", rb_eStandardError);
+	eHMACError = rb_define_class_under(module, "HMACError", rb_eStandardError);
 	
-	cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
+	cHMAC = rb_define_class_under(module, "HMAC", rb_cObject);
 	rb_define_singleton_method(cHMAC, "new", ossl_hmac_s_new, -1);
 	rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, -1);
 	rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
@@ -182,7 +182,7 @@ Init_hmac(VALUE mOSSL)
 #else
 
 void
-Init_hmac(VALUE dummy)
+Init_hmac(VALUE module)
 {
 	rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC");
 }

@@ -160,7 +160,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	unsigned long h = 0;
 	BIO *in = NULL;
 	char *passwd = NULL;
-	void (*cb)() = NULL;
+	void (*cb)(int, int, void *) = NULL;
 	VALUE buffer, pass;
 	
 	GetDSA_unsafe(self, dsap);

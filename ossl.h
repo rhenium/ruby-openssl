@@ -16,9 +16,14 @@
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
 
 #include "openssl_missing.h"
 #include "ossl_version.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 /*
  * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
@@ -95,6 +100,9 @@ EXTERN VALUE eHMACError;
 /* Conf */
 EXTERN VALUE cConfig;
 EXTERN VALUE eConfigError;
+/* BN */
+EXTERN VALUE cBN;
+EXTERN VALUE eBNError;
 
 /*
  * CheckTypes
@@ -240,6 +248,18 @@ void Init_pkcs7(VALUE);
  * HMAC
  */
 void Init_hmac(VALUE);
+
+/*
+ * BN
+ */
+VALUE ossl_bn_new_null(void);
+VALUE ossl_bn_new(BIGNUM *);
+BIGNUM *ossl_bn_get_BIGNUM(VALUE);
+void Init_bn(VALUE);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif
 

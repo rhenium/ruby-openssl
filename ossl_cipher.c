@@ -15,7 +15,7 @@
 }
 #define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
 
-#define DefCipherConst(x) rb_define_const(mCipher, #x, INT2FIX(##x))
+#define DefCipherConst(x) rb_define_const(module, #x, INT2FIX(##x))
 
 /*
  * Constants
@@ -45,6 +45,7 @@
  */
 VALUE cCipher;
 VALUE eCipherError;
+VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5;
 
 /*
  * Struct
@@ -97,12 +98,12 @@ ossl_cipher_s_new(int argc, VALUE *argv, VALUE klass)
 
 	if (klass == cCipher)
 		rb_raise(rb_eNotImpError, "cannot do Cipher::ANY.new - it is an abstract class");
+
 	MakeCipher(obj, klass, ciphp);
-	
 	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX)))) {
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
-
+	
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -185,7 +186,8 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE ossl_cipher_update(VALUE self, VALUE data)
+static VALUE 
+ossl_cipher_update(VALUE self, VALUE data)
 {
 	ossl_cipher *ciphp = NULL;
 	char *in = NULL, *out = NULL;
@@ -210,7 +212,8 @@ static VALUE ossl_cipher_update(VALUE self, VALUE data)
 	return str;
 }
 
-static VALUE ossl_cipher_cipher(VALUE self)
+static VALUE 
+ossl_cipher_cipher(VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 
@@ -232,7 +235,11 @@ static VALUE ossl_cipher_cipher(VALUE self)
 	return str;
 }
 
-VALUE ossl_des_initialize(int argc, VALUE *argv, VALUE self)
+/*
+ * DES
+ */
+static VALUE 
+ossl_des_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -291,7 +298,11 @@ VALUE ossl_des_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-VALUE ossl_rc4_initialize(int argc, VALUE *argv, VALUE self)
+/*
+ * RC4
+ */
+static VALUE 
+ossl_rc4_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -318,7 +329,11 @@ VALUE ossl_rc4_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-VALUE ossl_idea_initialize(int argc, VALUE *argv, VALUE self)
+/*
+ * Idea
+ */
+static VALUE 
+ossl_idea_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -350,7 +365,12 @@ VALUE ossl_idea_initialize(int argc, VALUE *argv, VALUE self)
 
 	return self;
 }
-VALUE ossl_rc2_initialize(int argc, VALUE *argv, VALUE self)
+
+/*
+ * RC2
+ */
+static VALUE 
+ossl_rc2_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -390,7 +410,12 @@ VALUE ossl_rc2_initialize(int argc, VALUE *argv, VALUE self)
 
 	return self;
 }
-VALUE ossl_bf_initialize(int argc, VALUE *argv, VALUE self)
+
+/*
+ * BlowFish
+ */
+static VALUE 
+ossl_bf_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -423,7 +448,11 @@ VALUE ossl_bf_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-VALUE ossl_cast5_initialize(int argc, VALUE *argv, VALUE self)
+/*
+ * Cast5
+ */
+static VALUE 
+ossl_cast5_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -456,7 +485,11 @@ VALUE ossl_cast5_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-VALUE ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
+/*
+ * RC5
+ */
+static VALUE 
+ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_cipher *ciphp = NULL;
 	int spec = 0, nid = 0;
@@ -492,9 +525,19 @@ VALUE ossl_rc5_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * INIT
  */
-void Init_ossl_cipher(VALUE mCipher)
+void 
+Init_ossl_cipher(VALUE module)
 {
-	VALUE cDES, cRC4, cIdea, cRC2, cBlowFish, cCast5, cRC5;
+	eCipherError = rb_define_class_under(module, "Error", rb_eStandardError);
+
+	cCipher = rb_define_class_under(module, "ANY", rb_cObject);
+	rb_define_singleton_method(cCipher, "new", ossl_cipher_s_new, -1);
+	/*"initialize"*/
+	rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
+	rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
+	rb_define_method(cCipher, "update", ossl_cipher_update, 1);
+	rb_define_alias(cCipher, "<<", "update");
+	rb_define_method(cCipher, "cipher", ossl_cipher_cipher, 0);
 
 	DefCipherConst(ECB);
 	DefCipherConst(EDE);
@@ -505,36 +548,25 @@ void Init_ossl_cipher(VALUE mCipher)
 	DefCipherConst(BIT40);
 	DefCipherConst(BIT64);
 	
-	eCipherError = rb_define_class_under(mCipher, "Error", rb_eStandardError);
-
-	cCipher = rb_define_class_under(mCipher, "ANY", rb_cObject);
-	rb_define_singleton_method(cCipher, "new", ossl_cipher_s_new, -1);
-	/*"initialize"*/
-	rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
-	rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
-	rb_define_method(cCipher, "update", ossl_cipher_update, 1);
-	rb_define_alias(cCipher, "<<", "update");
-	rb_define_method(cCipher, "cipher", ossl_cipher_cipher, 0);
-
-	cDES = rb_define_class_under(mCipher, "DES", cCipher);
+	cDES = rb_define_class_under(module, "DES", cCipher);
 	rb_define_method(cDES, "initialize", ossl_des_initialize, -1);
 
-	cRC4 = rb_define_class_under(mCipher, "RC4", cCipher);
+	cRC4 = rb_define_class_under(module, "RC4", cCipher);
 	rb_define_method(cRC4, "initialize", ossl_rc4_initialize, -1);
 
-	cIdea = rb_define_class_under(mCipher, "Idea", cCipher);
+	cIdea = rb_define_class_under(module, "Idea", cCipher);
 	rb_define_method(cIdea, "initialize", ossl_idea_initialize, -1);
 
-	cRC2 = rb_define_class_under(mCipher, "RC2", cCipher);
+	cRC2 = rb_define_class_under(module, "RC2", cCipher);
 	rb_define_method(cRC2, "initialize", ossl_rc2_initialize, -1);
 
-	cBlowFish = rb_define_class_under(mCipher, "BlowFish", cCipher);
+	cBlowFish = rb_define_class_under(module, "BlowFish", cCipher);
 	rb_define_method(cBlowFish, "initialize", ossl_bf_initialize, -1);
 
-	cCast5 = rb_define_class_under(mCipher, "Cast5", cCipher);
+	cCast5 = rb_define_class_under(module, "Cast5", cCipher);
 	rb_define_method(cCast5, "initialize", ossl_cast5_initialize, -1);
 
-	cRC5 = rb_define_class_under(mCipher, "RC5", cCipher);
+	cRC5 = rb_define_class_under(module, "RC5", cCipher);
 	rb_define_method(cRC5, "initialize", ossl_rc5_initialize, -1);
 }
 

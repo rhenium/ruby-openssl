@@ -643,15 +643,15 @@ Init_pkcs7(VALUE mPKCS7)
 	rb_define_method(cPKCS7, "decode_data", ossl_pkcs7_data_decode, 2);
 	rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
 	
+	DefPKCS7Const(SIGNED);
+	DefPKCS7Const(ENVELOPED);
+	DefPKCS7Const(SIGNED_ENVELOPED);
+	
 	cPKCS7SignerInfo = rb_define_class_under(mPKCS7, "Signer", rb_cObject);
 	rb_define_singleton_method(cPKCS7SignerInfo, "new", ossl_pkcs7si_s_new, -1);
 	rb_define_method(cPKCS7SignerInfo, "initialize", ossl_pkcs7si_initialize, -1);
 	rb_define_method(cPKCS7SignerInfo, "name", ossl_pkcs7si_get_name, 0);
 	rb_define_method(cPKCS7SignerInfo, "serial", ossl_pkcs7si_get_serial, 0);
 	rb_define_method(cPKCS7SignerInfo, "signed_time", ossl_pkcs7si_get_signed_time, 0);
-	
-	DefPKCS7Const(SIGNED);
-	DefPKCS7Const(ENVELOPED);
-	DefPKCS7Const(SIGNED_ENVELOPED);
 }
 

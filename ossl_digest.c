@@ -328,6 +328,9 @@ ossl_sha1_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
+/*
+ * DSS = SHA for DSA
+ */
 static VALUE
 ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -347,6 +350,9 @@ ossl_dss_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
+/*
+ * DSS1 = SHA1 for DSA
+ */
 static VALUE
 ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -370,11 +376,11 @@ ossl_dss1_initialize(int argc, VALUE *argv, VALUE self)
  * INIT
  */
 void
-Init_ossl_digest(VALUE mDigest)
+Init_ossl_digest(VALUE module)
 {
-	eDigestError = rb_define_class_under(mDigest, "Error", rb_eStandardError);
+	eDigestError = rb_define_class_under(module, "Error", rb_eStandardError);
 	
-	cDigest = rb_define_class_under(mDigest, "ANY", rb_cObject);
+	cDigest = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cDigest, "new", ossl_digest_s_new, -1);
 /*	rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 1);
 	rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 1);
@@ -390,35 +396,35 @@ Init_ossl_digest(VALUE mDigest)
 	/*rb_define_method(cDigest, "==", ossl_digest_equal, 1);*/
 
 	/* MD2 */
-	cMD2 = rb_define_class_under(mDigest, "MD2", cDigest);
+	cMD2 = rb_define_class_under(module, "MD2", cDigest);
 	rb_define_method(cMD2, "initialize", ossl_md2_initialize, -1);
 	
 	/* MD5 */
-	cMD5 = rb_define_class_under(mDigest, "MD5", cDigest);
+	cMD5 = rb_define_class_under(module, "MD5", cDigest);
 	rb_define_method(cMD5, "initialize", ossl_md5_initialize, -1);
 
 	/* MDC2 */
-	cMDC2 = rb_define_class_under(mDigest, "MDC2", cDigest);
+	cMDC2 = rb_define_class_under(module, "MDC2", cDigest);
 	rb_define_method(cMDC2, "initialize", ossl_mdc2_initialize, -1);
 
 	/* RIPEmd160 */
-	cRIPEMD160 = rb_define_class_under(mDigest, "Ripemd160", cDigest);
+	cRIPEMD160 = rb_define_class_under(module, "Ripemd160", cDigest);
 	rb_define_method(cRIPEMD160, "initialize", ossl_ripemd160_initialize, -1);
 	
 	/* SHA */
-	cSHA = rb_define_class_under(mDigest, "SHA", cDigest);
+	cSHA = rb_define_class_under(module, "SHA", cDigest);
 	rb_define_method(cSHA, "initialize", ossl_sha_initialize, -1);
 	
 	/* SHA1 */
-	cSHA1 = rb_define_class_under(mDigest, "SHA1", cDigest);
+	cSHA1 = rb_define_class_under(module, "SHA1", cDigest);
 	rb_define_method(cSHA1, "initialize", ossl_sha1_initialize, -1);
 
 	/* SHA for DSA */
-	cDSS = rb_define_class_under(mDigest, "DSS", cDigest);
+	cDSS = rb_define_class_under(module, "DSS", cDigest);
 	rb_define_method(cDSS, "initialize", ossl_dss_initialize, -1);
 
 	/* SHA1 for DSA */
-	cDSS1 = rb_define_class_under(mDigest, "DSS1", cDigest);
+	cDSS1 = rb_define_class_under(module, "DSS1", cDigest);
 	rb_define_method(cDSS1, "initialize", ossl_dss1_initialize, -1);
 }
 

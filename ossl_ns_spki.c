@@ -13,10 +13,7 @@
 #define MakeSPKI(obj, spkip) {\
 	obj = Data_Make_Struct(cSPKI, ossl_spki, 0, ossl_spki_free, spkip);\
 }
-
-#define GetSPKI(obj, spkip) {\
-	Data_Get_Struct(obj, ossl_spki, spkip);\
-}
+#define GetSPKI(obj, spkip) Data_Get_Struct(obj, ossl_spki, spkip)
 
 /*
  * Classes
@@ -70,19 +67,19 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "01", &buffer);
 
-	if (NIL_P(buffer)) {
-		if (!(spki = NETSCAPE_SPKI_new())) {
-			rb_raise(eSPKIError, "%s", ossl_error());
-		}
-	} else switch (TYPE(buffer)) {
+	switch (TYPE(buffer)) {
+		case T_NIL:
+			spki = NETSCAPE_SPKI_new();
+			break;
 		case T_STRING:
 			Check_SafeStr(buffer);
-			if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1))) {
-				rb_raise(eSPKIError, "%s", ossl_error());
-			}
+			spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1);
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
+	}
+	if (!spki) {
+		rb_raise(eSPKIError, "%s", ossl_error());
 	}
 	spkip->spki = spki;
 
@@ -134,16 +131,14 @@ ossl_spki_get_public_key(VALUE self)
 {
 	ossl_spki *spkip = NULL;
 	EVP_PKEY *pkey = NULL;
-	VALUE pub_key;
 
 	GetSPKI(self, spkip);
 	
 	if (!(pkey = NETSCAPE_SPKI_get_pubkey(spkip->spki))) {
 		rb_raise(eSPKIError, "%s", ossl_error());
 	}
-	pub_key = ossl_pkey_new(pkey);
 
-	return pub_key;
+	return ossl_pkey_new(pkey);
 }
 
 static VALUE
@@ -249,11 +244,11 @@ ossl_spki_verify(VALUE self, VALUE key)
  * NETSCAPE_SPKI init
  */
 void
-Init_ossl_spki(VALUE mNetscape)
+Init_ossl_spki(VALUE module)
 {
-	eSPKIError = rb_define_class_under(mNetscape, "SPKIError", rb_eStandardError);
+	eSPKIError = rb_define_class_under(module, "SPKIError", rb_eStandardError);
 	
-	cSPKI = rb_define_class_under(mNetscape, "SPKI", rb_cObject);
+	cSPKI = rb_define_class_under(module, "SPKI", rb_cObject);
 	rb_define_singleton_method(cSPKI, "new", ossl_spki_s_new, -1);
 	rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
 	rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);

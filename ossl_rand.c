@@ -94,7 +94,6 @@ void Init_ossl_rand(VALUE mOSSL)
 	rb_define_method(cRandom, "seed", ossl_rand_seed, 1);
 	rb_define_method(cRandom, "load_random_file", ossl_rand_load_file, 1);
 	rb_define_method(cRandom, "write_random_file", ossl_rand_write_file, 1);
-	rb_define_method(cRandom, "random_bytes", ossl_rand_bytes, 1);
-	
+	rb_define_method(cRandom, "random_bytes", ossl_rand_bytes, 1);	
 }
 

@@ -97,19 +97,25 @@ ossl_pkey_s_new(int argc, VALUE *argv, VALUE klass)
 	return Qnil;
 }
 
+/*
+ * INIT
+ */
 void
-Init_ossl_pkey(VALUE mPKey)
+Init_ossl_pkey(VALUE module)
 {
-	ePKeyError = rb_define_class_under(mPKey, "Error", rb_eStandardError);
+	ePKeyError = rb_define_class_under(module, "Error", rb_eStandardError);
 
-	cPKey = rb_define_class_under(mPKey, "ANY", rb_cObject);
+	cPKey = rb_define_class_under(module, "ANY", rb_cObject);
 	rb_define_singleton_method(cPKey, "new", ossl_pkey_s_new, -1);
 	
-	Init_ossl_rsa(mPKey, cPKey, ePKeyError);
-	Init_ossl_dsa(mPKey, cPKey, ePKeyError);
+	/*
+	 * INIT rsa, dsa
+	 */
+	Init_ossl_rsa(module, cPKey, ePKeyError);
+	Init_ossl_dsa(module, cPKey, ePKeyError);
 	/*
 	 * TODO:
-	 * Init_ossl_dh(mPKey, cPKey, ePKeyError);
+	 * Init_ossl_dh(module, cPKey, ePKeyError);
 	 */
 }
 

@@ -10,6 +10,11 @@
  */
 #ifndef _OPENSSL_MISSING_H_
 #define _OPENSSL_MISSING_H_
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /*
  * These functions are not included in headers of OPENSSL <= 0.9.6b
  */
@@ -53,6 +58,10 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 
 	return 1;
 }
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif
 

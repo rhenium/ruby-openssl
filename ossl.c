@@ -124,5 +124,6 @@ void Init_openssl()
 	Init_ssl(mSSL);
 	Init_pkcs7(mPKCS7);
 	Init_hmac(mOSSL);
+	Init_bn(mOSSL);
 }
 

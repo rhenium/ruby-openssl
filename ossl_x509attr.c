@@ -13,9 +13,10 @@
 #define MakeX509Attr(obj, attrp) {\
 	obj = Data_Make_Struct(cX509Attribute, ossl_x509attr, 0, ossl_x509attr_free, attrp);\
 }
-
+#define GetX509Attr_unsafe(obj, attrp) Data_Get_Struct(obj, ossl_x509attr, attrp);
 #define GetX509Attr(obj, attrp) {\
-	Data_Get_Struct(obj, ossl_x509attr, attrp);\
+	GetX509Attr_unsafe(obj, attrp);\
+	if (!attrp->attribute) rb_raise(eX509AttributeError, "not initialized!");\
 }
 
 /*
@@ -32,10 +33,12 @@ typedef struct ossl_x509attr_st {
 } ossl_x509attr;
 
 
-static void ossl_x509attr_free(ossl_x509attr *attrp)
+static void 
+ossl_x509attr_free(ossl_x509attr *attrp)
 {
 	if (attrp) {
 		if (attrp->attribute) X509_ATTRIBUTE_free(attrp->attribute);
+		attrp->attribute = NULL;
 		free(attrp);
 	}
 }
@@ -43,7 +46,8 @@ static void ossl_x509attr_free(ossl_x509attr *attrp)
 /*
  * public
  */
-VALUE ossl_x509attr_new2(X509_ATTRIBUTE *attr)
+VALUE 
+ossl_x509attr_new2(X509_ATTRIBUTE *attr)
 {
 	ossl_x509attr *attrp = NULL;
 	VALUE obj;
@@ -57,7 +61,8 @@ VALUE ossl_x509attr_new2(X509_ATTRIBUTE *attr)
 	return obj;
 }
 
-X509_ATTRIBUTE *ossl_x509attr_get_X509_ATTRIBUTE(VALUE self)
+X509_ATTRIBUTE *
+ossl_x509attr_get_X509_ATTRIBUTE(VALUE self)
 {
 	ossl_x509attr *attrp = NULL;
 	X509_ATTRIBUTE *attr = NULL;
@@ -73,7 +78,8 @@ X509_ATTRIBUTE *ossl_x509attr_get_X509_ATTRIBUTE(VALUE self)
 /*
  * private
  */
-static VALUE ossl_x509attr_s_new(int argc, VALUE *argv, VALUE klass)
+static VALUE 
+ossl_x509attr_s_new(int argc, VALUE *argv, VALUE klass)
 {
 	ossl_x509attr *attrp = NULL;
 	VALUE obj;
@@ -83,7 +89,8 @@ static VALUE ossl_x509attr_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-X509_ATTRIBUTE *ary_to_x509attr(VALUE ary)
+X509_ATTRIBUTE *
+ary_to_x509attr(VALUE ary)
 {
 	X509_ATTRIBUTE *attr = NULL;
 	int nid = NID_undef;
@@ -113,17 +120,18 @@ X509_ATTRIBUTE *ary_to_x509attr(VALUE ary)
 	return attr;
 }
 
-static VALUE ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE 
+ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_x509attr *attrp = NULL;
 	X509_ATTRIBUTE *attr = NULL;
 	VALUE arg1, arg2, ary;
 
+	GetX509Attr_unsafe(self, attrp);
+	
 	switch (rb_scan_args(argc, argv, "02", &arg1, &arg2)) {
 		case 0:
-			if (!(attr = X509_ATTRIBUTE_new())) {
-				rb_raise(eX509AttributeError, "%s", ossl_error());
-			}
+			attr = X509_ATTRIBUTE_new();
 			break;
 		case 1:
 			Check_Type(arg1, T_ARRAY);
@@ -138,8 +146,9 @@ static VALUE ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-
-	GetX509Attr(self, attrp);
+	if (!attr) {
+		rb_raise(eX509AttributeError, "%s", ossl_error());
+	}
 	attrp->attribute = attr;
 
 	return self;
@@ -148,11 +157,12 @@ static VALUE ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * X509_ATTRIBUTE init
  */
-void Init_ossl_x509attr(VALUE mX509)
+void
+Init_ossl_x509attr(VALUE module)
 {
-	eX509AttributeError = rb_define_class_under(mX509, "AttributeError", rb_eStandardError);
+	eX509AttributeError = rb_define_class_under(module, "AttributeError", rb_eStandardError);
 
-	cX509Attribute = rb_define_class_under(mX509, "Attribute", rb_cObject);
+	cX509Attribute = rb_define_class_under(module, "Attribute", rb_cObject);
 	rb_define_singleton_method(cX509Attribute, "new", ossl_x509attr_s_new, -1);
 	rb_define_method(cX509Attribute, "initialize", ossl_x509attr_initialize, -1);
 /*

@@ -158,7 +158,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	int type = 0;
 	BIO *in = NULL;
 	char *passwd = NULL;
-	void (*cb)() = NULL;
+	void (*cb)(int, int, void *) = NULL;
 	VALUE buffer, pass;
 	
 	GetRSA_unsafe(self, rsap);

@@ -15,12 +15,9 @@ SSLLIB="ssl"
 
 dir_config("openssl")
 
-have_library(CRYPTOLIB, nil)
-have_library(SSLLIB, "SSLv23_method")
-
-#if have_header("openssl/ssl.h")
-#	if have_library(CRYPTOLIB, "SSLv23_method")
+if have_header("openssl/ssl.h")
+	if have_library(CRYPTOLIB, nil) and have_library(SSLLIB, nil) #"SSLv23_method")
 		create_makefile("openssl")
-#	end
-#end
+	end
+end
 
