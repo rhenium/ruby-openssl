@@ -136,7 +136,7 @@ ssl_false(VALUE dummy)
 	return Qfalse;
 }
 
-static int
+static int MS_CALLBACK
 ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
 	VALUE x509stc, args, ret;

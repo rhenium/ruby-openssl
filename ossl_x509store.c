@@ -182,6 +182,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 		rb_raise(eX509StoreError, "%s", ossl_error());
 	}
 	X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
+	/* OpenSSL 0.9.6c
+	 * X509_STORE_CTX_set_verify_cb(ctx, func);
+	 */
 	X509_STORE_CTX_init(storep->store, store, NULL, NULL);
 	
 	/*

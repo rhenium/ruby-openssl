@@ -168,7 +168,7 @@ ossl_rsa_s_new_from_pem(int argc, VALUE *argv, VALUE klass)
 /*
  * CB for yielding when generating RSA data
  */
-static void
+static void MS_CALLBACK
 ossl_rsa_generate_cb(int p, int n, void *arg)
 {
 	VALUE ary;

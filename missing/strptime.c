@@ -36,10 +36,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifndef HAVE_STRNCASECMP
-#  include "./strncasecmp.c"
-#endif
-
 /*
 #if !defined(WIN32)
 #  include "common/config.h"

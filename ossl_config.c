@@ -140,6 +140,7 @@ Init_ossl_config(VALUE module)
 	cConfig = rb_define_class_under(module, "Config", rb_cObject);
 	
 	rb_define_singleton_method(cConfig, "load", ossl_config_s_load, -1);
+	rb_define_alias(CLASS_OF(cConfig), "new", "load");
 	
 	rb_define_method(cConfig, "get_value", ossl_config_get_value, 2);
 	rb_define_method(cConfig, "get_section", ossl_config_get_section, 1);

@@ -481,23 +481,28 @@ BIGNUM_SHIFT(rshift);
 BIGNUM_RAND(rand);
 BIGNUM_RAND(pseudo_rand);
 
-static VALUE
-ossl_bn_s_rand_range(VALUE klass, VALUE range)
-{
-	ossl_bn *bnp = NULL;
-	BIGNUM *result = NULL;
-
-	OSSL_Check_Type(range, cBN);
-	GetBN(range, bnp);
-	
-	if (!(result = BN_new()))
-		OSSL_Raise(eBNError, "");
-	
-	if (!BN_rand_range(result, bnp->bignum))
-		OSSL_Raise(eBNError, "");
-
-	return ossl_bn_new_nodup(result);
+#define BIGNUM_RAND_RANGE(func)								\
+	static VALUE									\
+	ossl_bn_s_##func##_range(VALUE klass, VALUE range)				\
+	{										\
+	ossl_bn *bnp = NULL;								\
+	BIGNUM *result = NULL;								\
+											\
+	OSSL_Check_Type(range, cBN);							\
+	GetBN(range, bnp);								\
+											\
+	if (!(result = BN_new()))							\
+		OSSL_Raise(eBNError, "");						\
+											\
+	if (!BN_##func##_range(result, bnp->bignum))					\
+		OSSL_Raise(eBNError, "");						\
+											\
+	return ossl_bn_new_nodup(result);						\
 }
+BIGNUM_RAND_RANGE(rand);
+#if OPENSSL_VERSION_NUMBER >= 0x0090603fL /* "OpenSSL 0.9.6c 21 dec 2001" */
+	BIGNUM_RAND_RANGE(pseudo_rand);
+#endif
 
 static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
@@ -696,6 +701,9 @@ Init_bn(VALUE module)
 	rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, 3);
 	rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, 3);
 	rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);
+#if OPENSSL_VERSION_NUMBER >= 0x0090603fL /* "OpenSSL 0.9.6c 21 dec 2001" */
+	rb_define_singleton_method(cBN, "pseudo_rand_range", ossl_bn_s_pseudo_rand_range, 1);
+#endif
 	rb_define_singleton_method(cBN, "generate_prime", ossl_bn_s_generate_prime, -1);
 
 	rb_define_method(cBN, "num_bytes", ossl_bn_num_bytes, 0);

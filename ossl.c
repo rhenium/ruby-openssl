@@ -15,6 +15,9 @@
  * implementation in strptime.c
  */
 #ifndef HAVE_STRPTIME
+#  ifndef HAVE_STRNCASECMP
+#    include "./missing/strncasecmp.c"
+#  endif
 #  include "./missing/strptime.c"
 #endif
 
@@ -81,6 +84,13 @@ VALUE mPKCS7;
 void
 Init_openssl()
 {
+#if defined(OSSL_DEBUG)
+	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+#endif
+	
+	/*
+	 * Init all digests, ciphers
+	 */
 	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();
 
