@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 24 Jul 2002 13:10:28 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.c: FIX that enables OSSL module compile on *BSD (sent by Akinori MUSHA)
+
 Wed, 24 Jul 2002 12:35:00 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* config.c: changed #value so: value("AAA"), means value(nil, "AAA")
 

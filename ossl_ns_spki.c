@@ -192,17 +192,18 @@ static VALUE
 ossl_spki_verify(VALUE self, VALUE key)
 {
 	NETSCAPE_SPKI *spki;
-	int result;
 
 	GetSPKI(self, spki);
 	
-	if ((result = NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) < 0) { /* NO NEED TO DUP */
-		ossl_raise(eSPKIError, "");
+	switch (NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
+		case 0:
+			return Qfalse;
+		case 1:
+			return Qtrue;
+		default:
+			ossl_raise(eSPKIError, "");
 	}
-	if (result > 0) {
-		return Qtrue;
-	}
-	return Qfalse;
+	return Qnil; /* dummy */
 }
 
 /*

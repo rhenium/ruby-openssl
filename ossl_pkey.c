@@ -193,7 +193,6 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 {
 	EVP_PKEY *pkey;
 	EVP_MD_CTX ctx;
-	int result;
 
 	GetPKey(self, pkey);
 
@@ -204,13 +203,15 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 	
 	EVP_VerifyUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 	
-	if ((result = EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey)) < 0) {
-		ossl_raise(ePKeyError, "");
+	switch (EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey)) {
+		case 0:
+			return Qfalse;
+		case 1:
+			return Qtrue;
+		default:
+			ossl_raise(ePKeyError, "");
 	}
-	if (result == 1) {
-		return Qtrue;
-	}
-	return Qfalse;
+	return Qnil; /* dummy */
 }
 
 /*

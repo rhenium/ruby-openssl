@@ -18,6 +18,15 @@
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
 
+#if defined(HAVE_SYS_TIME_H)
+#  include <sys/time.h>
+#elif !defined(NT)
+struct timeval {
+	long tv_sec;	/* seconds */
+	long tv_usec;	/* and microseconds */
+};
+#endif
+
 /*
  * On Windows platform there is no strptime function
  * implementation in strptime.c
