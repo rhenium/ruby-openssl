@@ -211,7 +211,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     if(!(p7 = PKCS7_encrypt(x509s, in, ciph, flg))){
 	BIO_free(in);
 	sk_X509_free(x509s);
-	ossl_rasie(ePKCS7Error, NULL);
+	ossl_raise(ePKCS7Error, NULL);
     }
     WrapPKCS7(cPKCS7, ret, p7);
     ossl_pkcs7_set_data(ret, data);
