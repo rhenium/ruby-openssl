@@ -11,6 +11,7 @@
 #ifndef _OSSL_H_
 #define _OSSL_H_
 
+#include <errno.h>
 #include <openssl/asn1_mac.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
@@ -18,6 +19,7 @@
 #if !defined(OSSL_DEBUG) && defined(RFILE)
 #  undef RFILE
 #endif
+#include "ossl_version.h"
 #include <ruby.h>
 
 /*
@@ -116,6 +118,7 @@ void Init_ossl_digest(VALUE);
  * X509
  */
 VALUE ossl_x509_new2(X509 *);
+VALUE ossl_x509_new_from_file(VALUE);
 X509 *ossl_x509_get_X509(VALUE);
 void Init_ossl_x509(VALUE);
 
@@ -188,6 +191,7 @@ void Init_ossl_rand(VALUE);
  * PKey
  */
 VALUE ossl_pkey_new(EVP_PKEY *);
+VALUE ossl_pkey_new_from_file(VALUE);
 EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE);
 void Init_ossl_pkey(VALUE);
 

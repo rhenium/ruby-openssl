@@ -9,6 +9,9 @@
 
   $IPR: protocols.rb,v 1.1 2001/06/17 14:30:22 gotoyuzo Exp $
 
+  2001/11/06: Contiributed to Ruby/OpenSSL project.
+  $Id$
+
 =end
 
 require 'net/protocol'
@@ -22,20 +25,21 @@ module Net
       extend Forwardable
 
       def_delegators(:@socket,
-                     :key=, :cert=, :ca_file=, :ca_path=,
+                     :key=, :cert=, :key_file=, :cert_file=,
+                     :ca_file=, :ca_path=,
                      :verify_mode=, :verify_callback=, :verify_depth=,
                      :timeout=)
 
       def initialize(addr, port, otime = nil, rtime = nil, pipe = nil)
         super
         @raw_socket = @socket
-        @socket = OpenSSL::SSL::SSLSocket.new(@socket, @cert_file, @key_file)
+        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket)
       end
 
       def reopen(tout=nil)
         super
         @raw_socket = @socket
-        @socket = OpenSSL::SSL::SSLSocket.new(@socket, @cert_file, @key_file)
+        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket)
       end
 
       def close

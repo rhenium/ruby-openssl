@@ -4,6 +4,16 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 2001/11/16
+	* ossl_version.h - new file
+	* SSL::VERSION and SSL::OPENSSL_VERSION went under OpenSSL
+	* SSLSocket - connect and accept were reworked; use Mutex to protect verify_callback_proc from race condition
+	* SSLSocket - new allows certificate and pkey as filename
+	* ossl_x509_new_from_file() added
+	* ossl_pkey_new_from_file() added
+	* lib/ssl.rb added for migrations from old SSLSocket
+	* lib/net/* should follow above changes
+
+2001/11/16
 	* added yielding when generating RSA key (see test/ossl_pkey.rb)
 	* added yielding when generating DSA key (see test/ossl_pkey.rb)
 

@@ -1,10 +1,13 @@
 =begin
 
-= https.rb -- SSL/TLS enhancement for Net::Telnet.
+= telnets.rb -- SSL/TLS enhancement for Net::Telnet.
 
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
 
   $IPR: telnets.rb,v 1.5 2001/09/13 16:42:50 gotoyuzo Exp $
+
+  2001/11/06: Contiributed to Ruby/OpenSSL project.
+  $Id$
 
 == class Net::Telnet
 
@@ -14,9 +17,27 @@ sent OPT_STARTTLS. Some options are added for SSL/TLS.
   host = Net::Telnet::new({
            "Host"       => "localhost",
            "Port"       => "telnets",
-           # follows are new options.
-           'Cert'       => "user.crt",   
-           'Key'        => "user.key",
+           ## follows are new options.
+           'CertFile'   => "user.crt",
+           'KeyFile'    => "user.key",
+           'CAFile'     => "/some/where/certs/casert.pem",
+           'CAPath'     => "/some/where/caserts",
+           'VerifyMode' => SSL::VERIFY_PEER,
+           'VerifyCallback' => verify_proc
+         })
+
+Or, the new options ('Cert', 'Key' and 'CACert') are available from
+Michal Rokos's OpenSSL module.
+
+  cert_data = File.open("user.crt"){|io| io.read }
+  pkey_data = File.open("user.key"){|io| io.read }
+  cacert_data = File.open("your_ca.pem"){|io| io.read }
+  host = Net::Telnet::new({
+           "Host"       => "localhost",
+           "Port"       => "telnets",
+           'Cert'       => OpenSSL::X509::Certificate.new(cert_data)
+           'Key'        => OpenSSL::PKey::RSA.new(pkey_data)
+           'CACert'     => OpenSSL::X509::Certificate.new(cacert_data)
            'CAFile'     => "/some/where/certs/casert.pem",
            'CAPath'     => "/some/where/caserts",
            'VerifyMode' => SSL::VERIFY_PEER,
@@ -28,7 +49,7 @@ This class is expected to be a superset of usual Net::Telnet.
 =end
 
 require "net/telnet"
-require "OpenSSL"
+require "openssl"
 
 module Net
   class Telnet
@@ -98,17 +119,17 @@ module Net
         elsif SB[0] == $1[0]    # respond to "IAC SB xxx IAC SE"
           if    OPT_STARTTLS[0] == $1[1] && TLS_FOLLOWS[0] == $2[0]
             @sock = OpenSSL::SSL::SSLSocket.new(@sock)
-            @sock.cert      = @options['cert']    || @options['Cert']
-            @sock.key       = @options['key']     || @options['Key']
-            @sock.ca_file   = @options['ca_file'] || @options['CAFile']
-            @sock.ca_path   = @options['ca_path'] || @options['CAPath']
-            @sock.timeout   = @options['timeout'] || @options['Timeout']
-            @sock.verify_mode =
-              @options['verify_mode'] || @options['VerifyMode']
-            @sock.verify_callback =
-              @options['verify_callback'] || @options['VerifyCallback']
-            @sock.verify_depth =
-              @options['verify_depth'] || @options['VerifyDepth']
+            @sock.cert_file       = @options['CertFile']
+            @sock.cert            = @options['Cert'] unless @sock.cert
+            @sock.key_file        = @options['KeyFile']
+            @sock.key             = @options['Key'] unless @sock.key
+            @sock.ca_cert         = @options['CACert']
+            @sock.ca_file         = @options['CAFile']
+            @sock.ca_path         = @options['CAPath']
+            @sock.timeout         = @options['Timeout']
+            @sock.verify_mode     = @options['VerifyMode']
+            @sock.verify_callback = @options['VerifyCallback']
+            @sock.verify_depth    = @options['VerifyDepth']
             @sock.connect
             @ssl = true
           end

@@ -38,10 +38,12 @@
 #define ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
 
 #define ssl_get_io(o)            rb_ivar_get((o),rb_intern("@io"))
-#define ssl_get_cert(o)     rb_ivar_get((o),rb_intern("@cert"))
-#define ssl_get_key(o)      rb_ivar_get((o),rb_intern("@key"))
-#define ssl_get_ca(o)       rb_ivar_get((o),rb_intern("@ca_cert"))
-#define ssl_get_ca_file(o)	rb_ivar_get((o),rb_intern("@ca_file"))
+#define ssl_get_cert(o)          rb_ivar_get((o),rb_intern("@cert"))
+#define ssl_get_cert_file(o)     rb_ivar_get((o),rb_intern("@cert_file"))
+#define ssl_get_key(o)           rb_ivar_get((o),rb_intern("@key"))
+#define ssl_get_key_file(o)      rb_ivar_get((o),rb_intern("@key_file"))
+#define ssl_get_ca(o)            rb_ivar_get((o),rb_intern("@ca_cert"))
+#define ssl_get_ca_file(o)       rb_ivar_get((o),rb_intern("@ca_file"))
 #define ssl_get_ca_path(o)       rb_ivar_get((o),rb_intern("@ca_path"))
 #define ssl_get_timeout(o)       rb_ivar_get((o),rb_intern("@timeout"))
 #define ssl_get_verify_mode(o)   rb_ivar_get((o),rb_intern("@verify_mode"))
@@ -49,15 +51,22 @@
 #define ssl_get_verify_cb(o)     rb_ivar_get((o),rb_intern("@verify_callback"))
 
 #define ssl_set_io(o,v)          rb_ivar_set((o),rb_intern("@io"),(v))
-#define ssl_set_cert(o,v)   rb_ivar_set((o),rb_intern("@cert"),(v))
-#define ssl_set_key(o,v)    rb_ivar_set((o),rb_intern("@key"),(v))
-#define ssl_set_ca(o,v)     rb_ivar_set((o),rb_intern("@ca_cert"),(v))
-#define ssl_set_ca_file(o,v)	rb_ivar_set((o),rb_intern("@ca_file"),(v))
+#define ssl_set_cert(o,v)        rb_ivar_set((o),rb_intern("@cert"),(v))
+#define ssl_set_cert_file(o,v)   rb_ivar_set((o),rb_intern("@cert_file"),(v))
+#define ssl_set_key(o,v)         rb_ivar_set((o),rb_intern("@key"),(v))
+#define ssl_set_key_file(o,v)    rb_ivar_set((o),rb_intern("@key_file"),(v))
+#define ssl_set_ca(o,v)          rb_ivar_set((o),rb_intern("@ca_cert"),(v))
+#define ssl_set_ca_file(o,v)     rb_ivar_set((o),rb_intern("@ca_file"),(v))
 #define ssl_set_ca_path(o,v)     rb_ivar_set((o),rb_intern("@ca_path"),(v))
 #define ssl_set_timeout(o,v)     rb_ivar_set((o),rb_intern("@timeout"),(v))
 #define ssl_set_verify_mode(o,v) rb_ivar_set((o),rb_intern("@verify_mode"),(v))
 #define ssl_set_verify_dep(o,v)  rb_ivar_set((o),rb_intern("@verify_depth"),(v))
 #define ssl_set_verify_cb(o,v)   rb_ivar_set((o),rb_intern("@verify_callback"),(v))
+
+static VALUE ssl_set_cert2(VALUE, VALUE);
+static VALUE ssl_set_cert_file2(VALUE, VALUE);
+static VALUE ssl_set_key2(VALUE, VALUE);
+static VALUE ssl_set_key_file2(VALUE, VALUE);
 
 /*
  * Classes
@@ -69,8 +78,12 @@ VALUE eSSLError;
  * List of instance vars
  */
 char *ssl_attrs[] = {
-  /* "io", */"cert", "key", "ca_cert", "ca_file", "ca_path",
+  "ca_cert", "ca_file", "ca_path",
   "timeout", "verify_mode", "verify_depth", "verify_callback"
+};
+
+char *ssl_attr_readers[] = {
+  "io", "cert", "cert_file", "key", "key_file"
 };
 
 /*
@@ -235,16 +248,25 @@ static VALUE ssl_initialize(int argc, VALUE *argv, VALUE self)
 
 	switch (rb_scan_args(argc, argv, "12", &io, &cert, &key)) {
 		case 3:
-			if (!NIL_P(key))
-				OSSL_Check_Type(key, cPKey);
-			ssl_set_key(self, key);
+			if (!NIL_P(key)){
+				if(TYPE(key) == T_STRING) ssl_set_key_file2(self, key);
+				else{
+					OSSL_Check_Type(key, cPKey);
+					ssl_set_key2(self, key);
+				}
+			}
+			/* FALLTHROUGH */
 		case 2:
-			if (!NIL_P(cert))
-				OSSL_Check_Type(cert, cX509Certificate);
-			ssl_set_cert(self, cert);
+			if (!NIL_P(cert)){
+				if(TYPE(cert) == T_STRING) ssl_set_cert_file2(self, cert);
+				else{
+					OSSL_Check_Type(cert, cX509Certificate);
+					ssl_set_cert2(self, cert);
+				}
+			}
+			/* FALLTHROUGH */
 		case 1:
-			if(!NIL_P(io))
-				Check_Type(io, T_FILE);
+			Check_Type(io, T_FILE);
 			ssl_set_io(self, io);
 	}
 
@@ -258,13 +280,11 @@ static VALUE ssl_connect(VALUE self)
     Data_Get_Struct(self, ssl_st, p);
     ssl_ctx_setup(self);
     ssl_setup(self);
-    rb_thread_critical = 1;
+
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_connect(p->ssl) <= 0){
-        rb_thread_critical = 0;
         rb_raise(eSSLError, "SSL_connect:%s", ossl_error());
     }
-    rb_thread_critical = 0;
 
     return self;
 }
@@ -278,13 +298,11 @@ ssl_accept(self)
     Data_Get_Struct(self, ssl_st, p);
     ssl_ctx_setup(self);
     ssl_setup(self);
-    rb_thread_critical = 1;
+
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_accept(p->ssl) <= 0){
-        rb_thread_critical = 0;
         rb_raise(eSSLError, "SSL_accept:%s", ossl_error());
     }
-    rb_thread_critical = 0;
 
     return self;
 }
@@ -515,13 +533,43 @@ ssl_get_state(self)
     return ret;
 }
 
+static VALUE ssl_set_cert2(VALUE self, VALUE v)
+{
+	if(!NIL_P(v)) OSSL_Check_Type(v, cX509Certificate);
+	ssl_set_cert(self, v);
+	ssl_set_cert_file(self, Qnil);
+	return v;
+}
+
+static VALUE ssl_set_cert_file2(VALUE self, VALUE v)
+{
+	VALUE cert;
+	cert = NIL_P(v) ? Qnil :ossl_x509_new_from_file(v);
+	ssl_set_cert(self, cert);
+	ssl_set_cert_file(self, v);
+	return v;
+}
+
+static VALUE ssl_set_key2(VALUE self, VALUE v)
+{
+	if(!NIL_P(v)) OSSL_Check_Type(v, cPKey);
+	ssl_set_key(self, v);
+	ssl_set_key_file(self, Qnil);
+	return v;
+}
+
+static VALUE ssl_set_key_file2(VALUE self, VALUE v)
+{
+	VALUE key;
+	key = NIL_P(v) ? Qnil : ossl_pkey_new_from_file(v);
+	ssl_set_key(self, key);
+	ssl_set_key_file(self, v);
+	return v;
+}
+
 void Init_ssl(VALUE mSSL)
 {
     int i;
-
-    /* module SSL */
-    rb_define_const(mSSL, "VERSION", rb_str_new2("0.3.3"));
-    rb_define_const(mSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
 
     /* class SSLError */
     eSSLError = rb_define_class_under(mSSL, "Error", rb_eStandardError);
@@ -530,8 +578,8 @@ void Init_ssl(VALUE mSSL)
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_singleton_method(cSSLSocket, "new", ssl_s_new, -1);
     rb_define_method(cSSLSocket, "initialize",   ssl_initialize, -1);
-    rb_define_method(cSSLSocket, "connect",      ssl_connect, 0);
-    rb_define_method(cSSLSocket, "accept",       ssl_accept, 0);
+    rb_define_method(cSSLSocket, "__connect",    ssl_connect, 0);
+    rb_define_method(cSSLSocket, "__accept",     ssl_accept, 0);
     rb_define_method(cSSLSocket, "sysread",      ssl_read, 1);
     rb_define_method(cSSLSocket, "syswrite",     ssl_write, 1);
     rb_define_method(cSSLSocket, "sysclose",     ssl_close, 0);
@@ -541,9 +589,14 @@ void Init_ssl(VALUE mSSL)
     rb_define_method(cSSLSocket, "ciphers",      ssl_get_ciphers, 0);
     rb_define_method(cSSLSocket, "ciphers=",     ssl_set_ciphers, 1);
     rb_define_method(cSSLSocket, "state",        ssl_get_state, 0);
+    rb_define_method(cSSLSocket, "cert=",        ssl_set_cert2, 1);
+    rb_define_method(cSSLSocket, "cert_file=",   ssl_set_cert_file2, 1);
+    rb_define_method(cSSLSocket, "key=",         ssl_set_key2, 1);
+    rb_define_method(cSSLSocket, "key_file=",    ssl_set_key_file2, 1);
     for(i = 0; i < numberof(ssl_attrs); i++)
         rb_attr(cSSLSocket, rb_intern(ssl_attrs[i]), 1, 1, Qfalse);
-    rb_attr(cSSLSocket, rb_intern("io"), 1, 0, Qfalse);
+    for(i = 0; i < numberof(ssl_attr_readers); i++)
+        rb_attr(cSSLSocket, rb_intern(ssl_attr_readers[i]), 1, 0, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
 
     ssl_def_const(VERIFY_NONE);

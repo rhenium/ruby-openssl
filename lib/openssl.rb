@@ -2,6 +2,7 @@
 
 require 'openssl.so'
 require 'buffering'
+require 'thread'
 
 module OpenSSL
   module PKey
@@ -88,9 +89,17 @@ module OpenSSL
       end #verify
     end #RSA
   end #PKey
+
   module SSL
     class SSLSocket
+      CallbackMutex = Mutex.new
       include Buffering
+      def connect
+        CallbackMutex.synchronize{ __connect }
+      end
+      def accept
+        CallbackMutex.synchronize{ __accept }
+      end
     end #SSLSocket
   end #SSL
 end #OpenSSL

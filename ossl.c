@@ -79,6 +79,11 @@ void Init_openssl()
 	mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
 	
 	/*
+	 * Constants
+	 */
+	rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
+	rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+	/*
 	 * Components
 	 */
 	/* Init_ossl_config(mOSSL); TO BE DROPPED OUT??? */

@@ -49,6 +49,25 @@ VALUE ossl_pkey_new(EVP_PKEY *key)
 	return Qnil;
 }
 
+VALUE ossl_pkey_new_from_file(VALUE v)
+{
+	char *path;
+	FILE *fp;
+	EVP_PKEY *pkey;
+	VALUE obj;
+
+	path = RSTRING(v)->ptr;
+	if((fp = fopen(path, "r")) == NULL)
+		rb_raise(ePKeyError, "%s", strerror(errno));
+	pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+	fclose(fp);
+	if(!pkey) rb_raise(ePKeyError, "%s", ossl_error());
+	obj = rb_ensure(ossl_pkey_new, (VALUE)pkey,
+			(VALUE(*)(VALUE))EVP_PKEY_free, (VALUE)pkey);
+
+	return obj;
+}
+
 EVP_PKEY *ossl_pkey_get_EVP_PKEY(VALUE obj)
 {
 	ossl_pkey *pkeyp = NULL;

@@ -56,6 +56,26 @@ VALUE ossl_x509_new2(X509 *x509)
 	return obj;
 }
 
+VALUE ossl_x509_new_from_file(VALUE v)
+{
+	char *path;
+	FILE *fp;
+	X509 *cert;
+	ossl_x509 *x509p = NULL;
+	VALUE obj;
+
+	MakeX509(obj, x509p);
+	path = RSTRING(v)->ptr;
+	if((fp = fopen(path, "r")) == NULL)
+		rb_raise(eX509CertificateError, "%s", strerror(errno));
+	cert = PEM_read_X509(fp, NULL, NULL, NULL);
+	fclose(fp);
+	if(!cert) rb_raise(eX509CertificateError, "%s", ossl_error());
+	x509p->x509 = cert;
+
+	return obj;
+}
+
 X509 *ossl_x509_get_X509(VALUE self)
 {
 	ossl_x509 *x509p = NULL;

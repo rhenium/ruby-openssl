@@ -9,6 +9,9 @@
 
   $IPR: https.rb,v 1.5 2001/07/15 22:24:05 gotoyuzo Exp $
 
+  2001/11/06: Contiributed to Ruby/OpenSSL project.
+  $Id$
+
 == class Net::HTTP
 
 == Example
@@ -50,12 +53,23 @@ It can be replaced by follow one:
 : peer_cert
     return the X.509 certificates the server presented.
 
-: key=((|path|))
-    Sets private key file to use in PEM format.
-    Key_file is not required if the cert_file bundles private key.
+: key=((|key|))
+    Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
+    (This method is appeared in Michal Rokos's OpenSSL extention.)
 
-: cert=((|path|))
+: key_file=((|path|))
+    Sets a private key file to use in PEM format.
+
+: cert=((|cert|))
+    Sets an OpenSSL::X509::Certificate object as client certificate.
+    (This method is appeared in Michal Rokos's OpenSSL extention.)
+
+: cert_file=((|path|))
     Sets pathname of a X.509 certification file in PEM format.
+
+: ca_cert=((|cert|))
+    Sets an OpenSSL::X509::Certificate object as specific CA certifacate.
+    (This method is appeared in Michal Rokos's OpenSSL extention.)
 
 : ca_file=((|path|))
     Sets path of a CA certification file in PEM format.
@@ -85,7 +99,8 @@ module Net
     protocol_param :socket_type, ::Net::NetPrivate::SSLSocket
 
     attr_accessor :use_ssl
-    attr_writer :key, :cert, :ca_file, :ca_path, :timeout
+    attr_writer :key, :cert, :key_file, :cert_file
+    attr_writer :ca_file, :ca_path, :timeout
     attr_writer :verify_mode, :verify_callback, :verify_depth
     attr_reader :peer_cert
 
@@ -119,8 +134,10 @@ module Net
             raise resp.message
           end
         end
-        @socket.key             = @key_file
-        @socket.cert            = @cert_file
+        @socket.key             = @key       if @key
+        @socket.key_file        = @key_file  if @key_file
+        @socket.cert            = @cert      if @cert
+        @socket.cert_file       = @cert_file if @cert_file
         @socket.ca_file         = @ca_file
         @socket.ca_path         = @ca_path
         @socket.verify_mode     = @verify_mode
