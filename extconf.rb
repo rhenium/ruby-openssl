@@ -30,13 +30,14 @@ have_header("unistd.h")
 have_header("sys/time.h")
 have_func("strptime", "time.h")
 
+
 ##
 # Adds -Wall -DOSSL_DEBUG for compilation and some more targets when GCC is used
 # To turn it on, use: --with-debug or --enable-debug
 #
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
-  $CPPFLAGS += " " + "-Wall" unless $CPPFLAGS.split.include? "-Wall"
+  $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
 
   if CONFIG["CC"] =~ /gcc/
     srcs = []
@@ -62,6 +63,25 @@ EOD
     }
   end
 end
+
+print "checking for Ruby >= 1.8.0... "
+if RUBY_VERSION < "1.8.0"
+  puts "no"
+  exit
+else
+  puts "yes"
+end
+
+##
+# TODO:
+# print "checking for OpenSSL >= 0.9.7... "
+# txt = File.read("/home/michal/local/include/openssl/opensslv.h")
+# if (txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1] < "0.9.7"
+#   puts "no"
+#   exit
+# else
+#   puts "yes"
+#  end
 
 if have_header("openssl/crypto.h") and 
     have_library(CRYPTOLIB, "OPENSSL_load_builtin_modules") and 
