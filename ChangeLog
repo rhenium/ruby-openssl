@@ -1,3 +1,6 @@
+Wed, 23 Apr 2003 22:19:14 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_pkey.c: Is #to_der broken?
+
 Sun, 20 Apr 2003 22:26:56 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* ossl_pkcs7.c: Added #copy_object for Ruby1.8 dup&copy framework
 
