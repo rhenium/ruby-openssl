@@ -20,7 +20,7 @@
 
 #if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>
-#elif !defined(NT)
+#elif !defined(NT) && !defined(_WIN32)
 struct timeval {
     long tv_sec;	/* seconds */
     long tv_usec;	/* and microseconds */
@@ -222,7 +222,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
  */
 VALUE dOSSL;
 
-#if defined(NT)
+#if defined(NT) || defined(_WIN32)
 void ossl_debug(const char *fmt, ...)
 {
     va_list args;

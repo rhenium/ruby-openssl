@@ -57,7 +57,7 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 /*
  * FIXME
  * Does't work for Windows?
-#if defined(NT)
+#if defined(NT) || defined(_WIN32)
 	if (!(conf = NCONF_new(NCONF_WIN32()))){
 #else
 	if (!(conf = NCONF_new(NCONF_default()))){
