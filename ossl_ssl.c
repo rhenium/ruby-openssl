@@ -52,7 +52,7 @@ VALUE cSSLSocket;
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "ca_cert", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
-    "verify_callback", "options",
+    "verify_callback", "options", "cert_store",
 }; 
 
 struct {
@@ -206,6 +206,7 @@ ossl_sslctx_setup(VALUE self)
 {
     SSL_CTX *ctx;
     X509 *cert = NULL, *ca_cert = NULL;
+    X509_STORE *store; 
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
@@ -268,6 +269,12 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2LONG(val));
+
+    val = ossl_sslctx_get_cert_store(self);
+    if(!NIL_P(val)){
+        store = DupX509StorePtr(val);
+        SSL_CTX_set_cert_store(ctx, store);
+    }
 
     val = ossl_sslctx_get_options(self);
     if(!NIL_P(val)) SSL_CTX_set_options(ctx, NUM2LONG(val));

@@ -75,6 +75,17 @@ GetX509StorePtr(VALUE obj)
     return store;
 }
 
+X509_STORE *
+DupX509StorePtr(VALUE obj)
+{   
+    X509_STORE *store;
+
+    SafeGetX509Store(obj, store);
+    CRYPTO_add(&store->references, 1, CRYPTO_LOCK_X509_STORE);
+    
+    return store;
+}
+
 /*
  * Private functions
  */

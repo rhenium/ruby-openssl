@@ -100,6 +100,7 @@ extern VALUE eX509StoreError;
 
 VALUE ossl_x509store_new(X509_STORE *);
 X509_STORE *GetX509StorePtr(VALUE);
+X509_STORE *DupX509StorePtr(VALUE);
 
 VALUE ossl_x509stctx_new(X509_STORE_CTX *);
 VALUE ossl_x509stctx_clear_ptr(VALUE);
