@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.27  2002/01/16 14:49:52  majkl
+	* really fixed strptime.c (silly me, thanks Hynek)
+
 Revision 1.26  2002/01/16 13:52:24  majkl
 	* fixed missing/strptime.c (Hynek)
 	* more strict format for UTC time (ossl.c - 'Z' in the end)

@@ -11,7 +11,7 @@ Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate)
 
 [Contributors]
 UNKNOWN <oss-ruby@technorama.net>oss-ruby@technorama.net - BN implementation core
-Hynek Rostinsky <Hynek.Rostinsky@foresta.cz> - Windows platform fixes
+Hynek Rostinsky <Hynek.Rostinsky@foresta.cz> - Windows platform fixes (strptime mainly)
 
 [Done] (but not fully tested)
 = PKey:: RSA,DSA keys - new, load, export

@@ -57,7 +57,6 @@ asn1time_to_time(ASN1_UTCTIME *time)
 
 	switch(time->type) {
 		case V_ASN1_UTCTIME:
-			rb_warn("UTCTIME: %s", time->data);
 			if (!strptime(time->data, "%y%m%d%H%M%SZ", &tm)) {
 				rb_raise(rb_eTypeError, "bad UTCTIME format");
 			}
