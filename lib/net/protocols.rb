@@ -38,26 +38,21 @@ module Net
 
       def initialize(addr, port, otime = nil, rtime = nil, pipe = nil)
         super
-        @raw_socket = @socket
         @ssl_context = OpenSSL::SSL::SSLContext.new()
-        @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
       end
 
-      def reopen(tout=nil)
-        super
+      def ssl_connect()
         @raw_socket = @socket
-        @ssl_context = OpenSSL::SSL::SSLContext.new()
         @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
+        @socket.connect
       end
 
       def close
         super
-        @raw_socket.close
+        @raw_socket.close if @raw_socket
       end
 
       def peer_cert; @socket.peer_cert; end
-      def ssl_connect; @socket.connect; end
-
     end
   end
 end
