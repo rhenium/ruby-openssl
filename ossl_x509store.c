@@ -424,7 +424,7 @@ ossl_x509store_load_locations(VALUE self, VALUE path)
 	
 	SafeStringValue(path);
 
-	if (!X509_STORE_load_locations(storep->store->ctx, NULL, StringValuePtr(path))) {
+	if (!X509_STORE_load_locations(storep->store->ctx, NULL, RSTRING(path)->ptr)) {
 		ossl_raise(eX509StoreError, "");
 	}
 	return self;

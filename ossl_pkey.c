@@ -54,7 +54,7 @@ ossl_pkey_new_from_file(VALUE filename)
 
 	SafeStringValue(filename);
 	
-	if (!(fp = fopen(StringValuePtr(filename), "r"))) {
+	if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
 		ossl_raise(ePKeyError, "%s", strerror(errno));
 	}
 	/*

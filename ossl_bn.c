@@ -115,12 +115,12 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 				}
 				break;
 			case 10:
-				if (!BN_dec2bn(&bn, StringValuePtr(str))) {
+				if (!BN_dec2bn(&bn, RSTRING(str)->ptr)) {
 					ossl_raise(eBNError, "");
 				}
 				break;
 			case 16:
-				if (!BN_hex2bn(&bn, StringValuePtr(str))) {
+				if (!BN_hex2bn(&bn, RSTRING(str)->ptr)) {
 					ossl_raise(eBNError, "");
 				}
 				break;

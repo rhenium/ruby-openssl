@@ -64,7 +64,7 @@ ossl_x509_new_from_file(VALUE filename)
 
 	SafeStringValue(filename);
 	
-	if (!(fp = fopen(StringValuePtr(filename), "r"))) {
+	if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
 		ossl_raise(eX509CertError, "%s", strerror(errno));
 	}
 	x509 = PEM_read_X509(fp, NULL, NULL, NULL);

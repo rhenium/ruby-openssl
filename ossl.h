@@ -97,6 +97,7 @@ void ossl_raise(VALUE, const char *, ...);
  * Debug
  */
 extern VALUE dOSSL;
+
 #if !defined(NT)
 #  define OSSL_Debug(fmt, ...) do { \
 	if (dOSSL == Qtrue) { \

@@ -56,7 +56,7 @@ asn1time_to_time(ASN1_TIME *time)
 	struct tm tm;
 
 	if (!time) {
-		rb_bug("ASN1_TIME is NULL!");
+		ossl_raise(rb_eTypeError, "ASN1_TIME is NULL!");
 	}
 	memset(&tm, 0, sizeof(struct tm));
 	
@@ -102,7 +102,7 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 	if (buf_len < 0 || len < buf_len) { /* PARANOIA? */
 		return -1;
 	}
-	if (!hexbuf) {
+	if (!hexbuf) { /* if no buf, return calculated len */
 		if (hexbuf_len) {
 			*hexbuf_len = len;
 		}
@@ -162,6 +162,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
  * Debug
  */
 VALUE dOSSL;
+
 #if defined(NT)
 void ossl_debug(const char *fmt, ...)
 {

@@ -45,7 +45,8 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 	VALUE path, obj;
 
 	if (rb_scan_args(argc, argv, "01", &path) == 1) {
-		filename = StringValuePtr(path);
+		SafeStringValue(path);
+		filename = RSTRING(path)->ptr;
 	} else {
 		if (!(filename = CONF_get1_default_config_file())) {
 			ossl_raise(eConfigError, "");
@@ -75,7 +76,6 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 					err_line, filename);
 		}
 	}
-
 	WrapConfig(klass, obj, conf);
 
 	return obj;

@@ -3,6 +3,9 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 09 Jul 2002 17:17:43 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* Some minor cleanups (bring back RSTRING macro (instead of StringValuePtr) where tested by StringValue)
+
 Mon,  1 Jul 2002 15:36:28 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* tc_x509name.rb: NEW (TestCase)
 	* tc_x509req.rb: NEW (TestCase)

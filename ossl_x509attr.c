@@ -88,8 +88,8 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	item = RARRAY(ary)->ptr[0];
 	StringValue(item);
 	
-	if (!(nid = OBJ_ln2nid(StringValuePtr(item)))) {
-		if (!(nid = OBJ_sn2nid(StringValuePtr(item)))) {
+	if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
+		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
 			ossl_raise(eX509AttrError, "");
 		}
 	}
@@ -98,7 +98,7 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	item = RARRAY(ary)->ptr[1];
 	StringValuePtr(item);
 
-	if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, StringValuePtr(item)))) {
+	if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, RSTRING(item)->ptr))) {
 		ossl_raise(eX509AttrError, "");
 	}
 	WrapX509Attr(klass, obj, attr);

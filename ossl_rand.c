@@ -41,7 +41,7 @@ ossl_rand_load_file(VALUE self, VALUE filename)
 {
 	SafeStringValue(filename);
 	
-	if(!RAND_load_file(StringValuePtr(filename), -1)) {
+	if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
 		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
@@ -52,7 +52,7 @@ ossl_rand_write_file(VALUE self, VALUE filename)
 {
 	SafeStringValue(filename);
 	
-	if (RAND_write_file(StringValuePtr(filename)) == -1) {
+	if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
 		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
@@ -82,7 +82,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
 {
 	SafeStringValue(filename);
 	
-	if(!RAND_egd(StringValuePtr(filename))) {
+	if(!RAND_egd(RSTRING(filename)->ptr)) {
 		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
@@ -93,7 +93,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
 	SafeStringValue(filename);
 
-	if (!RAND_egd_bytes(StringValuePtr(filename), FIX2INT(len))) {
+	if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len))) {
 		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
