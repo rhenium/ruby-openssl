@@ -55,6 +55,9 @@ asn1time_to_time(ASN1_TIME *time)
 {
 	struct tm tm;
 
+	if (!time) {
+		rb_bug("ASN1_TIME is NULL!");
+	}
 	memset(&tm, 0, sizeof(struct tm));
 	
 	switch(time->type) {

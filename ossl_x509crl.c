@@ -191,13 +191,13 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 
 	sec = time_to_time_t(time);
 	
-	if (!X509_time_adj(crl->crl->nextUpdate, 0, &sec)) {
+	if (!(crl->crl->nextUpdate = X509_time_adj(crl->crl->nextUpdate, 0, &sec))) { /* This must be some thinko in OpenSSL */
 		ossl_raise(eX509CRLError, "");
 	}
 	return time;
 }
 
-static VALUE 
+static VALUE
 ossl_x509crl_get_revoked(VALUE self)
 {
 	X509_CRL *crl;
@@ -240,12 +240,11 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 	
 	sk_X509_REVOKED_pop_free(crl->crl->revoked, X509_REVOKED_free);
 	crl->crl->revoked = NULL;
-	M_ASN1_New(crl->crl->revoked, sk_X509_REVOKED_new_null);
 	
 	for (i=0; i<RARRAY(ary)->len; i++) {
 		rev = ossl_x509revoked_get_X509_REVOKED(RARRAY(ary)->ptr[i]);
 
-		if (!sk_X509_CRL_push(crl->crl->revoked, rev)) { /* NO DUP - don't free! */
+		if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
 			ossl_raise(eX509CRLError, "");
 		}
 	}
@@ -264,7 +263,7 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
 
 	rev = ossl_x509revoked_get_X509_REVOKED(revoked);
 
-	if (!sk_X509_CRL_push(crl->crl->revoked, rev)) { /* NO DUP - don't free! */
+	if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
 		ossl_raise(eX509CRLError, "");
 	}
 	X509_CRL_sort(crl);
@@ -459,7 +458,7 @@ Init_ossl_x509crl()
 	rb_define_method(cX509CRL, "revoked", ossl_x509crl_get_revoked, 0);
 	rb_define_method(cX509CRL, "revoked=", ossl_x509crl_set_revoked, 1);
 	rb_define_method(cX509CRL, "add_revoked", ossl_x509crl_add_revoked, 1);
-	rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 1);
+	rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 2);
 	rb_define_method(cX509CRL, "verify", ossl_x509crl_verify, 1);
 	rb_define_method(cX509CRL, "to_pem", ossl_x509crl_to_pem, 0);
 	rb_define_alias(cX509CRL, "to_s", "to_pem");

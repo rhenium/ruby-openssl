@@ -30,10 +30,10 @@ $x509 = Certificate::new()
 
 puts "Generating 1024-bit RSA key"
 $rsa = PKey::RSA::generate(1024) {|p, n| #the same as in OpenSSL
-  if (p==0) then putc "." #BN_generate_prime
-  elsif (p==1) then putc "+" #BN_generate_prime
-  elsif (p==2) then putc "*" #searching good prime, n = #of try, but also data from BN_generate_prime
-  elsif (p==3) then putc "\n" #found good prime, n==0 - p, n==1 - q, but also data from BN_generate_prime
+  if (p == 0) then putc "." #BN_generate_prime
+  elsif (p == 1) then putc "+" #BN_generate_prime
+  elsif (p == 2) then putc "*" #searching good prime, n = #of try, but also data from BN_generate_prime
+  elsif (p == 3) then putc "\n" #found good prime, n==0 - p, n==1 - q, but also data from BN_generate_prime
   else putc "*" #BN_generate_prime
   end
 }
@@ -111,6 +111,7 @@ class TC_Certificate < Test::Unit::TestCase
     # FIXME
     # add == method to PKeys
     # assert_equal(pubk, $x509.public_key, "public_key")
+    # 
     assert($x509.check_private_key($rsa), "check_private_key")
   end
   def test_08extensions

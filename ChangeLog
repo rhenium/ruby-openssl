@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Mon,  1 Jul 2002 13:34:38 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509crl.c: #next_update=, #set_revoked, #add_revoked fixes
+	* tc_x509crl.rb: NEW (TestCase)
+
 Wed, 26 Jun 2002 16:14:42 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* x509name.c: added method #cmp (aka <=>)
 
