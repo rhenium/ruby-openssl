@@ -107,16 +107,19 @@ DEFINE_ALLOC_WRAPPER(ossl_x509store_alloc)
 /*
  * General callback for OpenSSL verify
  */
-int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
-
 static VALUE
 ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
-    rb_ivar_set(self, rb_intern("@verify_callback"), Qnil);
+    X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
+    rb_iv_set(self, "@verify_callback", Qnil);
+
+    /* last verification status */
+    rb_iv_set(self, "@error", Qnil);
+    rb_iv_set(self, "@error_string", Qnil);
+    rb_iv_set(self, "@chain", Qnil);
 
     return self;
 }
@@ -132,19 +135,43 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
     return flags;
 }
 
+static VALUE
+ossl_x509store_set_purpose(VALUE self, VALUE purpose)
+{
+    X509_STORE *store;
+
+    GetX509Store(self, store);
+    X509_STORE_set_purpose(store, NUM2LONG(purpose));
+
+    return purpose;
+}
+
+static VALUE
+ossl_x509store_set_trust(VALUE self, VALUE trust)
+{
+    X509_STORE *store;
+
+    GetX509Store(self, store);
+    X509_STORE_set_trust(store, NUM2LONG(trust));
+
+    return trust;
+}
+
 static VALUE 
 ossl_x509store_add_file(VALUE self, VALUE file)
 {
     X509_STORE *store;
     X509_LOOKUP *lookup;
+    char *path = NULL;
 
-    Check_SafeStr(file);
+    if(file != Qnil){
+        Check_SafeStr(file);
+	path = RSTRING(file)->ptr;
+    }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-    if(lookup == NULL){
-        ossl_raise(eX509StoreError, "");
-    }
-    if(X509_LOOKUP_load_file(lookup, RSTRING(file)->ptr,X509_FILETYPE_PEM) != 1){
+    if(lookup == NULL) ossl_raise(eX509StoreError, "");
+    if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, "");
     }
 
@@ -152,18 +179,20 @@ ossl_x509store_add_file(VALUE self, VALUE file)
 }
 
 static VALUE 
-ossl_x509store_add_path(VALUE self, VALUE path)
+ossl_x509store_add_path(VALUE self, VALUE dir)
 {
     X509_STORE *store;
     X509_LOOKUP *lookup;
+    char *path = NULL;
 
-    Check_SafeStr(path);
+    if(dir != Qnil){
+        Check_SafeStr(dir);
+	path = RSTRING(dir)->ptr;
+    }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
-    if(lookup == NULL){
-        ossl_raise(eX509StoreError, "");
-    }
-    if(X509_LOOKUP_add_dir(lookup, RSTRING(path)->ptr,X509_FILETYPE_PEM) != 1){
+    if(lookup == NULL) ossl_raise(eX509StoreError, "");
+    if(X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, "");
     }
 
@@ -215,85 +244,26 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
     return self;
 }
 
-static int ossl_x509store_vcb_idx;
+static VALUE ossl_x509stctx_get_err(VALUE);
+static VALUE ossl_x509stctx_get_err_string(VALUE);
+static VALUE ossl_x509stctx_get_chain(VALUE);
 
 static VALUE 
-ossl_x509store_call_verify_cb_proc(VALUE args)
+ossl_x509store_verify(VALUE self, VALUE cert)
 {
-    VALUE proc, ok, store_ctx;
+    VALUE ctx, proc, result;
 
-    proc = rb_ary_entry(args, 0);
-    ok = rb_ary_entry(args, 1);
-    store_ctx = rb_ary_entry(args, 2);
+    ctx = rb_funcall(cX509StoreContext, rb_intern("new"), 2, self, cert);
+    proc = rb_block_given_p() ?  rb_block_proc() :
+	   rb_iv_get(self, "@verify_callback");
+    rb_iv_set(ctx, "@verify_callback", proc);
+    result = rb_funcall(ctx, rb_intern("verify"), 0);
 
-    return rb_funcall(proc, rb_intern("call"), 2, ok, store_ctx);
-}
+    rb_iv_set(self, "@error", ossl_x509stctx_get_err(ctx));
+    rb_iv_set(self, "@error_string", ossl_x509stctx_get_err_string(ctx));
+    rb_iv_set(self, "@chain", ossl_x509stctx_get_chain(ctx));
 
-static VALUE
-ossl_x509store_verify_false(VALUE dummy)
-{
-    return Qfalse;
-}
-
-int
-ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
-{
-    VALUE proc, rctx, args, ret = Qundef;
-
-    if (rb_block_given_p()) {
-        rctx = ossl_x509stctx_new(ctx);
-	ret = rb_yield_values(2, ok ? Qtrue : Qfalse, rctx);
-    } else {
-	proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_x509store_vcb_idx);
-	if (!NIL_P(proc)) {
-	    rctx = ossl_x509stctx_new(ctx);
-	    args = rb_ary_new2(3);
-	    rb_ary_store(args, 0, proc);
-	    rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
-	    rb_ary_store(args, 2, rctx);
-	    ret = rb_rescue(ossl_x509store_call_verify_cb_proc, args,
-			    ossl_x509store_verify_false, Qnil);
-	}
-    }
-    if (ret != Qundef) {
-        ossl_x509stctx_clear_ptr(rctx);
-	if (ret == Qtrue) {
-	    ok = 1;
-	    X509_STORE_CTX_set_error(ctx, X509_V_OK);
-	} else {
-	    ok = 0;
-	    if (X509_STORE_CTX_get_error(ctx) == X509_V_OK) {
-		X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-	    }
-	}
-    }
-
-    return ok;
-}
-
-static VALUE 
-ossl_x509store_verify(VALUE self, VALUE arg)
-{
-    int result;
-    X509_STORE_CTX *ctx;
-    X509_STORE *store;
-    X509 *cert;
-
-    GetX509Store(self, store);
-    cert = GetX509CertPtr(arg);
-    if((ctx = X509_STORE_CTX_new()) == NULL){
-        ossl_raise(eX509StoreError, "");
-    }
-    if(X509_STORE_CTX_init(ctx, store, cert, NULL) != 1){
-        X509_STORE_CTX_free(ctx);
-        ossl_raise(eX509StoreError, "");
-    }
-    X509_STORE_CTX_set_ex_data(ctx, ossl_x509store_vcb_idx,
-                               (void*)rb_iv_get(self, "@verify_callback"));
-    result = X509_verify_cert(ctx);
-    X509_STORE_CTX_free(ctx);
-
-    return result ? Qtrue : Qfalse;
+    return result;
 }
 
 /*
@@ -341,7 +311,50 @@ DEFINE_ALLOC_WRAPPER(ossl_x509stctx_alloc)
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE store, cert;
+    X509_STORE_CTX *ctx;
+    X509_STORE *x509st;
+    X509 *x509 = NULL;
+
+    GetX509StCtx(self, ctx);
+    rb_scan_args(argc, argv, "11", &store, &cert);
+    SafeGetX509Store(store, x509st);
+    if(!NIL_P(cert)) x509 = GetX509CertPtr(cert);
+    if(X509_STORE_CTX_init(ctx, x509st, x509, NULL) != 1){
+        ossl_raise(eX509StoreError, "");
+    }
+    rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
+    rb_iv_set(self, "@cert", cert);
+
     return self;
+}
+
+static VALUE
+ossl_x509stctx_set_cert(VALUE self, VALUE cert)
+{
+    X509_STORE_CTX *ctx;
+    X509 *x509;
+
+    GetX509StCtx(self, ctx);
+    x509 = GetX509CertPtr(cert);
+    X509_STORE_CTX_set_cert(ctx, x509);
+    rb_iv_set(self, "@cert", cert);
+
+    return cert;
+}
+
+static VALUE
+ossl_x509stctx_verify(VALUE self)
+{
+    X509_STORE_CTX *ctx;
+    int result;
+
+    GetX509StCtx(self, ctx);
+    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx,
+                               (void*)rb_iv_get(self, "@verify_callback"));
+    result = X509_verify_cert(ctx);
+
+    return result ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -371,7 +384,7 @@ ossl_x509stctx_get_chain(VALUE self)
 }
 
 static VALUE 
-ossl_x509stctx_get_error(VALUE self)
+ossl_x509stctx_get_err(VALUE self)
 {
     X509_STORE_CTX *ctx;
 
@@ -441,22 +454,25 @@ void
 Init_ossl_x509store()
 {
     VALUE x509stctx;
-    VALUE mX509VErr;
-    VALUE mX509VFlag;
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 
-    ossl_x509store_vcb_idx =
+    ossl_verify_cb_idx =
       X509_STORE_CTX_get_ex_new_index(0,"ossl_x509store_ex_vcb",NULL,NULL,NULL);
 
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 1, Qfalse);
+    rb_attr(cX509Store, rb_intern("error"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern("error_string"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern("chain"), 1, 0, Qfalse);
     rb_define_alloc_func(cX509Store, ossl_x509store_alloc);
     rb_define_method(cX509Store, "initialize",   ossl_x509store_initialize, -1);
     rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
+    rb_define_method(cX509Store, "purpose=",     ossl_x509store_set_purpose, 1);
+    rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
     rb_define_method(cX509Store, "add_path",     ossl_x509store_add_path, 1);
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
-    rb_define_method(cX509Store, "add_crl_file", ossl_x509store_add_crl_file, 1);
+    rb_define_method(cX509Store, "add_crl_file", ossl_x509store_add_crl_file,1);
     rb_define_method(cX509Store, "add_cert",     ossl_x509store_add_cert, 1);
     rb_define_method(cX509Store, "add_crl",      ossl_x509store_add_crl, 1);
     rb_define_method(cX509Store, "verify",       ossl_x509store_verify, 1);
@@ -465,56 +481,14 @@ Init_ossl_x509store()
     x509stctx = cX509StoreContext;
     rb_define_alloc_func(cX509StoreContext, ossl_x509stctx_alloc);
     rb_define_method(x509stctx,"initialize",  ossl_x509stctx_initialize, -1);
+    rb_define_method(x509stctx,"cert=",       ossl_x509stctx_set_cert, 1);
+    rb_define_method(x509stctx,"verify",      ossl_x509stctx_verify, 0);
     rb_define_method(x509stctx,"chain",       ossl_x509stctx_get_chain,0);
-    rb_define_method(x509stctx,"error",       ossl_x509stctx_get_error, 0);
+    rb_define_method(x509stctx,"error",       ossl_x509stctx_get_err, 0);
     rb_define_method(x509stctx,"error=",      ossl_x509stctx_set_error, 1);
     rb_define_method(x509stctx,"error_string",ossl_x509stctx_get_err_string,0);
     rb_define_method(x509stctx,"error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
-	
-#define DefX509StoreVError(x) \
-rb_define_const(mX509VErr, #x, INT2FIX(X509_V_ERR_##x))
-
-    mX509VErr = rb_define_module_under(cX509Store, "V_ERR");
-    DefX509StoreVError(UNABLE_TO_GET_ISSUER_CERT);
-    DefX509StoreVError(UNABLE_TO_GET_CRL);
-    DefX509StoreVError(UNABLE_TO_DECRYPT_CERT_SIGNATURE);
-    DefX509StoreVError(UNABLE_TO_DECRYPT_CRL_SIGNATURE);
-    DefX509StoreVError(UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
-    DefX509StoreVError(CERT_SIGNATURE_FAILURE);
-    DefX509StoreVError(CRL_SIGNATURE_FAILURE);
-    DefX509StoreVError(CERT_NOT_YET_VALID);
-    DefX509StoreVError(CERT_HAS_EXPIRED);
-    DefX509StoreVError(CRL_NOT_YET_VALID);
-    DefX509StoreVError(CRL_HAS_EXPIRED);
-    DefX509StoreVError(ERROR_IN_CERT_NOT_BEFORE_FIELD);
-    DefX509StoreVError(ERROR_IN_CERT_NOT_AFTER_FIELD);
-    DefX509StoreVError(ERROR_IN_CRL_LAST_UPDATE_FIELD);
-    DefX509StoreVError(ERROR_IN_CRL_NEXT_UPDATE_FIELD);
-    DefX509StoreVError(OUT_OF_MEM);
-    DefX509StoreVError(DEPTH_ZERO_SELF_SIGNED_CERT);
-    DefX509StoreVError(SELF_SIGNED_CERT_IN_CHAIN);
-    DefX509StoreVError(UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
-    DefX509StoreVError(UNABLE_TO_VERIFY_LEAF_SIGNATURE);
-    DefX509StoreVError(CERT_CHAIN_TOO_LONG);
-    DefX509StoreVError(CERT_REVOKED);
-    DefX509StoreVError(INVALID_CA);
-    DefX509StoreVError(PATH_LENGTH_EXCEEDED);
-    DefX509StoreVError(INVALID_PURPOSE);
-    DefX509StoreVError(CERT_UNTRUSTED);
-    DefX509StoreVError(CERT_REJECTED);
-    DefX509StoreVError(SUBJECT_ISSUER_MISMATCH);
-    DefX509StoreVError(AKID_SKID_MISMATCH);
-    DefX509StoreVError(AKID_ISSUER_SERIAL_MISMATCH);
-    DefX509StoreVError(KEYUSAGE_NO_CERTSIGN);
-    DefX509StoreVError(APPLICATION_VERIFICATION);
-
-#define DefX509StoreVFlag(x) \
-rb_define_const(mX509VFlag, #x, INT2FIX(X509_V_FLAG_##x))
-
-    mX509VFlag = rb_define_module_under(mX509, "V_FLAG");
-    DefX509StoreVFlag(CRL_CHECK);
-    DefX509StoreVFlag(CRL_CHECK_ALL);
 
 }

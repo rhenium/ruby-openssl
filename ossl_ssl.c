@@ -55,7 +55,7 @@ static char *ossl_sslctx_attrs[] = {
     "cert", "key", "ca_cert", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
     "verify_callback", "options", "cert_store",
-}; 
+};
 
 struct {
     const char *name;
@@ -81,7 +81,7 @@ static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
     SSL_CTX *ctx;
-    
+
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new:");
@@ -101,7 +101,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     char *s;
 
     Data_Get_Struct(self, SSL_CTX, ctx);
-    
+
     if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
         return self;
     }
@@ -122,30 +122,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static int ossl_ssl_ex_vcb_idx;
-
-static VALUE
-ossl_ssl_call_verify_cb(VALUE args)
-{
-    VALUE cb, ok, store;
-
-    cb = rb_ary_shift(args);
-    ok = rb_ary_shift(args);
-    store = rb_ary_shift(args);
-
-    return rb_funcall(cb, rb_intern("call"), 2, ok, store);
-}
-
-static VALUE
-ossl_ssl_callback_failure(VALUE cbname)
-{
-    char *msg;
-
-    msg = StringValuePtr(ruby_errinfo);
-    rb_warn("%s error: %s", RSTRING(cbname)->ptr, msg);
-
-    return Qfalse;
-}
+int ossl_ssl_ex_vcb_idx;
 
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
@@ -155,60 +132,16 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx);
-    if(!NIL_P(cb)){
-        rctx = ossl_x509stctx_new(ctx);
-        args = rb_ary_new2(3);
-        rb_ary_push(args, cb);
-        rb_ary_push(args, preverify_ok ? Qtrue : Qfalse);
-        rb_ary_push(args, rctx);
-        result = rb_rescue(ossl_ssl_call_verify_cb, args,
-                           ossl_ssl_callback_failure, 
-                           rb_str_new2("verify_callback"));
-        ossl_x509stctx_clear_ptr(rctx);
-        if(result != Qtrue){
-            if(X509_STORE_CTX_get_error(ctx) == X509_V_OK)
-                X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-            return 0; /* verify NG. */
-        }
-        X509_STORE_CTX_set_error(ctx, X509_V_OK);
-        return 1;     /* verify OK. */
-    }
-    
-    return preverify_ok;
+    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx, (void*)cb);
+    return ossl_verify_cb(preverify_ok, ctx);
 }
-
-#if 0 /* enable if use SSL_CTX_user_PrivateKey_file */
-static VALUE
-ossl_ssl_call_passwd_cb(VALUE cb)
-{
-    VALUE ret;
-
-    ret = rb_funcall(cb, rb_intern("call"), 0);
-    StringValue(ret);
-
-    return ret;
-}
-
-static int
-ossl_ssl_passwd_cb(char *buf, int size, int rwflag, void *cb)
-{
-    VALUE result;
-
-    result = rb_rescue(ossl_ssl_call_passwd_cb, (VALUE)cb,
-                       ossl_ssl_callback_failure,
-                       rb_str_new2("passwd_callback"));
-    strncpy(buf, RSTRING(result)->ptr, size);
-    buf[size-1] = 0;
-    return strlen(buf);
-}
-#endif
 
 static VALUE
 ossl_sslctx_setup(VALUE self)
 {
     SSL_CTX *ctx;
     X509 *cert = NULL, *ca_cert = NULL;
-    X509_STORE *store; 
+    X509_STORE *store;
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
@@ -217,13 +150,11 @@ ossl_sslctx_setup(VALUE self)
     if(OBJ_FROZEN(self)) return Qnil;
     Data_Get_Struct(self, SSL_CTX, ctx);
 
-#if 0 /* enable if use SSL_CTX_user_PrivateKey_file */
-    val = ossl_sslctx_get_passwd_cb(self);
+    val = ossl_sslctx_get_cert_store(self);
     if(!NIL_P(val)){
-        SSL_CTX_set_default_passwd_cb_userdata(ctx, val);
-        SSL_CTX_set_default_passwd_cb(ctx, ossl_ssl_passwd_cb);
+        store = DupX509StorePtr(val);
+        SSL_CTX_set_cert_store(ctx, store);
     }
-#endif
 
     /* private key may be bundled in certificate file. */
     val = ossl_sslctx_get_cert(self);
@@ -271,12 +202,6 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2LONG(val));
-
-    val = ossl_sslctx_get_cert_store(self);
-    if(!NIL_P(val)){
-        store = DupX509StorePtr(val);
-        SSL_CTX_set_cert_store(ctx, store);
-    }
 
     val = ossl_sslctx_get_options(self);
     if(!NIL_P(val)) SSL_CTX_set_options(ctx, NUM2LONG(val));
@@ -557,7 +482,7 @@ ossl_ssl_close(VALUE self)
     Data_Get_Struct(self, SSL, ssl);
 
     ossl_ssl_shutdown(ssl);
-    
+
     return Qnil;
 }
 
@@ -650,7 +575,7 @@ Init_ossl_ssl()
 {
     int i;
 
-    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0, "ossl_ssl_ex_vcb_idx", NULL, NULL, NULL);
+    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_vcb_idx",0,0,0);
 
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
@@ -701,7 +626,9 @@ Init_ossl_ssl()
      */
     ossl_ssl_def_const(OP_ALL);
     ossl_ssl_def_const(OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
-    /* ossl_ssl_def_const(OP_SINGLE_ECDH_USE); */
+#ifdef SSL_OP_SINGLE_ECDH_USE
+    ossl_ssl_def_const(OP_SINGLE_ECDH_USE);
+#endif
     ossl_ssl_def_const(OP_SINGLE_DH_USE);
     ossl_ssl_def_const(OP_EPHEMERAL_RSA);
     ossl_ssl_def_const(OP_CIPHER_SERVER_PREFERENCE);

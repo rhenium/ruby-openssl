@@ -55,9 +55,9 @@ asn1time_to_time(ASN1_TIME *time)
 	tm.tm_mon -= 1;
 	break;
     default:
-	ossl_raise(rb_eTypeError, "unknown time format");
+	rb_warning("unknown time format");
+        return Qnil;
     }
-//    return rb_time_new(mktime(&tm) - timezone, 0);
     argv[0] = INT2NUM(tm.tm_year);
     argv[1] = INT2NUM(tm.tm_mon+1);
     argv[2] = INT2NUM(tm.tm_mday);
@@ -242,6 +242,52 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 }
 
 /*
+ * Verify callback
+ */
+int ossl_verify_cb_idx;
+
+VALUE
+ossl_call_verify_cb_proc(struct ossl_verify_cb_args *args)
+{   
+    return rb_funcall(args->proc, rb_intern("call"), 2,
+                      args->preverify_ok, args->store_ctx);
+}    
+ 
+int 
+ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
+{
+    VALUE proc, rctx, ret;
+    struct ossl_verify_cb_args args;
+    int state;
+
+    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_verify_cb_idx);
+    if (!NIL_P(proc)) {
+	rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new,
+			  (VALUE)ctx, &state);
+	ret = Qfalse;
+	if(!state){
+	    args.proc = proc;
+	    args.preverify_ok = ok ? Qtrue : Qfalse;
+	    args.store_ctx = rctx;
+	    ret = rb_ensure(ossl_call_verify_cb_proc, (VALUE)&args,
+			    ossl_x509stctx_clear_ptr, rctx);
+	}
+	if(ret == Qtrue){
+	    X509_STORE_CTX_set_error(ctx, X509_V_OK);
+	    ok = 1;
+	}
+	else{
+	    if (X509_STORE_CTX_get_error(ctx) == X509_V_OK) {
+		X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+	    }
+	    ok = 0;
+	}
+    }
+
+    return ok;
+}
+
+/*
  * Debug
  */
 VALUE dOSSL;
@@ -293,21 +339,25 @@ Init_openssl()
 {
     /*
      * Init timezone info
-     *
-    tzset();
      */
+#if 0
+    tzset();
+#endif
 
     /*
      * Init all digests, ciphers
      */
-/*    CRYPTO_malloc_init(); */
+    /* CRYPTO_malloc_init(); */
+    /* ENGINE_load_builtin_engines(); */
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
-/*    ENGINE_load_builtin_engines(); */
+
     /*
      * FIXME:
      * On unload do:
+     */
+#if 0
     CONF_modules_unload(1);
     destroy_ui_method();
     EVP_cleanup();
@@ -315,7 +365,7 @@ Init_openssl()
     CRYPTO_cleanup_all_ex_data();
     ERR_remove_state(0);
     ERR_free_strings();
-     */
+#endif
 
     /*
      * Init main module
@@ -326,13 +376,19 @@ Init_openssl()
      * Constants
      */
     rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
-    rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+    rb_define_const(mOSSL, "OPENSSL_VERSION",rb_str_new2(OPENSSL_VERSION_TEXT));
 
     /*
      * Generic error,
      * common for all classes under OpenSSL module
      */
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
+
+    /*
+     * Verify callback Proc index for ext-data
+     */
+    ossl_verify_cb_idx =
+	X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0);
 
     /*
      * Init debug core
