@@ -198,6 +198,19 @@ ossl_x509name_cmp(VALUE self, VALUE other)
     return INT2FIX(0);
 }
 
+static VALUE
+ossl_x509name_hash(VALUE self)
+{
+    X509_NAME *name;
+    unsigned long hash;
+
+    GetX509Name(self, name);
+
+    hash = X509_NAME_hash(name);
+
+    return ULONG2NUM(hash);
+}
+
 /*
  * INIT
  */
@@ -216,5 +229,7 @@ Init_ossl_x509name()
 
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
     rb_define_alias(cX509Name, "<=>", "cmp");
+
+    rb_define_method(cX509Name, "hash", ossl_x509name_hash, 0);
 }
 

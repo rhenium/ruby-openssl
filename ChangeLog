@@ -1,3 +1,6 @@
+Fri, 21 Feb 2003 19:30:31 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* x509name.c: added new method #hash to behave as openssl [name.hash.to_s(16)]
+
 Thu, 20 Feb 2003 20:41:44 +0100 -- Michal Rokos <michal@rokos.homeip.net>
 	* ossl.h: Make it compilable under Win32
 
