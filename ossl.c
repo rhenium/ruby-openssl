@@ -16,6 +16,7 @@
 #endif
 
 #include "ossl.h"
+#include <stdarg.h> /* for ossl_raise */
 
 /*
  * On Windows platform there is no strptime function
@@ -31,7 +32,7 @@
 void
 ossl_check_kind(VALUE obj, VALUE klass)
 {
-	if (!RTEST(rb_obj_is_kind_of(obj, klass))) {
+	if (rb_obj_is_kind_of(obj, klass) != Qtrue) {
 		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
@@ -40,7 +41,7 @@ ossl_check_kind(VALUE obj, VALUE klass)
 void
 ossl_check_instance(VALUE obj, VALUE klass)
 {
-	if (!RTEST(rb_obj_is_instance_of(obj, klass))) {
+	if (rb_obj_is_instance_of(obj, klass) != Qtrue) {
 		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
@@ -133,14 +134,65 @@ VALUE mOSSL;
 VALUE eOSSLError;
 
 /*
+ * Errors
+ */
+void
+ossl_raise(VALUE exc, const char *fmt, ...)
+{
+	va_list args;
+	char buf[BUFSIZ];
+	int len;
+	long e = ERR_get_error();
+
+	va_start(args, fmt);
+	len = vsnprintf(buf, BUFSIZ, fmt, args);
+	va_end(args);
+	
+	if (e) {
+		if (dOSSL == Qtrue) { /* FULL INFO */
+			len += snprintf(buf + len, BUFSIZ - len, ":%s", ERR_error_string(e, NULL));
+		} else {
+			len += snprintf(buf + len, BUFSIZ - len, ":%s", ERR_reason_error_string(e));
+		}
+	}
+	rb_exc_raise(rb_exc_new(exc, buf, len));
+}
+
+/*
+ * Debug
+ */
+VALUE dOSSL;
+
+static VALUE
+ossl_debug_get(VALUE self)
+{
+	return dOSSL;
+}
+
+static VALUE
+ossl_debug_set(VALUE self, VALUE val)
+{
+	VALUE old = dOSSL;
+	dOSSL = val;
+	
+	if (old != dOSSL) {
+		if (dOSSL == Qtrue) {
+			CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+			fprintf(stderr, "OSSL_DEBUG: IS NOW ON!\n");
+		} else if (old == Qtrue) {
+			CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_OFF);
+			fprintf(stderr, "OSSL_DEBUG: IS NOW OFF!\n");
+		}
+	}
+	return val;
+}
+
+/*
  * OSSL library init
  */
 void
 Init_openssl()
 {
-#if defined(OSSL_DEBUG)
-	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
-#endif
 	/*
 	 * Init all digests, ciphers
 	 */
@@ -163,7 +215,14 @@ Init_openssl()
 	 * common for all classes under OpenSSL module
 	 */
 	eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-	
+
+	/*
+	 * Init debug core
+	 */
+	dOSSL = Qfalse;
+	rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
+	rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
+
 	/*
 	 * Init components
 	 */

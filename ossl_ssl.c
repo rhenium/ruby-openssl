@@ -32,7 +32,10 @@
 #include "ossl.h"
 #include <rubysig.h>
 #include <rubyio.h>
-#include <unistd.h> /* for read(), and write() */
+
+#if defined(HAVE_UNISTD_H)
+#  include <unistd.h> /* for read(), and write() */
+#endif
 
 #define numberof(ary) (sizeof(ary)/sizeof((ary)[0]))
 
@@ -209,7 +212,7 @@ ssl_ctx_setup(VALUE self)
 	}
 	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
 			!SSL_CTX_set_default_verify_paths(p->ctx))) {
-		OSSL_Warning("can't set verify locations");
+		rb_warning("can't set verify locations");
 	}
 
     val = ssl_get_verify_mode(self);

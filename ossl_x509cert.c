@@ -445,13 +445,10 @@ static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
 	X509 *x509;
-	EVP_PKEY *pkey;
 
 	GetX509(self, x509);
 	
-	pkey = GetPKeyPtr(key); /* NO NEED TO DUP! */
-	
-	if (!X509_set_pubkey(x509, pkey)) { /* DUPs pkey - FREE it */
+	if (!X509_set_pubkey(x509, GetPKeyPtr(key))) { /* DUPs pkey */
 		OSSL_Raise(eX509CertError, "");
 	}
 	return key;
@@ -513,7 +510,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	
 	if (!X509_check_private_key(x509, pkey)) {
-		OSSL_Warning("Check private key:");
+		rb_warning("Check private key:%s", OSSL_ErrMsg());
 		return Qfalse;
 	}
 	return Qtrue;
@@ -534,11 +531,11 @@ ossl_x509_get_extensions(VALUE self)
 
 	count = X509_get_ext_count(x509);
 
-	if (count > 0) {
-		ary = rb_ary_new2(count);
-	} else {
+	if (count < 0) {
 		return rb_ary_new();
 	}
+	ary = rb_ary_new2(count);
+	
 	for (i=0; i<count; i++) {
 		ext = X509_get_ext(x509, i); /* NO DUP - don't free! */
 		rb_ary_push(ary, ossl_x509ext_new(ext));

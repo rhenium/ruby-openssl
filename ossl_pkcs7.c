@@ -386,8 +386,9 @@ ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
 	for (i=0; i<sk_PKCS7_SIGNER_INFO_num(sk); i++) {
 		si = sk_PKCS7_SIGNER_INFO_value(sk, i);
 		result = PKCS7_dataVerify(store, &ctx, bio, pkcs7, si);
+		
 		if (result <= 0) {
-			OSSL_Warning("PKCS7::PKCS7.verify_data():");
+			OSSL_Debug("result < 0! (%s)", OSSL_ErrMsg());
 			return Qfalse;
 		}
 		

@@ -93,7 +93,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 		base = NUM2INT(bs);
 	}
-	if (RTEST(rb_obj_is_kind_of(str, cBN))) {
+	if (rb_obj_is_kind_of(str, cBN) == Qtrue) {
 		BIGNUM *other;
 
 		GetBN(str, other); /* Safe - we checked kind_of? above */

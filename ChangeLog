@@ -3,6 +3,16 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue, 11 Jun 2002 02:42:25 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* extconf.rb: Check for unistd.h
+	* ssl.c: include <unistd.h> is avaible (needed for read(), write())
+	* ossl.c: drop RTESTs
+	* bn.c: ditto.
+	* pkey.c: ditto.
+	* ossl.c: new debug interface that can be enabled/disabled from Ruby-space via OpenSSL::debug= method
+	* ossl.c: implemented new ossl_raise (for C-space)
+	* ossl.h: implemented new OSSL_Debug (for C-space)
+	
 Mon, 10 Jun 2002 10:35:56 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* pkey.c: implemented #sign and #verify for PKey
 	* pkey.rb: deleted (funcs implemented in C-space (pkey.c))

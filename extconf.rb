@@ -26,6 +26,7 @@ end
 
 dir_config("openssl")
 
+have_header("unistd.h")
 have_func("strptime", "time.h")
 
 ##

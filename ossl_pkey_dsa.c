@@ -326,7 +326,7 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 	StringValue(digest);
 	StringValue(sig);
 
-	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.dsa); /*type = 0*/
+	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.dsa); /* type is ignored (0) */
 
 	if (ret < 0) {
 		OSSL_Raise(eDSAError, "");

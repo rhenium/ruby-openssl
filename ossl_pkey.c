@@ -90,7 +90,7 @@ GetPrivPKeyPtr(VALUE obj)
 	
 	SafeGetPKey(obj, pkey);
 
-	if (RTEST(rb_funcall(obj, id_private_q, 0, NULL))) { /* returns Qtrue */
+	if (rb_funcall(obj, id_private_q, 0, NULL) == Qtrue) { /* returns Qtrue */
 		return pkey;
 	}
 	rb_raise(rb_eArgError, "Private key is needed.");
@@ -105,7 +105,7 @@ DupPrivPKeyPtr(VALUE obj)
 	
 	SafeGetPKey(obj, pkey);
 
-	if (RTEST(rb_funcall(obj, id_private_q, 0, NULL))) { /* returns Qtrue */
+	if (rb_funcall(obj, id_private_q, 0, NULL) = Qtrue) { /* returns Qtrue */
 		CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 		return pkey;
 	}

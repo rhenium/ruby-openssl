@@ -91,26 +91,22 @@ int string2hex(char *, int, char **, int *);
  * ERRor messages
  */
 #define OSSL_ErrMsg() \
-	ERR_error_string(ERR_get_error(), NULL)
+	ERR_reason_error_string(ERR_get_error())
 
-#if defined(OSSL_DEBUG)
-#  define OSSL_Raise(klass, text) \
-	rb_raise(klass, "%s%s [in '%s', ('%s':%d)]", \
-			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
-#  define OSSL_Warn(text) \
-	rb_warn("%s%s [in '%s', ('%s':%d)]", \
-			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
-#  define OSSL_Warning(text) \
-	rb_warning("%s%s [in '%s', ('%s':%d)]", \
-			text, OSSL_ErrMsg(), __func__, __FILE__, __LINE__)
-#else /* OSSL_DEBUG */
-#  define OSSL_Raise(klass, text) \
-	rb_raise(klass, "%s%s", text, OSSL_ErrMsg())
-#  define OSSL_Warn(text) \
-	rb_warn("%s%s", text, OSSL_ErrMsg())
-#  define OSSL_Warning(text) \
-	rb_warning("%s%s", text, OSSL_ErrMsg())
-#endif /* OSSL_DEBUG */
+void ossl_raise(VALUE, const char *, ...);
+#define OSSL_Raise ossl_raise
+
+/*
+ * Debug
+ */
+extern VALUE dOSSL;
+#define OSSL_Debug(args...) do { \
+	if (dOSSL == Qtrue) { \
+		fprintf(stderr, "OSSL_DEBUG: "); \
+		fprintf(stderr, args); \
+		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
+	} \
+} while (0)
 
 /*
  * Include all parts
