@@ -1,3 +1,6 @@
+Tue, 01 Jul 2003 13:08:11 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* ossl_x509crl.c: Add OpenSSL::X509::CRL#to_der (ossl_x509crl_to_der).
+
 Mon, 30 Jun 2003 04:32:40 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: @ca_cert is renamed to @client_ca;
 	  and an Array can be specified to this.

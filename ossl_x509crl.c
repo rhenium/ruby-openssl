@@ -335,6 +335,29 @@ ossl_x509crl_verify(VALUE self, VALUE key)
 }
 
 static VALUE 
+ossl_x509crl_to_der(VALUE self)
+{
+    X509_CRL *crl;
+    BIO *out;
+    BUF_MEM *buf;
+    VALUE str;
+
+    GetX509CRL(self, crl);
+    if (!(out = BIO_new(BIO_s_mem()))) {
+	ossl_raise(eX509CRLError, "");
+    }
+    if (!i2d_X509_CRL_bio(out, crl)) {
+	BIO_free(out);
+	ossl_raise(eX509CRLError, "");
+    }
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
+    BIO_free(out);
+
+    return str;
+}
+
+static VALUE 
 ossl_x509crl_to_pem(VALUE self)
 {
     X509_CRL *crl;
@@ -480,6 +503,7 @@ Init_ossl_x509crl()
     rb_define_method(cX509CRL, "add_revoked", ossl_x509crl_add_revoked, 1);
     rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 2);
     rb_define_method(cX509CRL, "verify", ossl_x509crl_verify, 1);
+    rb_define_method(cX509CRL, "to_der", ossl_x509crl_to_der, 0);
     rb_define_method(cX509CRL, "to_pem", ossl_x509crl_to_pem, 0);
     rb_define_alias(cX509CRL, "to_s", "to_pem");
     rb_define_method(cX509CRL, "to_text", ossl_x509crl_to_text, 0);
