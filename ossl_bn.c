@@ -68,7 +68,6 @@ ossl_bn_get_BIGNUM(VALUE obj)
 static VALUE
 ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 {
-	BIGNUM *bn = NULL;
 	VALUE obj;
 
 	obj = ossl_bn_new(NULL);
@@ -78,7 +77,7 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
-#define BIGNUM_FROM(func)								\
+#define BIGNUM_FROM_S(func)								\
 	static VALUE									\
 	ossl_bn_from_s_##func(VALUE self, VALUE str)					\
 	{										\
@@ -93,10 +92,10 @@ ossl_bn_s_new(int argc, VALUE *argv, VALUE klass)
 		}									\
 		return self;								\
 	}
-BIGNUM_FROM(bin);
-BIGNUM_FROM(mpi);
+BIGNUM_FROM_S(bin);
+BIGNUM_FROM_S(mpi);
 
-#define BIGNUM_FROM2(func)								\
+#define BIGNUM_FROM_S2(func)								\
 	static VALUE									\
 	ossl_bn_from_s_##func(VALUE self, VALUE str)					\
 	{										\
@@ -111,11 +110,11 @@ BIGNUM_FROM(mpi);
 		}									\
 		return self;								\
 	}
-BIGNUM_FROM2(dec);
-BIGNUM_FROM2(hex);
+BIGNUM_FROM_S2(dec);
+BIGNUM_FROM_S2(hex);
 
 static VALUE
-ossl_bn_to_bin(VALUE self)
+ossl_bn_to_s_bin(VALUE self)
 {
 	BIGNUM *bn = NULL;
 	char *buf = NULL;
@@ -140,7 +139,7 @@ ossl_bn_to_bin(VALUE self)
 }
 
 static VALUE
-ossl_bn_to_mpi(VALUE self)
+ossl_bn_to_s_mpi(VALUE self)
 {
 	BIGNUM *bn = NULL;
 	char *buf = NULL;
@@ -182,8 +181,8 @@ ossl_bn_to_mpi(VALUE self)
 											\
 		return str;								\
 	}
-BIGNUM_TO_STR(dec);
-BIGNUM_TO_STR(hex);
+BIGNUM_TO_S(dec);
+BIGNUM_TO_S(hex);
 
 #define BIGNUM_BOOL1(func)								\
 	static VALUE 									\

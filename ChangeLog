@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.34  2002/03/06 08:05:05  majkl
+	* build fix-ups
+
 Revision 1.33  2002/03/05 15:05:57  majkl
 	* WARNING! All to_str methods are not used any longer (use to_text instead)
 	* made an aliases to_pem as to_s
