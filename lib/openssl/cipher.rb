@@ -45,6 +45,18 @@ module Cipher
   EOD
 end
 
+	class Cipher
+		def random_key
+			str = OpenSSL::Random.random_bytes(self.key_len)
+			self.key = str
+			return str
+		end
+		def random_iv
+			str = OpenSSL::Random.random_bytes(self.iv_len)
+			self.iv = str
+			return str
+		end
+	end
+
 end # Cipher
 end # OpenSSL
-
