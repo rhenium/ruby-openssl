@@ -38,7 +38,7 @@ VALUE eSPKIError;
  * Private functions
  */
 static VALUE
-ossl_spki_s_allocate(VALUE klass)
+ossl_spki_alloc(VALUE klass)
 {
     NETSCAPE_SPKI *spki;
     VALUE obj;
@@ -215,7 +215,7 @@ Init_ossl_ns_spki()
 	
     cSPKI = rb_define_class_under(mNetscape, "SPKI", rb_cObject);
 	
-    rb_define_singleton_method(cSPKI, "allocate", ossl_spki_s_allocate, 0);
+    rb_define_alloc_func(cSPKI, ossl_spki_alloc);
     rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
 	
     rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);

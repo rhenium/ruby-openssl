@@ -72,7 +72,7 @@ ossl_x509req_get_X509_REQ(VALUE obj)
  * Private functions
  */
 static VALUE 
-ossl_x509req_s_allocate(VALUE klass)
+ossl_x509req_alloc(VALUE klass)
 {
     X509_REQ *req;
     VALUE obj;
@@ -374,7 +374,7 @@ Init_ossl_x509req()
 	
     cX509Req = rb_define_class_under(mX509, "Request", rb_cObject);
 	
-    rb_define_singleton_method(cX509Req, "allocate", ossl_x509req_s_allocate, 0);
+    rb_define_alloc_func(cX509Req, ossl_x509req_alloc);
     rb_define_method(cX509Req, "initialize", ossl_x509req_initialize, -1);
 	
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);

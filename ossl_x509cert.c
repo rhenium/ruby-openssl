@@ -102,7 +102,7 @@ DupX509CertPtr(VALUE obj)
  * Private
  */
 static VALUE 
-ossl_x509_s_allocate(VALUE klass)
+ossl_x509_alloc(VALUE klass)
 {
     X509 *x509;
     VALUE obj;
@@ -145,7 +145,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_x509_become(VALUE self, VALUE other)
+ossl_x509_copy_object(VALUE self, VALUE other)
 {
     X509 *a, *b, *x509;
 	
@@ -584,10 +584,10 @@ Init_ossl_x509cert()
 	
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);
 	
-    rb_define_singleton_method(cX509Cert, "allocate", ossl_x509_s_allocate, 0);
+    rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
-	
-    rb_define_method(cX509Cert, "become", ossl_x509_become, 1);
+    rb_define_method(cX509Cert, "copy_object", ossl_x509_copy_object, 1);
+    
     rb_define_method(cX509Cert, "to_der", ossl_x509_to_der, 0);
     rb_define_method(cX509Cert, "to_pem", ossl_x509_to_pem, 0);
     rb_define_alias(cX509Cert, "to_s", "to_pem");

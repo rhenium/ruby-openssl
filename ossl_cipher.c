@@ -69,7 +69,7 @@ ossl_cipher_get_EVP_CIPHER(VALUE obj)
  * PRIVATE
  */
 static VALUE
-ossl_cipher_s_allocate(VALUE klass)
+ossl_cipher_alloc(VALUE klass)
 {
     ossl_cipher *ciphp;
     VALUE obj;
@@ -98,7 +98,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     return self;
 }
 static VALUE
-ossl_cipher_become(VALUE self, VALUE other)
+ossl_cipher_copy_object(VALUE self, VALUE other)
 {
     ossl_cipher *ciphp1, *ciphp2;
 	
@@ -293,11 +293,11 @@ Init_ossl_cipher(void)
     mCipher = rb_define_module_under(mOSSL, "Cipher");
     eCipherError = rb_define_class_under(mOSSL, "CipherError", eOSSLError);
     cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);
-	
-    rb_define_singleton_method(cCipher, "allocate", ossl_cipher_s_allocate, 0);
-    rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
 
-    rb_define_method(cCipher, "become", ossl_cipher_become, 1);
+    rb_define_alloc_func(cCipher, ossl_cipher_alloc);
+    rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
+    rb_define_method(cCipher, "copy_object", ossl_cipher_copy_object, 1);
+
     rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
     rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
     rb_define_method(cCipher, "update", ossl_cipher_update, 1);

@@ -24,7 +24,7 @@ require 'digest/md5'
 #
 
 class TC_Digest < Test::Unit::TestCase
-  def set_up
+  def setup
     @d1 = OpenSSL::Digest::Digest::new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
     @md = Digest::MD5.new
@@ -53,6 +53,10 @@ class TC_Digest < Test::Unit::TestCase
     assert_equal("MD5", @d1.name, "name")
     assert_equal("MD5", @d2.name, "name")
     assert_equal(16, @d1.size, "size")
+  end
+  def test_dup
+    assert_equal(@d1.name, @d1.dup.name, "dup")
+    assert_equal(@d1.name, @d1.clone.name, "clone")
   end
   def tear_down
     @d1 = @d2 = @md = nil

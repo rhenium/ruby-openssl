@@ -83,11 +83,14 @@ time_to_time_t(VALUE time)
  * ASN1_INTEGER conversions
  * TODO: Make a decision what's the right way to do this.
  */
+#define DO_IT_VIA_RUBY 0
 VALUE
 asn1integer_to_num(ASN1_INTEGER *ai)
 {
     BIGNUM *bn;
+#if DO_IT_VIA_RUBY
     char *txt;
+#endif
     VALUE num;
 
     if (!ai) {
@@ -96,7 +99,7 @@ asn1integer_to_num(ASN1_INTEGER *ai)
     if (!(bn = ASN1_INTEGER_to_BN(ai, NULL))) {
 	ossl_raise(eOSSLError, "");
     }
-#if 0
+#if DO_IT_VIA_RUBY
     if (!(txt = BN_bn2dec(bn))) {
 	BN_free(bn);
 	ossl_raise(eOSSLError, "");

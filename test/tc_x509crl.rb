@@ -43,7 +43,7 @@ $rsa = PKey::RSA::generate(1024) {|p, n| # the same as in OpenSSL
 # tests are numbered, because we depend on their exec. order
 #
 class TC_CRL < Test::Unit::TestCase
-  def set_up
+  def setup
     ##
     # NONE
     #

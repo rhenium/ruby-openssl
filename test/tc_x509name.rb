@@ -26,7 +26,7 @@ include X509
 #
 
 class TC_Name < Test::Unit::TestCase
-  def set_up
+  def setup
     ##
     # NONE
     #

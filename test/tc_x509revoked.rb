@@ -26,7 +26,7 @@ include X509
 #
 
 class TC_Revoked < Test::Unit::TestCase
-  def set_up
+  def setup
     @rev = Revoked::new()
   end
   def test_serial

@@ -87,7 +87,7 @@ GetBNPtr(VALUE obj)
 static BN_CTX *ossl_bn_ctx;
 
 static VALUE
-ossl_bn_s_allocate(VALUE klass)
+ossl_bn_alloc(VALUE klass)
 {
     BIGNUM *bn;
     VALUE obj;
@@ -626,12 +626,12 @@ Init_ossl_bn()
 
     cBN = rb_define_class_under(mOSSL, "BN", rb_cObject);
 
-    rb_define_singleton_method(cBN, "allocate", ossl_bn_s_allocate, 0);
+    rb_define_alloc_func(cBN, ossl_bn_alloc);
     rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
 	
     rb_define_method(cBN, "copy", ossl_bn_copy, 1);
-    rb_define_alias(cBN, "become", "copy");
-	
+    rb_define_method(cBN, "copy_object", ossl_bn_copy, 1);
+
     /* swap (=coerce?) */
 
     rb_define_method(cBN, "num_bytes", ossl_bn_num_bytes, 0);

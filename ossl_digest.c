@@ -47,7 +47,7 @@ GetDigestPtr(VALUE obj)
  * Private
  */
 static VALUE
-ossl_digest_s_allocate(VALUE klass)
+ossl_digest_alloc(VALUE klass)
 {
     EVP_MD_CTX *ctx;
     VALUE obj;
@@ -71,6 +71,23 @@ ossl_digest_initialize(VALUE self, VALUE str)
     }
     EVP_DigestInit(ctx, md);
     
+    return self;
+}
+
+static VALUE
+ossl_digest_copy_object(VALUE self, VALUE other)
+{
+    EVP_MD_CTX *ctx1, *ctx2;
+    
+    rb_check_frozen(self);
+    if (self == other) return self;
+
+    GetDigest(self, ctx1);
+    SafeGetDigest(other, ctx2);
+
+    if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
+	ossl_raise(eDigestError, "");
+    }
     return self;
 }
 
@@ -231,11 +248,12 @@ Init_ossl_digest()
 	
     cDigest = rb_define_class_under(mDigest, "Digest", rb_cObject);
 	
-    rb_define_singleton_method(cDigest, "allocate", ossl_digest_s_allocate, 0);
+    rb_define_alloc_func(cDigest, ossl_digest_alloc);
     rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 2);
     rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 2);
 	
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, 1);
+    rb_define_method(cDigest, "copy_object", ossl_digest_copy_object, 1);
     
     rb_define_method(cDigest, "clone",  ossl_digest_clone, 0);
     

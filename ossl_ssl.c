@@ -600,7 +600,7 @@ Init_ossl_ssl()
 
     /* class SSLContext */
     cSSLContext = rb_define_class_under(mSSL, "SSLContext", rb_cObject);
-    rb_define_singleton_method(cSSLContext, "allocate", ossl_sslctx_s_alloc, 0);
+    rb_define_alloc_func(cSSLContext, ossl_sslctx_s_alloc);
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++)
         rb_attr(cSSLContext, rb_intern(ossl_sslctx_attrs[i]), 1, 1, Qfalse);
     rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
@@ -609,7 +609,7 @@ Init_ossl_ssl()
 
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
-    rb_define_singleton_method(cSSLSocket, "allocate", ossl_ssl_s_alloc, 0);
+    rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     for(i = 0; i < numberof(ossl_ssl_attrs); i++)
         rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 0, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");

@@ -23,7 +23,7 @@ include OpenSSL
 OpenSSL::debug = true
 
 class TC_Config < Test::Unit::TestCase
-  def set_up
+  def setup
     @c = Config::load()
   end
   def test_config

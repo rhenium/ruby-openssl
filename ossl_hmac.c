@@ -20,6 +20,10 @@
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
 } while (0)
+#define SafeGetHMAC(obj, ctx) do { \
+    OSSL_Check_Kind(obj, cHMAC); \
+    GetHMAC(obj, ctx); \
+} while (0)
 
 /*
  * Classes
@@ -35,7 +39,7 @@ VALUE eHMACError;
  * Private
  */
 static VALUE
-ossl_hmac_s_allocate(VALUE klass)
+ossl_hmac_alloc(VALUE klass)
 {
     HMAC_CTX *ctx;
     VALUE obj;
@@ -55,6 +59,23 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
     HMAC_CTX_init(ctx);
     HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, GetDigestPtr(digest));
 
+    return self;
+}
+
+static VALUE
+ossl_hmac_copy_object(VALUE self, VALUE other)
+{
+    HMAC_CTX *ctx1, *ctx2;
+    
+    rb_check_frozen(self);
+    if (self == other) return self;
+
+    GetHMAC(self, ctx1);
+    SafeGetHMAC(other, ctx2);
+
+    if (!HMAC_CTX_copy(ctx1, ctx2)) {
+	ossl_raise(eHMACError, "");
+    }
     return self;
 }
 
@@ -167,13 +188,14 @@ Init_ossl_hmac()
     eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);
 	
     cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
-	
+
+    rb_define_alloc_func(cHMAC, ossl_hmac_alloc);
     rb_define_singleton_method(cHMAC, "digest", ossl_hmac_s_digest, 3);
     rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
-    rb_define_singleton_method(cHMAC, "allocate", ossl_hmac_s_allocate, 0);
+    
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
-	
-	
+    rb_define_method(cHMAC, "copy_object", ossl_hmac_copy_object, 1);
+
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
     rb_define_alias(cHMAC, "<<", "update");
     rb_define_method(cHMAC, "digest", ossl_hmac_digest, 0);

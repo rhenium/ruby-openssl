@@ -163,7 +163,7 @@ ossl_session_db_set(void *key, VALUE data)
  * Private functions
  */
 static VALUE 
-ossl_x509store_s_allocate(VALUE klass)
+ossl_x509store_alloc(VALUE klass)
 {
     ossl_x509store *storep;
     VALUE obj;
@@ -457,7 +457,7 @@ Init_ossl_x509store()
 
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
 	
-    rb_define_singleton_method(cX509Store, "allocate", ossl_x509store_s_allocate, 0);
+    rb_define_alloc_func(cX509Store, ossl_x509store_alloc);
     rb_define_method(cX509Store, "initialize", ossl_x509store_initialize, -1);
 
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);

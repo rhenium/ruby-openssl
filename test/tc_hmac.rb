@@ -25,7 +25,7 @@ include OpenSSL
 #
 
 class TC_HMAC < Test::Unit::TestCase
-  def set_up
+  def setup
     ##
     # None
     # 
@@ -40,6 +40,11 @@ class TC_HMAC < Test::Unit::TestCase
     
     assert_equal(HMAC::digest(digest, key, data), h.digest, "digest")
     assert_equal(HMAC::hexdigest(digest, key, data), h.hexdigest, "hexdigest")
+  end
+  def test_dup
+    ##
+    # TODO: Make some test case for
+    # 
   end
   def tear_down
     ##

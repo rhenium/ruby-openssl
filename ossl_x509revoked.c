@@ -72,7 +72,7 @@ ossl_x509revoked_get_X509_REVOKED(VALUE obj)
  * PRIVATE
  */
 static VALUE 
-ossl_x509revoked_s_allocate(VALUE klass)
+ossl_x509revoked_alloc(VALUE klass)
 {
     X509_REVOKED *rev;
     VALUE obj;
@@ -215,7 +215,7 @@ Init_ossl_x509revoked()
 
     cX509Rev = rb_define_class_under(mX509, "Revoked", rb_cObject);
 	
-    rb_define_singleton_method(cX509Rev, "new", ossl_x509revoked_s_allocate, 0);
+    rb_define_alloc_func(cX509Rev, ossl_x509revoked_alloc);
     rb_define_method(cX509Rev, "initialize", ossl_x509revoked_initialize, -1);
 	
     rb_define_method(cX509Rev, "serial", ossl_x509revoked_get_serial, 0);

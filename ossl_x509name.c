@@ -70,7 +70,7 @@ GetX509NamePtr(VALUE obj)
  * Private
  */
 static VALUE
-ossl_x509name_s_allocate(VALUE klass)
+ossl_x509name_alloc(VALUE klass)
 {
     X509_NAME *name;
     VALUE obj;
@@ -208,7 +208,7 @@ Init_ossl_x509name()
 
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
 
-    rb_define_singleton_method(cX509Name, "allocate", ossl_x509name_s_allocate, 0);
+    rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
 
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);

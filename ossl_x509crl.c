@@ -61,7 +61,7 @@ DupX509CRLPtr(VALUE obj)
  * PRIVATE
  */
 static VALUE 
-ossl_x509crl_s_allocate(VALUE klass)
+ossl_x509crl_alloc(VALUE klass)
 {
     X509_CRL *crl;
     VALUE obj;
@@ -434,7 +434,7 @@ Init_ossl_x509crl()
 
     cX509CRL = rb_define_class_under(mX509, "CRL", rb_cObject);
 	
-    rb_define_singleton_method(cX509CRL, "allocate", ossl_x509crl_s_allocate, 0);
+    rb_define_alloc_func(cX509CRL, ossl_x509crl_alloc);
     rb_define_method(cX509CRL, "initialize", ossl_x509crl_initialize, -1);
 	
     rb_define_method(cX509CRL, "version", ossl_x509crl_get_version, 0);

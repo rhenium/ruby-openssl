@@ -1,3 +1,8 @@
+Sun, 29 Dec 2002 22:54:54 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* *.c: Port to Ruby1.8 allocation framework
+	* bn.c, cipher.c, digest.c, hmac.c, x509cert.c: Port to Ruby1.8 copy framework
+	* test/tc_*.rb: Make it work with Test::Unit 1.5
+
 Mon, 23 Dec 08:30:52 2002 -0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* pkey_*.c: make alias to_s to export.
 	* ssl.c: the following methods are deprecated:

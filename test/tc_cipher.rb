@@ -26,7 +26,7 @@ include Cipher
 #
 
 class TC_Cipher < Test::Unit::TestCase
-  def set_up
+  def setup
     @c1 = Cipher.new("DES-EDE3-CBC")
     @c2 = DES.new(:EDE3, "CBC")
   end

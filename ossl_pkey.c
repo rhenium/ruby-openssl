@@ -109,7 +109,7 @@ DupPrivPKeyPtr(VALUE obj)
  * Private
  */
 static VALUE
-ossl_pkey_s_allocate(VALUE klass)
+ossl_pkey_alloc(VALUE klass)
 {
     EVP_PKEY *pkey;
     VALUE obj;
@@ -215,7 +215,7 @@ Init_ossl_pkey()
 
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
 	
-    rb_define_singleton_method(cPKey, "allocate", ossl_pkey_s_allocate, 0);
+    rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
 
     rb_define_method(cPKey, "to_der", ossl_pkey_to_der, 0);

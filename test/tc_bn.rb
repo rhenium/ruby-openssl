@@ -40,7 +40,7 @@ def gcd(a, b)
 end
 
 class TC_BN < Test::Unit::TestCase
-  def set_up
+  def setup
     ##
     # None
     # 

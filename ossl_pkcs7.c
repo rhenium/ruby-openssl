@@ -131,7 +131,7 @@ ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 #endif
 
 static VALUE
-ossl_pkcs7_s_allocate(VALUE klass)
+ossl_pkcs7_alloc(VALUE klass)
 {
     PKCS7 *pkcs7;
     VALUE obj;
@@ -441,7 +441,7 @@ ossl_pkcs7_to_pem(VALUE self)
  * SIGNER INFO
  */
 static VALUE
-ossl_pkcs7si_s_allocate(VALUE klass)
+ossl_pkcs7si_alloc(VALUE klass)
 {
     PKCS7_SIGNER_INFO *p7si;
     VALUE obj;
@@ -531,7 +531,7 @@ Init_ossl_pkcs7()
      * WORKS WELL, but we can implement this in Ruby space
      * rb_define_singleton_method(cPKCS7, "sign", ossl_pkcs7_s_sign, 3);
      */
-    rb_define_singleton_method(cPKCS7, "allocate", ossl_pkcs7_s_allocate, 0);
+    rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, 1);
 	
     rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 2);
@@ -554,7 +554,7 @@ Init_ossl_pkcs7()
 	
     cPKCS7SignerInfo = rb_define_class_under(mPKCS7, "Signer", rb_cObject);
 	
-    rb_define_singleton_method(cPKCS7SignerInfo, "allocate", ossl_pkcs7si_s_allocate, 0);
+    rb_define_alloc_func(cPKCS7SignerInfo, ossl_pkcs7si_alloc);
     rb_define_method(cPKCS7SignerInfo, "initialize", ossl_pkcs7si_initialize, 3);
     
     rb_define_method(cPKCS7SignerInfo, "name", ossl_pkcs7si_get_name, 0);
