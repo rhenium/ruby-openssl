@@ -180,28 +180,47 @@ ssl_ctx_setup(VALUE self)
     cert = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
     val = ssl_get_key(self);
     key = NIL_P(val) ? NULL : ossl_pkey_get_EVP_PKEY(val);
-	if(cert && key){
-		if(!SSL_CTX_use_certificate(p->ctx,cert))
-			OSSL_Raise(eSSLError,"SSL_CTX_use_certificate:");
-		if(!SSL_CTX_use_PrivateKey(p->ctx,key))
-			OSSL_Raise(eSSLError,"SSL_CTX_use_PrivateKey:");
-		if(!SSL_CTX_check_private_key(p->ctx))
-			OSSL_Raise(eSSLError,"SSL_CTX_check_private_key:");
+
+    	if (cert && key) {
+		if (!SSL_CTX_use_certificate(p->ctx, cert)) { /* Adds a ref => Safe to FREE */
+			X509_free(cert);
+			EVP_PKEY_free(key);
+			OSSL_Raise(eSSLError, "SSL_CTX_use_certificate:");
+		}
+		if (!SSL_CTX_use_PrivateKey(p->ctx, key)) { /* Adds a ref => Safe to FREE */
+			X509_free(cert);
+			EVP_PKEY_free(key);
+			OSSL_Raise(eSSLError, "SSL_CTX_use_PrivateKey:");
+		}
+		if (!SSL_CTX_check_private_key(p->ctx)) {
+			X509_free(cert);
+			EVP_PKEY_free(key);
+			OSSL_Raise(eSSLError, "SSL_CTX_check_private_key:");
+		}
 	}
 
-    val = ssl_get_ca(self);
-    ca = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
-    val = ssl_get_ca_file(self);
-    ca_file = NIL_P(val) ? NULL : RSTRING(val)->ptr;
-    val = ssl_get_ca_path(self);
-    ca_path = NIL_P(val) ? NULL : RSTRING(val)->ptr;
-	if (ca)
-		if(!SSL_CTX_add_client_CA(p->ctx, ca))
+	/*
+	 * Free cert, key (Used => Safe to FREE || Not used => Not needed)
+	 */
+	if (cert) X509_free(cert);
+	if (key) EVP_PKEY_free(key);
+
+	val = ssl_get_ca(self);
+	ca = NIL_P(val) ? NULL : ossl_x509_get_X509(val);
+	val = ssl_get_ca_file(self);
+	ca_file = NIL_P(val) ? NULL : RSTRING(val)->ptr;
+	val = ssl_get_ca_path(self);
+	ca_path = NIL_P(val) ? NULL : RSTRING(val)->ptr;
+
+	if (ca) {
+		if (!SSL_CTX_add_client_CA(p->ctx, ca)) { /* Copies X509_NAME => FREE it. */
+			X509_free(ca);
 			OSSL_Raise(eSSLError, "");
-	
+		}
+		X509_free(ca);
+	}
 	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
-			!SSL_CTX_set_default_verify_paths(p->ctx)) &&
-			ruby_verbose) {
+			!SSL_CTX_set_default_verify_paths(p->ctx))) {
 		OSSL_Warning("can't set verify locations");
 	}
 
@@ -230,7 +249,8 @@ ssl_setup(VALUE self)
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
         if((p->ssl = SSL_new(p->ctx)) == NULL)
-		OSSL_Raise(eSSLError, "SSL_new:");
+			OSSL_Raise(eSSLError, "SSL_new:");
+	
         SSL_set_fd(p->ssl, fileno(fptr->f));
     }
 }
@@ -411,7 +431,11 @@ ssl_get_certificate(VALUE self)
 		return Qnil;
     }
 
-    if((cert = SSL_get_certificate(p->ssl)) == NULL) return Qnil;
+    	/*
+	 * Is this OpenSSL bug? Should add a ref?
+	 * TODO: Ask for.
+	 */
+	if ((cert = SSL_get_certificate(p->ssl)) == NULL) return Qnil; /* NO DUPs => DON'T FREE. */
 
 	return ossl_x509_new(cert);
 }
@@ -419,18 +443,24 @@ ssl_get_certificate(VALUE self)
 static VALUE
 ssl_get_peer_certificate(VALUE self)
 {
-    ssl_st *p;
+	ssl_st *p;
 	X509 *cert = NULL;
+	VALUE obj;
 
-    Data_Get_Struct(self, ssl_st, p);
-    if(!p->ssl){
+	Data_Get_Struct(self, ssl_st, p);
+
+	if (!p->ssl){
 		rb_warning("SSL session is not started yet.");
 		return Qnil;
-    }
+	}
 
-    if((cert = SSL_get_peer_certificate(p->ssl)) == NULL) return Qnil;
+	if ((cert = SSL_get_peer_certificate(p->ssl)) == NULL) /* Adds a ref => Safe to FREE. */
+		return Qnil;
 
-	return ossl_x509_new(cert);
+	obj = ossl_x509_new(cert);
+	X509_free(cert);
+
+	return obj;
 }
 
 static VALUE

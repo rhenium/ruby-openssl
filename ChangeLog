@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.31  2002/02/20 08:43:54  majkl
+	* Fixed some memory leaks
+
 Revision 1.30  2002/02/13 13:09:49  majkl
 	* transition from rb_raise to OSSL_Raise (where possible)
 	* some mem checks
