@@ -43,6 +43,26 @@ class TC_Name < Test::Unit::TestCase
     assert_equal(s, name.to_s, "to_s")
     assert_equal(a, name.to_a, "to_a")
   end
+
+  def test_eql?
+    a1 = [["C", "JP"], ["O","NotworkOrg"], ["CN", "gotoyuzo"]]
+    a2 = [["C", "JP"], ["O","NotworkOrg"], ["CN", "gotoyuzo"]]
+    a3 = [["C", "JP"], ["O","NotworkOrg"], ["CN", "nahi"]]
+    nm1 = Name.new(a1)
+    nm2 = Name.new(a2)
+    nm3 = Name.new(a3)
+    cert = Certificate.new # T_DATA object
+    assert_equal(true,  nm1.eql?(nm2))
+    assert_equal(false, nm1.eql?(nm3))
+    assert_equal(false, nm1.eql?(1))
+    assert_equal(false, nm1.eql?(cert))
+
+    hash = { nm1 => 1, nm3 => 2 }
+    assert_equal(1, hash[nm1])
+    assert_equal(1, hash[nm2])
+    assert_equal(2, hash[nm3])
+  end
+
   def test_cmp
     ##
     # TODO
