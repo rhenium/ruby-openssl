@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.8  2001/11/21 09:37:03  gotoyuzo
+- buffering.rb went under ``openssl'' directory.
+
 Revision 1.7  2001/11/20 19:39:37  majkl
 - HMAC added
 - Config came back
