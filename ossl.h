@@ -93,7 +93,6 @@ int string2hex(char *, int, char **, int *);
 	ERR_reason_error_string(ERR_get_error())
 
 void ossl_raise(VALUE, const char *, ...);
-#define OSSL_Raise ossl_raise
 
 /*
  * Debug

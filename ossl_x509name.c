@@ -13,14 +13,14 @@
 
 #define WrapX509Name(klass, obj, name) do { \
 	if (!name) { \
-		rb_raise(rb_eRuntimeError, "Name wasn't initialized."); \
+		ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_NAME_free, name); \
 } while (0)
 #define GetX509Name(obj, name) do { \
 	Data_Get_Struct(obj, X509_NAME, name); \
 	if (!name) { \
-		rb_raise(rb_eRuntimeError, "Name wasn't initialized."); \
+		ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
 	} \
 } while (0)
 #define SafeGetX509Name(obj, name) do { \
@@ -49,7 +49,7 @@ ossl_x509name_new(X509_NAME *name)
 		new = X509_NAME_dup(name);
 	}
 	if (!new) {
-		OSSL_Raise(eX509NameError, "");
+		ossl_raise(eX509NameError, "");
 	}
 	WrapX509Name(cX509Name, obj, new);
 
@@ -64,7 +64,7 @@ ossl_x509name_get_X509_NAME(VALUE obj)
 	SafeGetX509Name(obj, name);
 
 	if (!(new = X509_NAME_dup(name))) {
-		OSSL_Raise(eX509NameError, "");
+		ossl_raise(eX509NameError, "");
 	}	
 	return new;
 }
@@ -86,14 +86,14 @@ ossl_x509name_hash_i(VALUE key, VALUE value, X509_NAME *name)
 	if (!(id = OBJ_ln2nid(RSTRING(key)->ptr))) {
 		if (!(id = OBJ_sn2nid(RSTRING(key)->ptr))) {
 			X509_NAME_free(name);
-			OSSL_Raise(eX509NameError, "OBJ_name2nid:");
+			ossl_raise(eX509NameError, "OBJ_name2nid:");
 		}
 	}
 	type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
 
 	if (!X509_NAME_add_entry_by_NID(name, id, type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
 		X509_NAME_free(name);
-		OSSL_Raise(eX509NameError, "");
+		ossl_raise(eX509NameError, "");
 	}
 	return ST_CONTINUE;
 }
@@ -107,7 +107,7 @@ ossl_x509name_s_new_from_hash(VALUE klass, VALUE hash)
 	Check_Type(hash, T_HASH);
 
 	if (!(name = X509_NAME_new())) {
-		OSSL_Raise(eX509NameError, "");
+		ossl_raise(eX509NameError, "");
 	}
 	st_foreach(RHASH(hash)->tbl, ossl_x509name_hash_i, name);
 
@@ -139,10 +139,10 @@ ossl_x509name_to_h(VALUE self)
 
 	for (i=0; i<entries; i++) {
 		if (!(entry = X509_NAME_get_entry(name, i))) {
-			OSSL_Raise(eX509NameError, "");
+			ossl_raise(eX509NameError, "");
 		}
 		if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name), entry->object)) {
-			OSSL_Raise(eX509NameError, "");
+			ossl_raise(eX509NameError, "");
 		}
 		short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
 

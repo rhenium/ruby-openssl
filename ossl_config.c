@@ -12,14 +12,14 @@
 
 #define WrapConfig(klass, obj, conf) do { \
 	if (!conf) { \
-		rb_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
+		ossl_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
 	} \
-	obj = Data_Wrap_Struct(klass, 0, CONF_free, conf); \
+	obj = Data_Wrap_Struct(klass, 0, NCONF_free, conf); \
 } while (0)
 #define GetConfig(obj, conf) do { \
-	Data_Get_Struct(obj, LHASH, conf); \
+	Data_Get_Struct(obj, CONF, conf); \
 	if (!conf) { \
-		rb_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
+		ossl_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
 	} \
 } while (0)
 
@@ -39,22 +39,38 @@ VALUE eConfigError;
 static VALUE
 ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 {
-	LHASH *conf;
-	long err_line = 0;
-	VALUE obj, path;
-	
-	rb_scan_args(argc, argv, "10", &path);
+	CONF *conf;
+	long err_line;
+	char *filename;
+	VALUE path, obj;
 
-	SafeStringValue(path);
-	
-	if (!(conf = CONF_load(NULL, StringValuePtr(path), &err_line))) {
-		if (err_line <= 0) {
-			rb_raise(eConfigError, "wrong config file %s", StringValuePtr(path));
-		} else {
-			rb_raise(eConfigError, "error on line %ld in config file %s", \
-					err_line, StringValuePtr(path));
+	if (rb_scan_args(argc, argv, "01", &path) == 1) {
+		filename = StringValuePtr(path);
+	} else {
+		if (!(filename = CONF_get1_default_config_file())) {
+			ossl_raise(eConfigError, "");
 		}
 	}
+		
+	if (!(conf = NCONF_new(
+#if defined(NT)
+			NCONF_WIN32()
+#else
+			NCONF_default()
+#endif
+			     ))) {
+		ossl_raise(eConfigError, "");
+	}
+	if (!NCONF_load(conf, filename, &err_line)) {
+		if (err_line <= 0) {
+			ossl_raise(eConfigError, "wrong config file %s", filename);
+		} else {
+			ossl_raise(eConfigError, "error on line %ld in config file %s", \
+					err_line, filename);
+		}
+	}
+	OSSL_Debug("Loaded file: %s", filename);
+
 	WrapConfig(klass, obj, conf);
 
 	return obj;
@@ -63,7 +79,7 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 {
-	LHASH *conf;
+	CONF *conf;
 	char *sect = NULL, *str;
 	
 	GetConfig(self, conf);
@@ -71,8 +87,8 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 	if (!NIL_P(section)) {
 		sect = StringValuePtr(section);
 	}
-	if (!(str = CONF_get_string(conf, sect, StringValuePtr(item)))) {
-		OSSL_Raise(eConfigError, "");
+	if (!(str = NCONF_get_string(conf, sect, StringValuePtr(item)))) {
+		ossl_raise(eConfigError, "");
 	}
 	return rb_str_new2(str);
 }
@@ -85,7 +101,7 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE item)
 static VALUE
 ossl_config_get_section(VALUE self, VALUE section)
 {
-	LHASH *conf;
+	CONF *conf;
 	STACK_OF(CONF_VALUE) *sk;
 	CONF_VALUE *entry;
 	int i, entries;
@@ -93,8 +109,8 @@ ossl_config_get_section(VALUE self, VALUE section)
 
 	GetConfig(self, conf);
 	
-	if (!(sk = CONF_get_section(conf, StringValuePtr(section)))) {
-		OSSL_Raise(eConfigError, "");
+	if (!(sk = NCONF_get_section(conf, StringValuePtr(section)))) {
+		ossl_raise(eConfigError, "");
 	}
 	hash = rb_hash_new();
 	

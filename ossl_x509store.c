@@ -15,7 +15,7 @@
 #define GetX509Store(obj, storep) do { \
 	Data_Get_Struct(obj, ossl_x509store, storep); \
 	if (!storep) { \
-		rb_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
 	} \
 } while (0);
 
@@ -66,7 +66,7 @@ ossl_x509store_new(X509_STORE_CTX *ctx)
 	 */
 	/*
 	if (!(ctx2 = X509_STORE_CTX_new())) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
 	*/
@@ -135,7 +135,7 @@ ossl_session_db_set(void *key, VALUE data)
 	}
 	if (!(item = (ossl_session_db *)OPENSSL_malloc(sizeof(ossl_session_db)))) {
 		rb_thread_critical = 0;
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	item->key = key;
 	item->data = data;
@@ -172,10 +172,10 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 	GetX509Store(self, storep);
 
 	if (!(store = X509_STORE_new())) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	if (!(storep->store = X509_STORE_CTX_new())) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	X509_STORE_set_verify_cb_func(store, ossl_x509store_verify_cb);
 	/* OpenSSL 0.9.6c
@@ -202,7 +202,7 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 	x509 = DupX509CertPtr(cert); /* DUP NEEDED!!! */
 
 	if (!X509_STORE_add_cert(storep->store->ctx, x509)) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	return cert;
 }
@@ -249,7 +249,7 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 
 	if (!X509_STORE_add_crl(storep->store->ctx, crl)) {
 		X509_CRL_free(crl);
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 	X509_CRL_free(crl);
 
@@ -385,7 +385,7 @@ ossl_x509store_set_default_paths(VALUE self)
 	GetX509Store(self, storep);
 
 	if (!X509_STORE_set_default_paths(storep->store->ctx)) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 
 	return self;
@@ -401,7 +401,7 @@ ossl_x509store_load_locations(VALUE self, VALUE path)
 	Check_SafeStr(path);
 
 	if (!X509_STORE_load_locations(storep->store->ctx, NULL, RSTRING(path)->ptr)) {
-		OSSL_Raise(eX509StoreError, "");
+		ossl_raise(eX509StoreError, "");
 	}
 
 	return self;

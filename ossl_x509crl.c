@@ -12,14 +12,14 @@
 
 #define WrapX509CRL(klass, obj, crl) do { \
 	if (!crl) { \
-		rb_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_CRL_free, crl); \
 } while (0)
 #define GetX509CRL(obj, crl) do { \
 	Data_Get_Struct(obj, X509_CRL, crl); \
 	if (!crl) { \
-		rb_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetX509CRL(obj, crl) do { \
@@ -44,7 +44,7 @@ ossl_x509crl_get_X509_CRL(VALUE obj)
 	SafeGetX509CRL(obj, crl);
 
 	if (!(new = X509_CRL_dup(crl))) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	return new;
 }
@@ -59,7 +59,7 @@ ossl_x509crl_s_allocate(VALUE klass)
 	VALUE obj;
 
 	if (!(crl = X509_CRL_new())) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	WrapX509CRL(klass, obj, crl);
 	
@@ -77,7 +77,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	
 	if (!(in = BIO_new_mem_buf(StringValuePtr(buffer), -1))) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	/*
 	 * TODO:
@@ -86,7 +86,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 	 */
 	if (!PEM_read_bio_X509_CRL(in, (X509_CRL **)&DATA_PTR(self), NULL, NULL)) {
 		BIO_free(in);
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	BIO_free(in);
 	
@@ -116,13 +116,13 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
 	GetX509CRL(self, crl);
 
 	if ((ver = NUM2LONG(version)) < 0) {
-		rb_raise(eX509CRLError, "version must be >= 0!");
+		ossl_raise(eX509CRLError, "version must be >= 0!");
 	}
 	if (!(asn1int = ASN1_INTEGER_new())) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	if (!ASN1_INTEGER_set(asn1int, ver)) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	ASN1_INTEGER_free(crl->crl->version);
 	crl->crl->version = asn1int;
@@ -152,7 +152,7 @@ ossl_x509crl_set_issuer(VALUE self, VALUE issuer)
 	
 	if (!X509_NAME_set(&(crl->crl->issuer), name)) { /* DUPs name - FREE it */
 		X509_NAME_free(name);
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	X509_NAME_free(name);
 	
@@ -180,7 +180,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 	sec = time_to_time_t(time);
 	
 	if (!ASN1_UTCTIME_set(crl->crl->lastUpdate, sec)) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	return time;
 }
@@ -206,7 +206,7 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 	sec = time_to_time_t(time);
 	
 	if (!ASN1_UTCTIME_set(crl->crl->nextUpdate, sec)) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	return time;
 }
@@ -260,7 +260,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 		rev = ossl_x509revoked_get_X509_REVOKED(RARRAY(ary)->ptr[i]);
 
 		if (!sk_X509_CRL_push(crl->crl->revoked, rev)) { /* NO DUP - don't free! */
-			OSSL_Raise(eX509CRLError, "");
+			ossl_raise(eX509CRLError, "");
 		}
 	}
 	sk_X509_REVOKED_sort(crl->crl->revoked);
@@ -279,7 +279,7 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
 	rev = ossl_x509revoked_get_X509_REVOKED(revoked);
 
 	if (!sk_X509_CRL_push(crl->crl->revoked, rev)) { /* NO DUP - don't free! */
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	sk_X509_REVOKED_sort(crl->crl->revoked);
 	
@@ -299,7 +299,7 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 	md = ossl_digest_get_EVP_MD(digest);
 	
 	if (!X509_CRL_sign(crl, pkey, md)) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	return self;
 }
@@ -331,11 +331,11 @@ ossl_x509crl_to_pem(VALUE self)
 	GetX509CRL(self, crl);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	if (!PEM_write_bio_X509_CRL(out, crl)) {
 		BIO_free(out);
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -355,11 +355,11 @@ ossl_x509crl_to_text(VALUE self)
 	GetX509CRL(self, crl);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	if (!X509_CRL_print(out, crl)) {
 		BIO_free(out);
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -422,7 +422,7 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 
 		if(!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
 			X509_EXTENSION_free(ext);
-			OSSL_Raise(eX509CRLError, "");
+			ossl_raise(eX509CRLError, "");
 		}
 		X509_EXTENSION_free(ext);
 	}
@@ -441,7 +441,7 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
 	
 	if (!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
 		X509_EXTENSION_free(ext);
-		OSSL_Raise(eX509CRLError, "");
+		ossl_raise(eX509CRLError, "");
 	}
 	X509_EXTENSION_free(ext);
 

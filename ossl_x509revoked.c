@@ -12,14 +12,14 @@
 
 #define WrapX509Rev(klass, obj, rev) do { \
 	if (!rev) { \
-		rb_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_REVOKED_free, rev); \
 } while (0)
 #define GetX509Rev(obj, rev) do { \
 	Data_Get_Struct(obj, X509_REVOKED, rev); \
 	if (!rev) { \
-		rb_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetX509Rev(obj, rev) do { \
@@ -48,7 +48,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
 		new = X509_REVOKED_dup(rev);
 	}
 	if (!new) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	WrapX509Rev(cX509Rev, obj, new);
 	
@@ -63,7 +63,7 @@ ossl_x509revoked_get_X509_REVOKED(VALUE obj)
 	SafeGetX509Rev(obj, rev);
 
 	if (!(new = X509_REVOKED_dup(rev))) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	return new;
 }
@@ -78,7 +78,7 @@ ossl_x509revoked_s_allocate(VALUE klass)
 	VALUE obj;
 
 	if (!(rev = X509_REVOKED_new())) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	WrapX509Rev(klass, obj, rev);
 
@@ -110,7 +110,7 @@ ossl_x509revoked_set_serial(VALUE self, VALUE serial)
 	GetX509Rev(self, rev);
 
 	if (!ASN1_INTEGER_set(rev->serialNumber, NUM2INT(serial))) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	return serial;
 }
@@ -136,7 +136,7 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
 	sec = time_to_time_t(time);
 	
 	if (!ASN1_UTCTIME_set(rev->revocationDate, sec)) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	return time;
 }
@@ -196,7 +196,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 		ext = ossl_x509ext_get_X509_EXTENSION(item);
 
 		if(!X509_REVOKED_add_ext(rev, ext, -1)) {
-			OSSL_Raise(eX509RevError, "");
+			ossl_raise(eX509RevError, "");
 		}
 	}
 	return ary;
@@ -210,7 +210,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
 	GetX509Rev(self, rev);
 
 	if(!X509_REVOKED_add_ext(rev, ossl_x509ext_get_X509_EXTENSION(ext), -1)) {
-		OSSL_Raise(eX509RevError, "");
+		ossl_raise(eX509RevError, "");
 	}
 	return ext;
 }

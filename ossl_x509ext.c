@@ -12,14 +12,14 @@
 
 #define WrapX509Ext(klass, obj, ext) do { \
 	if (!ext) { \
-		rb_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_EXTENSION_free, ext); \
 } while (0)
 #define GetX509Ext(obj, ext) do { \
 	Data_Get_Struct(obj, X509_EXTENSION, ext); \
 	if (!ext) { \
-		rb_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetX509Ext(obj, ext) do { \
@@ -32,7 +32,7 @@
 #define GetX509ExtFactory(obj, ctx) do { \
 	Data_Get_Struct(obj, X509V3_CTX, ctx); \
 	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
 	} \
 } while (0)
 
@@ -58,7 +58,7 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 		new = X509_EXTENSION_dup(ext);
 	}
 	if (!new) {
-		OSSL_Raise(eX509ExtError, "");
+		ossl_raise(eX509ExtError, "");
 	}
 	WrapX509Ext(cX509Ext, obj, new);
 	
@@ -73,7 +73,7 @@ ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 	SafeGetX509Ext(obj, ext);
 
 	if (!(new = X509_EXTENSION_dup(ext))) {
-		OSSL_Raise(eX509ExtError, "");
+		ossl_raise(eX509ExtError, "");
 	}
 	return new;
 }
@@ -202,7 +202,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	Check_Type(ary, T_ARRAY);
 
 	if ((RARRAY(ary)->len) < 2 || (RARRAY(ary)->len > 3)) { /*2 or 3 allowed*/
-		rb_raise(eX509ExtError, "unsupported structure");
+		ossl_raise(eX509ExtError, "unsupported structure");
 	}
 
 	/* key [0] */
@@ -210,7 +210,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	StringValue(item);
 	if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
 		if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
-			OSSL_Raise(eX509ExtError, "");
+			ossl_raise(eX509ExtError, "");
 		}
 	}
 
@@ -221,7 +221,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	/* (optional) critical [2] */
 	if (RARRAY(ary)->len == 3 && RARRAY(ary)->ptr[2] == Qtrue) {
 		if (!(value = OPENSSL_malloc(strlen("critical,") + (RSTRING(item)->len) + 1))) {
-			OSSL_Raise(eX509ExtError, "malloc error");
+			ossl_raise(eX509ExtError, "malloc error");
 		}
 		strcpy(value, "critical,");
 		strncat(value, RSTRING(item)->ptr, RSTRING(item)->len);
@@ -230,7 +230,7 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 	}
 	if (!(ext = X509V3_EXT_conf_nid(NULL, ctx, nid, value))) {
 		OPENSSL_free(value);
-		OSSL_Raise(eX509ExtError, "");
+		ossl_raise(eX509ExtError, "");
 	}
 	OPENSSL_free(value);
 	
@@ -259,11 +259,11 @@ ossl_x509ext_to_a(VALUE obj)
 	rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eX509ExtError, "");
+		ossl_raise(eX509ExtError, "");
 	}
 	if (!X509V3_EXT_print(out, ext, 0, 0)) {
 		BIO_free(out);
-		OSSL_Raise(eX509ExtError, "");
+		ossl_raise(eX509ExtError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	value = rb_str_new(buf->data, buf->length);

@@ -15,7 +15,7 @@
 #define GetDigest(obj, ctx) do { \
 	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
 	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetDigest(obj, ctx) do { \
@@ -69,7 +69,7 @@ ossl_digest_initialize(VALUE self, VALUE str)
 	md_name = StringValuePtr(str);
 	
 	if (!(md = EVP_get_digestbyname(md_name))) {
-		rb_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", md_name);
+		ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", md_name);
 	}
 	EVP_DigestInit(ctx, md);
 
@@ -96,10 +96,10 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
 	EVP_MD_CTX final;
 
 	if (!EVP_MD_CTX_copy(&final, ctx)) {
-		OSSL_Raise(eDigestError, "");
+		ossl_raise(eDigestError, "");
 	}
 	if (!(*buf = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-		OSSL_Raise(eDigestError, "Cannot allocate mem for digest");
+		ossl_raise(eDigestError, "Cannot allocate mem for digest");
 	}
 	EVP_DigestFinal(&final, *buf, buf_len);
 }
@@ -136,7 +136,7 @@ ossl_digest_hexdigest(VALUE self)
 	
 	if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 		OPENSSL_free(buf);
-		OSSL_Raise(eDigestError, "Memory alloc error");
+		ossl_raise(eDigestError, "Memory alloc error");
 	}
 	hexdigest = rb_str_new(hexbuf, 2 * buf_len);
 	OPENSSL_free(buf);
@@ -178,9 +178,8 @@ ossl_digest_clone(VALUE self)
 	GetDigest(obj, other);
 	
 	if (!EVP_MD_CTX_copy(other, ctx)) {
-		OSSL_Raise(eDigestError, "");
-	}
-	
+		ossl_raise(eDigestError, "");
+	}	
 	return obj;
 }
 
@@ -198,18 +197,14 @@ ossl_digest_equal(VALUE self, VALUE other)
 		StringValue(other);
 		str2 = other;
 	}
-
 	if (RSTRING(str2)->len == EVP_MD_CTX_size(ctx)) {
 		str1 = ossl_digest_digest(self);
 	} else {
 		str1 = ossl_digest_hexdigest(self);
 	}
-
-	if (RSTRING(str1)->len == RSTRING(str2)->len &&
-			rb_str_cmp(str1, str2) == 0) {
+	if (RSTRING(str1)->len == RSTRING(str2)->len && rb_str_cmp(str1, str2) == 0) {
 		return Qtrue;
 	}
-
 	return Qfalse;
 }
 

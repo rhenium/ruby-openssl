@@ -25,7 +25,7 @@ VALUE
 ossl_pkey_new(EVP_PKEY *pkey)
 {
 	if (!pkey) {
-		rb_raise(ePKeyError, "Cannot make new key from NULL.");
+		ossl_raise(ePKeyError, "Cannot make new key from NULL.");
 	}
 	switch (EVP_PKEY_type(pkey->type)) {
 #if !defined(OPENSSL_NO_RSA)
@@ -41,7 +41,7 @@ ossl_pkey_new(EVP_PKEY *pkey)
 			return ossl_dh_new(pkey);
 #endif
 		default:
-			rb_raise(ePKeyError, "unsupported key type");
+			ossl_raise(ePKeyError, "unsupported key type");
 	}
 	return Qnil; /* not reached */
 }
@@ -56,7 +56,7 @@ ossl_pkey_new_from_file(VALUE filename)
 	SafeStringValue(filename);
 	
 	if (!(fp = fopen(StringValuePtr(filename), "r"))) {
-		rb_raise(ePKeyError, "%s", strerror(errno));
+		ossl_raise(ePKeyError, "%s", strerror(errno));
 	}
 	/*
 	 * Will we handle user passwords?
@@ -65,7 +65,7 @@ ossl_pkey_new_from_file(VALUE filename)
 	fclose(fp);
 	
 	if (!pkey) {
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 	obj = ossl_pkey_new(pkey);
 	EVP_PKEY_free(pkey);
@@ -93,7 +93,7 @@ GetPrivPKeyPtr(VALUE obj)
 	if (rb_funcall(obj, id_private_q, 0, NULL) == Qtrue) { /* returns Qtrue */
 		return pkey;
 	}
-	rb_raise(rb_eArgError, "Private key is needed.");
+	ossl_raise(rb_eArgError, "Private key is needed.");
 
 	return 0; /* unreachable */
 }
@@ -109,7 +109,7 @@ DupPrivPKeyPtr(VALUE obj)
 		CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 		return pkey;
 	}
-	rb_raise(rb_eArgError, "Private key is needed.");
+	ossl_raise(rb_eArgError, "Private key is needed.");
 
 	return 0; /* unreachable */
 }
@@ -124,7 +124,7 @@ ossl_pkey_s_allocate(VALUE klass)
 	VALUE obj;
 
 	if (!(pkey = EVP_PKEY_new())) {
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 	WrapPKey(klass, obj, pkey);
 	
@@ -135,7 +135,7 @@ static VALUE
 ossl_pkey_initialize(VALUE self)
 {
 	if (rb_obj_is_instance_of(self, cPKey)) {
-		rb_raise(rb_eNotImpError, "OpenSSL::PKey::PKey is an abstract class.");
+		ossl_raise(rb_eNotImpError, "OpenSSL::PKey::PKey is an abstract class.");
 	}
 	return self;
 }
@@ -150,11 +150,11 @@ ossl_pkey_to_der(VALUE self)
 	GetPKey(self, pkey);
 	
 	if (!(key = X509_PUBKEY_new())) {
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 	if (!X509_PUBKEY_set(&key, pkey)) {
 		X509_PUBKEY_free(key);
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 
 	str = rb_str_new(key->public_key->data, key->public_key->length);
@@ -174,7 +174,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 	VALUE str;
 
 	if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
-		rb_raise(rb_eArgError, "Private key is needed.");
+		ossl_raise(rb_eArgError, "Private key is needed.");
 	}
 
 	GetPKey(self, pkey);
@@ -186,11 +186,11 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 	EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 	
 	if (!(buf = OPENSSL_malloc(EVP_PKEY_size(pkey) + 16))) {
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 	if (!EVP_SignFinal(&ctx, buf, &buf_len, pkey)) {
 		OPENSSL_free(buf);
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}	
 	str = rb_str_new(buf, buf_len);
 	OPENSSL_free(buf);
@@ -218,7 +218,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 	result = EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey);
 
 	if (result < 0) {
-		OSSL_Raise(ePKeyError, "");
+		ossl_raise(ePKeyError, "");
 	}
 	if (result == 1) {
 		return Qtrue;

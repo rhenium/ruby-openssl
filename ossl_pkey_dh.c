@@ -15,7 +15,7 @@
 #define GetPKeyDH(obj, pkey) do { \
 	GetPKey(obj, pkey); \
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
-		rb_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
+		ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
 	} \
 } while (0)
 
@@ -60,12 +60,12 @@ ossl_dh_new(EVP_PKEY *pkey)
 		obj = dh_instance(cDH, DH_new());
 	} else {
 		if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
-			rb_raise(rb_eTypeError, "Not a DH key!");
+			ossl_raise(rb_eTypeError, "Not a DH key!");
 		}
 		WrapPKey(cDH, obj, pkey);
 	}
 	if (obj == Qfalse) {
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	return obj;
 }
@@ -123,7 +123,7 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
 
 	if (obj == Qfalse) {
 		DH_free(dh);
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	return obj;
 }
@@ -146,23 +146,23 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 			g = FIX2INT(gen);
 		}
 		if (!(dh = dh_generate(FIX2INT(buffer), g))) {
-			OSSL_Raise(eDHError, "");
+			ossl_raise(eDHError, "");
 		}
 	} else {
 		StringValue(buffer);
 
 		if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
-			OSSL_Raise(eDHError, "");
+			ossl_raise(eDHError, "");
 		}
 		if (!(dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL))) {
 			BIO_free(in);
-			OSSL_Raise(eDHError, "");
+			ossl_raise(eDHError, "");
 		}
 		BIO_free(in);
 	}
 	if (!EVP_PKEY_assign_DH(pkey, dh)) {
 		DH_free(dh);
-		OSSL_Raise(eRSAError, "");
+		ossl_raise(eRSAError, "");
 	}
 	return self;
 }
@@ -202,11 +202,11 @@ ossl_dh_export(VALUE self)
 	GetPKeyDH(self, pkey);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	if (!PEM_write_bio_DHparams(out, pkey->pkey.dh)) {
 		BIO_free(out);
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -231,11 +231,11 @@ ossl_dh_to_text(VALUE self)
 	GetPKeyDH(self, pkey);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	if (!DHparams_print(out, pkey->pkey.dh)) {
 		BIO_free(out);
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -261,7 +261,7 @@ ossl_dh_to_public_key(VALUE self)
 
 	if (obj == Qfalse) {
 		DH_free(dh);
-		OSSL_Raise(eDHError, "");
+		ossl_raise(eDHError, "");
 	}
 	return obj;
 }

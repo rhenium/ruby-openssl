@@ -12,14 +12,14 @@
 
 #define WrapX509Attr(klass, obj, attr) do { \
 	if (!attr) { \
-		rb_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_ATTRIBUTE_free, attr); \
 } while (0)
 #define GetX509Attr(obj, attr) do { \
 	Data_Get_Struct(obj, X509_ATTRIBUTE, attr); \
 	if (!attr) { \
-		rb_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetX509Attr(obj, attr) do { \
@@ -48,7 +48,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 		new = X509_ATTRIBUTE_dup(attr);
 	}
 	if (!new) {
-		OSSL_Raise(eX509AttrError, "");
+		ossl_raise(eX509AttrError, "");
 	}
 	WrapX509Attr(cX509Attr, obj, new);
 
@@ -63,7 +63,7 @@ ossl_x509attr_get_X509_ATTRIBUTE(VALUE obj)
 	SafeGetX509Attr(obj, attr);
 
 	if (!(new = X509_ATTRIBUTE_dup(attr))) {
-		OSSL_Raise(eX509AttrError, "");
+		ossl_raise(eX509AttrError, "");
 	}	
 	return new;
 }
@@ -81,7 +81,7 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	Check_Type(ary, T_ARRAY);
 
 	if (RARRAY(ary)->len != 2) {
-		rb_raise(eX509AttrError, "unsupported ary structure");
+		ossl_raise(eX509AttrError, "unsupported ary structure");
 	}
 
 	/* key [0] */
@@ -90,7 +90,7 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	
 	if (!(nid = OBJ_ln2nid(StringValuePtr(item)))) {
 		if (!(nid = OBJ_sn2nid(StringValuePtr(item)))) {
-			OSSL_Raise(eX509AttrError, "");
+			ossl_raise(eX509AttrError, "");
 		}
 	}
 	
@@ -99,7 +99,7 @@ ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
 	StringValuePtr(item);
 
 	if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, StringValuePtr(item)))) {
-		OSSL_Raise(eX509AttrError, "");
+		ossl_raise(eX509AttrError, "");
 	}
 	WrapX509Attr(klass, obj, attr);
 
@@ -127,11 +127,11 @@ ossl_x509attr_to_a(VALUE self)
 	rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
 
 	if (!(out = BIO_new(BIO_s_mem())))
-		OSSL_Raise(eX509ExtensionError, "");
+		ossl_raise(eX509ExtensionError, "");
 		
 	if (!X509V3_???_print(out, extp->extension, 0, 0)) {
 		BIO_free(out);
-		OSSL_Raise(eX509ExtensionError, "");
+		ossl_raise(eX509ExtensionError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	value = rb_str_new(buf->data, buf->length);

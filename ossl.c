@@ -33,7 +33,7 @@ void
 ossl_check_kind(VALUE obj, VALUE klass)
 {
 	if (rb_obj_is_kind_of(obj, klass) != Qtrue) {
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
+		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)", \
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
 }
@@ -42,7 +42,7 @@ void
 ossl_check_instance(VALUE obj, VALUE klass)
 {
 	if (rb_obj_is_instance_of(obj, klass) != Qtrue) {
-		rb_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
+		ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
 				rb_class2name(CLASS_OF(obj)), rb_class2name(klass));
 	}
 }
@@ -58,16 +58,16 @@ asn1time_to_time(ASN1_UTCTIME *time)
 	switch(time->type) {
 		case V_ASN1_UTCTIME:
 			if (!strptime(time->data, "%y%m%d%H%M%SZ", &tm)) {
-				rb_raise(rb_eTypeError, "bad UTCTIME format");
+				ossl_raise(rb_eTypeError, "bad UTCTIME format");
 			}
 			break;
 		case V_ASN1_GENERALIZEDTIME:
 			if (!strptime(time->data, "%Y%m%d%H%M%SZ", &tm)) {
-				rb_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
+				ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
 			}
 			break;
 		default:
-			rb_raise(rb_eTypeError, "unknown time format");
+			ossl_raise(rb_eTypeError, "unknown time format");
 	}
 	/*
 	 * QUESTION:
@@ -172,6 +172,7 @@ void ossl_debug(const char *fmt, ...)
 		va_start(args, fmt);
 		vfprintf(stderr, fmt, args);
 		va_end(args);
+		fprintf(stderr, " [CONTEXT N/A]\n");
 	}
 }
 #endif

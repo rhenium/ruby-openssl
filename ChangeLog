@@ -3,6 +3,18 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 12 Jun 2002 19:52:20 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* config.c: ported to OpenSSL 0.9.7 interface
+
+Wed, 12 Jun 2002 19:05:21 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	ALL FILES: change all rb_raise and OSSL_Raise to ossl_raise
+	* ossl.h: drop define OSSL_Raise
+	* cipher.c: disable to call Cipher#final without preceding Cipher#(en|de)crypt
+
+Wed, 12 Jun 2002 18:20:57 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* ossl.h: really fixed OSSL_Debug macro
+	* ossl.c: implement part of OSSL_Debug for Windows
+
 Wed, 12 Jun 2002 14:12:36 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* tc_cipher.rb: NEW (TestCase for Cipher)
 	* tc_digest.rb: NEW (TestCase for Digest)

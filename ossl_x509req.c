@@ -12,14 +12,14 @@
 
 #define WrapX509Req(klass, obj, req) do { \
 	if (!req) { \
-		rb_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, X509_REQ_free, req); \
 } while (0)
 #define GetX509Req(obj, req) do { \
 	Data_Get_Struct(obj, X509_REQ, req); \
 	if (!req) { \
-		rb_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetX509Req(obj, req) do { \
@@ -48,7 +48,7 @@ ossl_x509req_new(X509_REQ *req)
 		new = X509_REQ_dup(req);
 	}
 	if (!new) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	WrapX509Req(cX509Req, obj, new);
 
@@ -63,7 +63,7 @@ ossl_x509req_get_X509_REQ(VALUE obj)
 	SafeGetX509Req(obj, req);
 	
 	if (!(new = X509_REQ_dup(req))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return new;
 }
@@ -78,7 +78,7 @@ ossl_x509req_s_allocate(VALUE klass)
 	VALUE obj;
 
 	if (!(req = X509_REQ_new())) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	WrapX509Req(klass, obj, req);
 
@@ -95,7 +95,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 		return self;
 	}
 	if (!(in = BIO_new_mem_buf(StringValuePtr(buffer), -1))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	/*
 	 * TODO:
@@ -104,7 +104,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 	 */
 	if (!PEM_read_bio_X509_REQ(in, (X509_REQ **)&DATA_PTR(self), NULL, NULL)) {
 		BIO_free(in);
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	BIO_free(in);
 
@@ -122,11 +122,11 @@ ossl_x509req_to_pem(VALUE self)
 	GetX509Req(self, req);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	if (!PEM_write_bio_X509_REQ(out, req)) {
 		BIO_free(out);
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -146,11 +146,11 @@ ossl_x509req_to_text(VALUE self)
 	GetX509Req(self, req);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	if (!X509_REQ_print(out, req)) {
 		BIO_free(out);
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
@@ -171,7 +171,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 	GetX509Req(self, req);
 	...
 	if (!(x509 = X509_REQ_to_X509(req, d, pkey))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return ossl_x509_new(x509);
 }
@@ -199,10 +199,10 @@ ossl_x509req_set_version(VALUE self, VALUE version)
 	GetX509Req(self, req);
 
 	if ((ver = FIX2LONG(version)) < 0) {
-		rb_raise(eX509ReqError, "version must be >= 0!");
+		ossl_raise(eX509ReqError, "version must be >= 0!");
 	}
 	if (!X509_REQ_set_version(req, ver)) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return version;
 }
@@ -217,7 +217,7 @@ ossl_x509req_get_subject(VALUE self)
 	GetX509Req(self, req);
 
 	if (!(name = X509_REQ_get_subject_name(req))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	subject = ossl_x509name_new(name);
 	/*X509_NAME_free(name);*/
@@ -236,7 +236,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
 	name = ossl_x509name_get_X509_NAME(subject);
 
 	if (!X509_REQ_set_subject_name(req, name)) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	/*X509_NAME_free(name);*/
 
@@ -252,7 +252,7 @@ ossl_x509req_get_public_key(VALUE self)
 	GetX509Req(self, req);
 	
 	if (!(pkey = X509_REQ_get_pubkey(req))) { /* adds reference */
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
@@ -268,7 +268,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
 	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 
 	if (!X509_REQ_set_pubkey(req, pkey)) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return key;
 }
@@ -286,7 +286,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 	md = ossl_digest_get_EVP_MD(digest);
 
 	if (!X509_REQ_sign(req, pkey, md)) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return self;
 }
@@ -306,7 +306,7 @@ ossl_x509req_verify(VALUE self, VALUE key)
 	pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
 	
 	if ((i = X509_REQ_verify(req, pkey)) < 0) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	if (i > 0) {
 		return Qtrue;
@@ -364,7 +364,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 		attr = ossl_x509attr_get_X509_ATTRIBUTE(item);
 
 		if (!X509_REQ_add1_attr(req, attr)) {
-			OSSL_Raise(eX509ReqError, "");
+			ossl_raise(eX509ReqError, "");
 		}
 	}
 	return ary;
@@ -378,7 +378,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 	GetX509Req(self, req);
 
 	if (!X509_REQ_add1_attr(req, ossl_x509attr_get_X509_ATTRIBUTE(attr))) {
-		OSSL_Raise(eX509ReqError, "");
+		ossl_raise(eX509ReqError, "");
 	}
 	return attr;
 }

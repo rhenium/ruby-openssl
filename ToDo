@@ -28,8 +28,8 @@ OpenSSL::
   Cipher::
     [DONE] Use Factory (Cipher.new("DES_EDE3_CBC"))?
 
-  Conf::
-    * Port it to new (0.9.7) interface (Already done??)
+  Config::
+    [DONE] Port it to new (0.9.7) interface
     
   Digest::
     [DONE] Use Factory (Digest.new("SHA1"))? [Used exactly like this: OpenSSL::Digest::Digest.new("SHA1")]

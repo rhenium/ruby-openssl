@@ -13,14 +13,14 @@
 
 #define WrapBN(klass, obj, bn) do { \
 	if (!bn) { \
-		rb_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
 	} \
 	obj = Data_Wrap_Struct(klass, 0, BN_clear_free, bn); \
 } while (0)
 #define GetBN(obj, bn) do { \
 	Data_Get_Struct(obj, BIGNUM, bn); \
 	if (!bn) { \
-		rb_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
+		ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
 	} \
 } while (0)
 #define SafeGetBN(obj, bn) do { \
@@ -50,7 +50,7 @@ ossl_bn_new(BIGNUM *bn)
 		new = BN_dup(bn);
 	}
 	if (!new) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	WrapBN(cBN, obj, new);
 
@@ -74,7 +74,7 @@ ossl_bn_s_allocate(VALUE klass)
 	VALUE obj;
 	
 	if (!(bn = BN_new())) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	WrapBN(klass, obj, bn);
 
@@ -98,7 +98,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
 		GetBN(str, other); /* Safe - we checked kind_of? above */
 		if (!BN_copy(bn, other)) {
-			OSSL_Raise(eBNError, "");
+			ossl_raise(eBNError, "");
 		}
 	} else {
 		StringValue(str);
@@ -106,26 +106,26 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 		switch (base) {
 			case 0:
 				if (!BN_mpi2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
-					OSSL_Raise(eBNError, "");
+					ossl_raise(eBNError, "");
 				}
 				break;
 			case 2:
 				if (!BN_bin2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
-					OSSL_Raise(eBNError, "");
+					ossl_raise(eBNError, "");
 				}
 				break;
 			case 10:
 				if (!BN_dec2bn(&bn, StringValuePtr(str))) {
-					OSSL_Raise(eBNError, "");
+					ossl_raise(eBNError, "");
 				}
 				break;
 			case 16:
 				if (!BN_hex2bn(&bn, StringValuePtr(str))) {
-					OSSL_Raise(eBNError, "");
+					ossl_raise(eBNError, "");
 				}
 				break;
 			default:
-				rb_raise(rb_eArgError, "illegal radix %d", base);
+				ossl_raise(rb_eArgError, "illegal radix %d", base);
 		}
 	}
 	return self;
@@ -148,37 +148,37 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 		case 0:
 			len = BN_bn2mpi(bn, NULL);
 			if (!(buf = OPENSSL_malloc(len))) {
-				OSSL_Raise(eBNError, "Cannot allocate mem for BN");
+				ossl_raise(eBNError, "Cannot allocate mem for BN");
 			}
 			if (BN_bn2mpi(bn, buf) != len) {
 				OPENSSL_free(buf);
-				OSSL_Raise(eBNError, "");
+				ossl_raise(eBNError, "");
 			}
 			break;
 		case 2:
 			len = BN_num_bytes(bn);
 			if (!(buf = OPENSSL_malloc(len))) {
-				OSSL_Raise(eBNError, "Cannot allocate mem for BN");
+				ossl_raise(eBNError, "Cannot allocate mem for BN");
 			}
 			if (BN_bn2bin(bn, buf) != len) {
 				OPENSSL_free(buf);
-				OSSL_Raise(eBNError, "");
+				ossl_raise(eBNError, "");
 			}
 			break;
 		case 10:
 			if (!(buf = BN_bn2dec(bn))) {
-				OSSL_Raise(eBNError, "");
+				ossl_raise(eBNError, "");
 			}
 			len = strlen(buf);
 			break;
 		case 16:
 			if (!(buf = BN_bn2hex(bn))) {
-				OSSL_Raise(eBNError, "");
+				ossl_raise(eBNError, "");
 			}
 			len = strlen(buf);
 			break;
 		default:
-			rb_raise(rb_eArgError, "illegal radix %d", base);
+			ossl_raise(rb_eArgError, "illegal radix %d", base);
 	}
 	str = rb_str_new(buf, len);
 	OPENSSL_free(buf);
@@ -213,11 +213,11 @@ BIGNUM_BOOL1(is_odd);
 		GetBN(self, bn);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, bn, ossl_bn_ctx)) {				\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(CLASS_OF(self), obj, result);					\
 											\
@@ -236,11 +236,11 @@ BIGNUM_1c(sqr);
 		SafeGetBN(other, bn2);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, bn1, bn2)) {					\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(CLASS_OF(self), obj, result);					\
 											\
@@ -260,11 +260,11 @@ BIGNUM_2(sub);
 		SafeGetBN(other, bn2);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, bn1, bn2, ossl_bn_ctx)) {			\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(CLASS_OF(self), obj, result);					\
 											\
@@ -287,16 +287,16 @@ ossl_bn_div(VALUE self, VALUE other)
 	SafeGetBN(other, bn2);
 	
 	if (!(r1 = BN_new())) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	if (!(r2 = BN_new())) {
 		BN_free(r1);
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	if (!BN_div(r1, r2, bn1, bn2, ossl_bn_ctx)) {
 		BN_free(r1);
 		BN_free(r2);
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	WrapBN(CLASS_OF(self), obj1, r1);
 	WrapBN(CLASS_OF(self), obj2, r2);
@@ -316,11 +316,11 @@ ossl_bn_div(VALUE self, VALUE other)
 		SafeGetBN(other2, bn3);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, bn1, bn2, bn3, ossl_bn_ctx)) {			\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(CLASS_OF(self), obj, result);					\
 											\
@@ -340,7 +340,7 @@ BIGNUM_3c(mod_exp);
 		GetBN(self, bn);							\
 											\
 		if (!BN_##func(bn, NUM2INT(bit))) {					\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		return self;								\
 	}
@@ -371,11 +371,11 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 		GetBN(self, bn);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, bn, NUM2INT(bits))) {				\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(CLASS_OF(self), obj, result);					\
 											\
@@ -400,11 +400,11 @@ BIGNUM_SHIFT(rshift);
 				top = FIX2INT(fill);					\
 		}									\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func(result, NUM2INT(bits), top, bottom)) {			\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(klass, obj, result);						\
 											\
@@ -423,11 +423,11 @@ BIGNUM_RAND(pseudo_rand);
 		SafeGetBN(range, bn);							\
 											\
 		if (!(result = BN_new())) {						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		if (!BN_##func##_range(result, bn)) {					\
 			BN_free(result);						\
-			OSSL_Raise(eBNError, "");					\
+			ossl_raise(eBNError, "");					\
 		}									\
 		WrapBN(klass, obj, result);						\
 											\
@@ -450,17 +450,17 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	}
 	if (!NIL_P(vadd)) {
 		if (NIL_P(vrem)) {
-			rb_raise(rb_eArgError, "if ADD is specified, REM must be also given");
+			ossl_raise(rb_eArgError, "if ADD is specified, REM must be also given");
 		}
 		SafeGetBN(vadd, add);
 		SafeGetBN(vrem, rem);
 	}
 	if (!(result = BN_new())) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	if (!BN_generate_prime(result, NUM2INT(vnum), safe, add, rem, NULL, NULL)) {
 		BN_free(result);
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	WrapBN(klass, obj, result);
 	
@@ -489,7 +489,7 @@ ossl_bn_dup(VALUE self)
 	GetBN(self, bn);
 
 	if (!(new = BN_dup(bn))) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	WrapBN(CLASS_OF(self), obj, new);
 
@@ -505,7 +505,7 @@ ossl_bn_copy(VALUE self, VALUE other)
 	SafeGetBN(other, bn2);
 	
 	if (!BN_copy(bn1, bn2)) {
-		OSSL_Raise(eBNError, "");
+		ossl_raise(eBNError, "");
 	}
 	return self;
 }
@@ -551,7 +551,7 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
 		case 0:
 			return Qfalse;
 		default:
-			OSSL_Raise(eBNError, "");
+			ossl_raise(eBNError, "");
 	}
 	/* not reachable */
 	return Qnil;
@@ -581,7 +581,7 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 		case 0:
 			return Qfalse;
 		default:
-			OSSL_Raise(eBNError, "");
+			ossl_raise(eBNError, "");
 	}
 	/* not reachable */
 	return Qnil;
@@ -595,7 +595,7 @@ void
 Init_ossl_bn()
 {
 	if (!(ossl_bn_ctx = BN_CTX_new())) {
-		OSSL_Raise(rb_eRuntimeError, "Cannot init BN_CTX");
+		ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
 	}
 
 	eBNError = rb_define_class_under(mOSSL, "BNError", eOSSLError);

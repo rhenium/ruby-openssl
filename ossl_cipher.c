@@ -14,14 +14,14 @@
 #define GetCipher(obj, ciphp) do { \
 	Data_Get_Struct(obj, ossl_cipher, ciphp); \
 	if (!ciphp) { \
-		rb_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
+		ossl_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
 	} \
 } while (0)
 #define SafeGetCipher(obj, ciphp) do { \
 	OSSL_Check_Kind(obj, cCipher); \
 	GetCipher(obj, ciphp); \
 	if (!ciphp->cipher) { \
-		rb_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
+		ossl_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
 	} \
 } while (0)
 
@@ -92,7 +92,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 	c_name = StringValuePtr(str);
 
 	if (!(ciphp->cipher = EVP_get_cipherbyname(c_name))) {
-		rb_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", c_name);
+		ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", c_name);
 	}
 	return self;
 }
@@ -119,7 +119,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		/*
 		RAND_add(data,i,0); where from take data?
 		if (RAND_pseudo_bytes(iv, 8) < 0) {
-			OSSL_Raise(eCipherError, "");
+			ossl_raise(eCipherError, "");
 		}
 		 */
 	} else {
@@ -127,15 +127,16 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 		if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
 			memset(iv, 0, EVP_MAX_IV_LENGTH);
 			memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
-		} else
+		} else {
 			memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
+		}
 	}
 	EVP_CIPHER_CTX_init(&ciphp->ctx);
 
 	EVP_BytesToKey(ciphp->cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
 	if (!EVP_EncryptInit(&ciphp->ctx, ciphp->cipher, key, iv)) {
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	ciphp->init = Qtrue;
 	
@@ -166,8 +167,9 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 		if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
 			memset(iv, 0, EVP_MAX_IV_LENGTH);
 			memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
-		} else
+		} else {
 			memcpy(iv, RSTRING(init_v)->ptr, EVP_MAX_IV_LENGTH);
+		}
 	}
 	EVP_CIPHER_CTX_init(&ciphp->ctx);
 
@@ -176,7 +178,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	EVP_BytesToKey(ciphp->cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
 	if (!EVP_DecryptInit(&ciphp->ctx, ciphp->cipher, key, iv)) {
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	ciphp->init = Qtrue;
 	
@@ -194,19 +196,18 @@ ossl_cipher_update(VALUE self, VALUE data)
 	GetCipher(self, ciphp);
 
 	if (ciphp->init != Qtrue) {
-		rb_raise(eCipherError, "Don't call 'update' without preceding 'en/decrypt'.");
+		ossl_raise(eCipherError, "Don't call Cipher#update without preceding Cipher#(en|de)crypt.");
 	}
-	
 	StringValue(data);
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
 	
 	if (!(out = OPENSSL_malloc(in_len + EVP_CIPHER_CTX_block_size(&ciphp->ctx)))) {
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	if (!EVP_CipherUpdate(&ciphp->ctx, out, &out_len, in, in_len)) {
 		OPENSSL_free(out);
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	str = rb_str_new(out, out_len);
 	OPENSSL_free(out);
@@ -224,16 +225,19 @@ ossl_cipher_final(VALUE self)
 
 	GetCipher(self, ciphp);
 	
+	if (ciphp->init != Qtrue) {
+		ossl_raise(eCipherError, "Don't call Cipher#final without preceding Cipher#(en|de)crypt.");
+	}	
 	if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(&ciphp->ctx)))) {
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	if (!EVP_CipherFinal(&ciphp->ctx, out, &out_len)) {
 		OPENSSL_free(out);
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	if (!EVP_CIPHER_CTX_cleanup(&ciphp->ctx)) {
 		OPENSSL_free(out);
-		OSSL_Raise(eCipherError, "");
+		ossl_raise(eCipherError, "");
 	}
 	ciphp->init = Qfalse;
 

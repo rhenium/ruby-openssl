@@ -42,7 +42,7 @@ ossl_rand_load_file(VALUE self, VALUE filename)
 	SafeStringValue(filename);
 	
 	if(!RAND_load_file(StringValuePtr(filename), -1)) {
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
 }
@@ -53,7 +53,7 @@ ossl_rand_write_file(VALUE self, VALUE filename)
 	SafeStringValue(filename);
 	
 	if (RAND_write_file(StringValuePtr(filename)) == -1) {
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
 }
@@ -65,11 +65,11 @@ ossl_rand_bytes(VALUE self, VALUE len)
 	VALUE str;
 	
 	if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	if (!RAND_bytes(buffer, FIX2INT(len))) {
 		OPENSSL_free(buffer);
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	str = rb_str_new(buffer, FIX2INT(len));
 	OPENSSL_free(buffer);
@@ -83,7 +83,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
 	SafeStringValue(filename);
 	
 	if(!RAND_egd(StringValuePtr(filename))) {
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
 }
@@ -94,7 +94,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 	SafeStringValue(filename);
 
 	if (!RAND_egd_bytes(StringValuePtr(filename), FIX2INT(len))) {
-		OSSL_Raise(eRandomError, "");
+		ossl_raise(eRandomError, "");
 	}
 	return Qtrue;
 }

@@ -188,13 +188,13 @@ ssl_ctx_setup(VALUE self)
 
     	if (cert && key) {
 		if (!SSL_CTX_use_certificate(p->ctx, cert)) { /* Adds a ref => Safe to FREE */
-			OSSL_Raise(eSSLError, "SSL_CTX_use_certificate:");
+			ossl_raise(eSSLError, "SSL_CTX_use_certificate:");
 		}
 		if (!SSL_CTX_use_PrivateKey(p->ctx, key)) { /* Adds a ref => Safe to FREE */
-			OSSL_Raise(eSSLError, "SSL_CTX_use_PrivateKey:");
+			ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey:");
 		}
 		if (!SSL_CTX_check_private_key(p->ctx)) {
-			OSSL_Raise(eSSLError, "SSL_CTX_check_private_key:");
+			ossl_raise(eSSLError, "SSL_CTX_check_private_key:");
 		}
 	}
 
@@ -207,7 +207,7 @@ ssl_ctx_setup(VALUE self)
 
 	if (ca) {
 		if (!SSL_CTX_add_client_CA(p->ctx, ca)) { /* Copies X509_NAME => FREE it. */
-			OSSL_Raise(eSSLError, "");
+			ossl_raise(eSSLError, "");
 		}
 	}
 	if ((!SSL_CTX_load_verify_locations(p->ctx, ca_file, ca_path) ||
@@ -240,7 +240,7 @@ ssl_setup(VALUE self)
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
         if((p->ssl = SSL_new(p->ctx)) == NULL)
-			OSSL_Raise(eSSLError, "SSL_new:");
+			ossl_raise(eSSLError, "SSL_new:");
 	
         SSL_set_fd(p->ssl, fileno(fptr->f));
     }
@@ -255,7 +255,7 @@ ssl_s_new(int argc, VALUE *argv, VALUE klass)
     obj = Data_Make_Struct(klass, ssl_st, 0, ssl_free, p);
     memset(p, 0, sizeof(ssl_st));
     if((p->ctx = SSL_CTX_new(SSLv23_method())) == NULL)
-		OSSL_Raise(eSSLError, "SSL_CTX_new:");
+		ossl_raise(eSSLError, "SSL_CTX_new:");
     
     SSL_CTX_set_options(p->ctx, SSL_OP_ALL);
 
@@ -307,7 +307,7 @@ ssl_connect(VALUE self)
 
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_connect(p->ssl) <= 0){
-		OSSL_Raise(eSSLError, "SSL_connect:");
+		ossl_raise(eSSLError, "SSL_connect:");
     }
 
     return self;
@@ -324,7 +324,7 @@ ssl_accept(VALUE self)
 
     ssl_verify_callback_proc = ssl_get_verify_cb(self);
     if(SSL_accept(p->ssl) <= 0){
-		OSSL_Raise(eSSLError, "SSL_accept:");
+		ossl_raise(eSSLError, "SSL_accept:");
     }
 
     return self;
@@ -345,7 +345,7 @@ ssl_read(VALUE self, VALUE len)
 	if (p->ssl) {
 		nread = SSL_read(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
 		if(nread < 0)
-			OSSL_Raise(eSSLError, "SSL_read:");
+			ossl_raise(eSSLError, "SSL_read:");
 	} else {
 		rb_warning("SSL session is not started yet.");
 
@@ -357,11 +357,11 @@ ssl_read(VALUE self, VALUE len)
 		TRAP_END;
 
 		if(nread < 0)
-			rb_raise(eSSLError, "read:%s", strerror(errno));
+			ossl_raise(eSSLError, "read:%s", strerror(errno));
 	}
 
 	if(nread == 0)
-		rb_raise(rb_eEOFError, "End of file reached");
+		ossl_raise(rb_eEOFError, "End of file reached");
 
 	RSTRING(str)->len = nread;
 	RSTRING(str)->ptr[nread] = 0;
@@ -384,7 +384,7 @@ ssl_write(VALUE self, VALUE str)
 	if (p->ssl) {
 		nwrite = SSL_write(p->ssl, RSTRING(str)->ptr, RSTRING(str)->len);
 		if (nwrite < 0)
-			OSSL_Raise(eSSLError, "SSL_write:");
+			ossl_raise(eSSLError, "SSL_write:");
 	} else {
 		rb_warning("SSL session is not started yet.");
 
@@ -393,7 +393,7 @@ ssl_write(VALUE self, VALUE str)
 		fp = GetWriteFile(fptr);
 		nwrite = write(fileno(fp), RSTRING(str)->ptr, RSTRING(str)->len);
 		if(nwrite < 0)
-			rb_raise(eSSLError, "write:%s", strerror(errno));
+			ossl_raise(eSSLError, "write:%s", strerror(errno));
 	}
 
 	return INT2NUM(nwrite);
@@ -519,7 +519,7 @@ ssl_set_ciphers(VALUE self, VALUE v)
 
     Data_Get_Struct(self, ssl_st, p);
     if(!p->ctx){
-        rb_raise(eSSLError, "SSL_CTX is not initialized.");
+        ossl_raise(eSSLError, "SSL_CTX is not initialized.");
         return Qnil;
     }
 
@@ -535,7 +535,7 @@ ssl_set_ciphers(VALUE self, VALUE v)
 	} else str = rb_String(v);
 
 	if (!SSL_CTX_set_cipher_list(p->ctx, RSTRING(str)->ptr)) {
-		OSSL_Raise(eSSLError, "SSL_CTX_set_ciphers:");
+		ossl_raise(eSSLError, "SSL_CTX_set_ciphers:");
 	}
 	return Qnil;
 }

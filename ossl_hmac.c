@@ -17,7 +17,7 @@
 #define GetHMAC(obj, ctx) do { \
 	Data_Get_Struct(obj, HMAC_CTX, ctx); \
 	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+		ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
 	} \
 } while (0)
 
@@ -80,10 +80,10 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
 	HMAC_CTX final;
 
 	if (!HMAC_CTX_copy(&final, ctx)) {
-		OSSL_Raise(eHMACError, "");
+		ossl_raise(eHMACError, "");
 	}
 	if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
-		OSSL_Raise(eHMACError, "Cannot allocate memory for hmac");
+		ossl_raise(eHMACError, "Cannot allocate memory for hmac");
 	}
 	HMAC_Final(&final, *buf, buf_len);
 	HMAC_CTX_cleanup(&final);
@@ -121,7 +121,7 @@ ossl_hmac_hexdigest(VALUE self)
 	
 	if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 		OPENSSL_free(buf);
-		OSSL_Raise(eHMACError, "Memory alloc error");
+		ossl_raise(eHMACError, "Memory alloc error");
 	}
 	hexdigest = rb_str_new(hexbuf, 2 * buf_len);
 	OPENSSL_free(buf);
