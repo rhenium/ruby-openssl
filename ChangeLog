@@ -4,6 +4,9 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.14  2001/12/21 20:10:24  majkl
+*** empty log message ***
+
 Revision 1.13  2001/12/21 20:10:12  majkl
 	* Memory checking
 
