@@ -486,7 +486,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
 	x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
-	md = ossl_digest_get_EVP_MD(digest);
+	md = GetDigestPtr(digest);
 
 	if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {
 		ossl_raise(ePKCS7Error, "");

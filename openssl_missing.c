@@ -23,6 +23,15 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
     	}
 	memcpy(out, in, sizeof(HMAC_CTX));
 
+	if (!EVP_MD_CTX_copy(&out->md_ctx, &in->md_ctx)) {
+		return 0;
+	}
+	if (!EVP_MD_CTX_copy(&out->i_ctx, &in->i_ctx)) {
+		return 0;
+	}
+	if (!EVP_MD_CTX_copy(&out->o_ctx, &in->o_ctx)) {
+		return 0;
+	}
 	return 1;
 }
 

@@ -15,7 +15,7 @@ extern VALUE mDigest;
 extern VALUE cDigest;
 extern VALUE eDigestError;
 
-const EVP_MD *ossl_digest_get_EVP_MD(VALUE);
+const EVP_MD *GetDigestPtr(VALUE);
 void Init_ossl_digest(void);
 
 #endif /* _OSSL_DIGEST_H_ */

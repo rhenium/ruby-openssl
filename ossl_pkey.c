@@ -168,7 +168,6 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 {
 	EVP_PKEY *pkey;
 	EVP_MD_CTX ctx;
-	const EVP_MD *md;
 	char *buf;
 	int buf_len;
 	VALUE str;
@@ -179,10 +178,10 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 
 	GetPKey(self, pkey);
 
-	md = ossl_digest_get_EVP_MD(digest);
+	EVP_SignInit(&ctx, GetDigestPtr(digest));
+	
 	StringValue(data);
 	
-	EVP_SignInit(&ctx, md);
 	EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 	
 	if (!(buf = OPENSSL_malloc(EVP_PKEY_size(pkey) + 16))) {
@@ -208,7 +207,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 
 	GetPKey(self, pkey);
 
-	md = ossl_digest_get_EVP_MD(digest);
+	md = GetDigestPtr(digest);
 	StringValue(sig);
 	StringValue(data);
 	

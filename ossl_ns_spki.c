@@ -183,8 +183,8 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
 
 	GetSPKI(self, spki);
 	
-	md = ossl_digest_get_EVP_MD(digest);
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
+	md = GetDigestPtr(digest);
 
 	if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
 		ossl_raise(eSPKIError, "");

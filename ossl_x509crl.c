@@ -296,7 +296,7 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 	GetX509CRL(self, crl);
 
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-	md = ossl_digest_get_EVP_MD(digest);
+	md = GetDigestPtr(digest);
 	
 	if (!X509_CRL_sign(crl, pkey, md)) {
 		ossl_raise(eX509CRLError, "");

@@ -463,8 +463,8 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 
 	GetX509(self, x509);
 	
-	md = ossl_digest_get_EVP_MD(digest);
 	pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
+	md = GetDigestPtr(digest);
 	
 	if (!X509_sign(x509, pkey, md)) {
 		ossl_raise(eX509CertError, "");

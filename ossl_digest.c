@@ -34,7 +34,7 @@ VALUE eDigestError;
  * Public
  */
 const EVP_MD *
-ossl_digest_get_EVP_MD(VALUE obj)
+GetDigestPtr(VALUE obj)
 {
 	EVP_MD_CTX *ctx;
 
