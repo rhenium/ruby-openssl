@@ -16,21 +16,15 @@
 	} \
 	obj = Data_Wrap_Struct(klass, 0, CRYPTO_free, ctx); \
 } while (0)
-
 #define GetDigest(obj, ctx) do { \
 	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
 	if (!ctx) { \
 		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
 	} \
 } while (0)
-#define DigestValue(obj) \
-	OSSL_Check_Instance((obj), cDigest)
-#define OSSLGetDigest(obj, ctx) do { \
-	DigestValue(obj); \
-	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
-	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
-	} \
+#define SafeGetDigest(obj, ctx) do { \
+	OSSL_Check_Instance(obj, cDigest); \
+	GetDigest(obj, ctx); \
 } while (0)
 
 /*
@@ -45,9 +39,9 @@ VALUE eDigestError;
 const EVP_MD *
 ossl_digest_get_EVP_MD(VALUE obj)
 {
-	EVP_MD_CTX *ctx = NULL;
+	EVP_MD_CTX *ctx;
 
-	OSSLGetDigest(obj, ctx);
+	SafeGetDigest(obj, ctx);
 
 	return EVP_MD_CTX_md(ctx); /*== ctx->digest*/
 }
@@ -58,7 +52,7 @@ ossl_digest_get_EVP_MD(VALUE obj)
 static VALUE
 ossl_digest_s_allocate(VALUE klass)
 {
-	EVP_MD_CTX *ctx = NULL;
+	EVP_MD_CTX *ctx;
 	VALUE obj;
 
 	if (!(ctx = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
@@ -72,9 +66,9 @@ ossl_digest_s_allocate(VALUE klass)
 static VALUE
 ossl_digest_initialize(VALUE self, VALUE str)
 {
-	EVP_MD_CTX *ctx = NULL;
+	EVP_MD_CTX *ctx;
 	const EVP_MD *md;
-	char *md_name = NULL;
+	char *md_name;
 	
 	GetDigest(self, ctx);
 	
@@ -91,7 +85,7 @@ ossl_digest_initialize(VALUE self, VALUE str)
 static VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
-	EVP_MD_CTX *ctx = NULL;
+	EVP_MD_CTX *ctx;
 
 	GetDigest(self, ctx);
 
@@ -105,9 +99,9 @@ ossl_digest_update(VALUE self, VALUE data)
 static VALUE
 ossl_digest_digest(VALUE self)
 {
-	EVP_MD_CTX *ctx = NULL, final;
-	char *digest_txt = NULL;
-	int digest_len = 0;
+	EVP_MD_CTX *ctx, final;
+	char *digest_txt;
+	int digest_len;
 	VALUE digest;
 	
 	GetDigest(self, ctx);
@@ -129,10 +123,10 @@ ossl_digest_digest(VALUE self)
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
-	EVP_MD_CTX *ctx = NULL, final;
+	EVP_MD_CTX *ctx, final;
 	static const char hex[]="0123456789abcdef";
 	char *digest_txt = NULL, *hexdigest_txt = NULL;
-	int i,digest_len = 0;
+	int i, digest_len;
 	VALUE hexdigest;
 	
 	GetDigest(self, ctx);
@@ -184,7 +178,7 @@ ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
 static VALUE
 ossl_digest_clone(VALUE self)
 {
-	EVP_MD_CTX *ctx = NULL, *other;
+	EVP_MD_CTX *ctx, *other;
 	VALUE obj;
 	
 	GetDigest(self, ctx);
@@ -203,7 +197,7 @@ ossl_digest_clone(VALUE self)
 static VALUE
 ossl_digest_equal(VALUE self, VALUE other)
 {
-	EVP_MD_CTX *ctx = NULL;
+	EVP_MD_CTX *ctx;
 	VALUE str1, str2;
 
 	GetDigest(self, ctx);

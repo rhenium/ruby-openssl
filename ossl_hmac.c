@@ -48,7 +48,6 @@ static VALUE
 ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 {
 	HMAC_CTX *ctx = NULL;
-	const EVP_MD *md = NULL;
 	VALUE key, digest;
 
 	GetHMAC(self, ctx);
@@ -56,9 +55,8 @@ ossl_hmac_initialize(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "20", &key, &digest);
 
 	key = rb_String(key);
-	md = ossl_digest_get_EVP_MD(digest);
 
-	HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, md);
+	HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, ossl_digest_get_EVP_MD(digest));
 
 	return self;
 }

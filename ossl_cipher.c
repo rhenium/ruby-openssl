@@ -12,6 +12,10 @@
 
 #define MakeCipher(obj, klass, ciphp) obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp)
 #define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
+#define SafeGetCipher(obj, ciphp) do { \
+	OSSL_Check_Instance(obj, cCipher); \
+	GetCipher(obj, ciphp); \
+} while (0)
 
 /*
  * Classes
@@ -45,11 +49,9 @@ ossl_cipher_free(ossl_cipher *ciphp)
 const EVP_CIPHER *
 ossl_cipher_get_EVP_CIPHER(VALUE obj)
 {
-	ossl_cipher *ciphp = NULL;
+	ossl_cipher *ciphp;
 
-	OSSL_Check_Kind(obj, cCipher);
-	
-	GetCipher(obj, ciphp);
+	SafeGetCipher(obj, ciphp);
 
 	return ciphp->cipher; /*EVP_CIPHER_CTX_cipher(ciphp->ctx);*/
 }
@@ -60,7 +62,7 @@ ossl_cipher_get_EVP_CIPHER(VALUE obj)
 static VALUE
 ossl_cipher_s_allocate(VALUE klass)
 {
-	ossl_cipher *ciphp = NULL;
+	ossl_cipher *ciphp;
 	VALUE obj;
 
 	MakeCipher(obj, klass, ciphp);
@@ -80,8 +82,8 @@ ossl_cipher_s_allocate(VALUE klass)
 static VALUE
 ossl_cipher_initialize(VALUE self, VALUE str)
 {
-	ossl_cipher *ciphp = NULL;
-	char *c_name = NULL;
+	ossl_cipher *ciphp;
+	char *c_name;
 
 	GetCipher(self, ciphp);
 
@@ -90,14 +92,13 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 	if (!(ciphp->cipher = EVP_get_cipherbyname(c_name))) {
 		rb_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", c_name);
 	}
-	
 	return self;
 }
 
 static VALUE
 ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 {
-	ossl_cipher *ciphp = NULL;
+	ossl_cipher *ciphp;
 	unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
 	VALUE pass, init_v;
 
@@ -142,7 +143,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 {
-	ossl_cipher *ciphp = NULL;
+	ossl_cipher *ciphp;
 	unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
 	VALUE pass, init_v;
 	
@@ -183,9 +184,9 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 static VALUE 
 ossl_cipher_update(VALUE self, VALUE data)
 {
-	ossl_cipher *ciphp = NULL;
-	char *in = NULL, *out = NULL;
-	int in_len = 0, out_len = 0;
+	ossl_cipher *ciphp;
+	char *in, *out;
+	int in_len, out_len;
 	VALUE str;
 
 	GetCipher(self, ciphp);
@@ -214,10 +215,9 @@ ossl_cipher_update(VALUE self, VALUE data)
 static VALUE 
 ossl_cipher_final(VALUE self)
 {
-	ossl_cipher *ciphp = NULL;
-
-	char *out = NULL;
-	int out_len = 0;
+	ossl_cipher *ciphp;
+	char *out;
+	int out_len;
 	VALUE str;
 
 	GetCipher(self, ciphp);
@@ -229,10 +229,14 @@ ossl_cipher_final(VALUE self)
 		OPENSSL_free(out);
 		OSSL_Raise(eCipherError, "");
 	}
-	EVP_CIPHER_CTX_cleanup(&ciphp->ctx);
+	if (!EVP_CIPHER_CTX_cleanup(&ciphp->ctx)) {
+		OPENSSL_free(out);
+		OSSL_Raise(eCipherError, "");
+	}
+	ciphp->init = Qfalse;
+
 	str = rb_str_new(out, out_len);
 	OPENSSL_free(out);
-	ciphp->init = Qfalse;
 	
 	return str;
 }
@@ -251,7 +255,6 @@ Init_ossl_cipher(void)
 	
 	rb_define_singleton_method(cCipher, "allocate", ossl_cipher_s_allocate, 0);
 	rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
-	rb_enable_super(cCipher, "initialize");
 	
 	rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
 	rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);

@@ -3,6 +3,12 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Tue,  4 Jun 2002 23:26:07 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* bn.c: cleanup (remove oddly initialized vars)
+	* config.c: ditto.
+	* cipher.c: ditto.
+	* digest.c: ditto.
+
 Tue,  4 Jun 2002 21:49:06 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: test Qtrue/Qfalse with RTEST
 	* bn.c: use StringValue instead of rb_String

@@ -18,5 +18,5 @@ extern VALUE eCipherError;
 const EVP_CIPHER *ossl_cipher_get_EVP_CIPHER(VALUE);
 void Init_ossl_cipher(void);
 
-#endif /* _OSSL_DIGEST_H_ */
+#endif /* _OSSL_CIPHER_H_ */
 

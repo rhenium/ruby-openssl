@@ -171,8 +171,6 @@ ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
 
 	GetPKCS7(self, pkcs7);
 
-	OSSL_Check_Type(cipher, cCipher);
-	
 	if (!PKCS7_set_cipher(pkcs7, ossl_cipher_get_EVP_CIPHER(cipher))) {
 		OSSL_Raise(ePKCS7Error, "");
 	}

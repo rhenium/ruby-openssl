@@ -8,16 +8,47 @@ This program is licenced under the same licence as Ruby.
 	$Id$
 
 [WARNING]
-	BIG FAT NOTE:
-	This README is not-up-to-date. For news check, ChangeLog and ToDo files.
-		
+[BIG FAT NOTE]
+	This 'README' is not up-to-date. For news check: 'ChangeLog' and 'ToDo' file.
+
 ['OpenSSL for Ruby' team members]
 	GOTOU Yuuzou <gotoyuzo@notwork.org> - SSL Socket implementation
-	Michal Rokos <m.rokos@sh.cvut.cz> - The rest (too long to enumerate), maintainer
+	Michal Rokos <m.rokos@sh.cvut.cz> - Errors, Memory leaks ;-) (maintainer)
 
 [Contributors]
-	UNKNOWN <oss-ruby@technorama.net> - BN implementation core
+	Technorama team <oss-ruby@technorama.net> - BN implementation core
 	Hynek Rostinsky <hynek.rostinsky@foresta.cz> - Windows platform fixes (strptime mainly)
+
+[Requirements]
+	Ruby	>= 1.7.2
+	OpenSSL >= 0.9.7
+
+[Instalation]
+	* Unix like systems:
+		ruby extconf.rb
+		make
+		su root -c make install
+
+	* Windows like systems:
+		add to %PATH%: c:\openssl\bin (where the dlls lays)
+		ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
+		(or ruby extconf.rb --with-openssl-dir=c:\openssl (NOT TESTED))
+		nmake
+		nmake install
+
+	* Developers can use 'ruby extconf.rb --with-debug' (or --enable-debug)
+
+[Note]
+	All code is under development - API/method names can change
+	All feedback, bug reports, requests are welcomed!
+
+	Enjoy!
+
+		Michal <m.rokos@sh.cvut.cz>
+
+
+---8<--- FROM NOW ON IT IS AN OLD FILE (= FOR OSSL1) ---8<---
+
 
 [Done] (but not fully tested)
 	= PKey:: RSA,DSA keys - new, load, export
@@ -59,25 +90,6 @@ This program is licenced under the same licence as Ruby.
 	= ASN.1 ???
 	= BIO ???
 	= compat tests for RSA/DSA sign/encrypt
-
-[Requirements]
-	Ruby	>= 1.7.2
-	OpenSSL >= 0.9.7
-
-[Instalation]
-	* Unix like systems:
-		ruby extconf.rb
-		make
-		su root -c make install
-
-	* Windows like systems:
-		add to %PATH%: c:\openssl\bin (where the dlls lays)
-		ruby extconf.rb --with-openssl-include=c:\openssl\include --with-openssl-lib=c:\openssl\lib
-		(or ruby extconf.rb --with-openssl-dir=c:\openssl (NOT TESTED))
-		nmake
-		nmake install
-
-	* Developers can use 'ruby extconf.rb --with-debug' (or --enable-debug)
 
 [Documentation/API]
 	Sorry, not done. See 'test' folder's examples and grep C sources for rb_define_*method :-))
@@ -374,13 +386,4 @@ OpenSSL::
 
 [Examples]
 	There are some braindead in 'test' directory
-
-[Note]
-	All code is under development - API/method names can change
-	All feedback, bug reports, requests are welcomed!
-
-
-	Enjoy!
-
-		Michal <m.rokos@sh.cvut.cz>
 
