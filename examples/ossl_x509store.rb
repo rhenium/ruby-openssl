@@ -24,16 +24,22 @@ def verify_with_store(store, certs, callback)
     # verify with block
     result = store.verify(cert, &callback)
     print result ? "Yes " : "No "
+    if store.error != X509::V_OK
+      puts store.error_string.inspect
+    end
 
     # verify with callback
+    print store.verify(cert) ? "Yes " : "No "
+    if store.error != X509::V_OK
+      puts store.error_string.inspect
+    end
+
+    # verify by StoreContext
     ctx = X509::StoreContext.new(store)
     ctx.cert = cert
     print ctx.verify ? "Yes " : "No "
-
-    # verify by StoreContext
-    print store.verify(cert) ? "Yes " : "No "
-    if store.error != X509::V_OK
-      print store.error_string.inspect
+    if ctx.error != X509::V_OK
+      puts ctx.error_string.inspect
     end
 
     puts
@@ -65,7 +71,7 @@ crl.revoked.each {|revoked|
 
 puts "========== Create Cert Store and Verify Certs =========="
 store = X509::Store.new
-store.purpose = X509::PURPOSE_SSL_CLINET
+store.purpose = X509::PURPOSE_SSL_CLIENT
 store.verify_callback = verify_cb if $VERBOSE
 store.add_cert(ca)
 verify_with_store(store, certs, verify_cb)
