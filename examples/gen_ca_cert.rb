@@ -5,6 +5,10 @@ include OpenSSL
 include X509
 include PKey
 
+p RUBY_VERSION
+p OpenSSL::VERSION
+p OPENSSL_VERSION
+
 p key = RSA.new(2048)
 p new = Certificate.new
 name = [['C', 'CZ'],['O','Ruby'],['CN','RubyCA']]
@@ -34,6 +38,6 @@ puts "Enter Password:"
 p pass = gets.chop!
 
 f = File.new("./#{new.serial}key.pem", "w")
-f.write key.export(Cipher::DES.new(Cipher::EDE3, Cipher::CBC), pass)
+f.write key.export(Cipher::DES.new(:EDE3, :CBC), pass)
 f.close
 

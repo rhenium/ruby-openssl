@@ -13,13 +13,16 @@
 #define MakeCipher(obj, klass, ciphp) obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp)
 #define GetCipher(obj, ciphp) do { \
 	Data_Get_Struct(obj, ossl_cipher, ciphp); \
-	if (!ciphp || !ciphp->cipher) { \
+	if (!ciphp) { \
 		rb_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
 	} \
 } while (0)
 #define SafeGetCipher(obj, ciphp) do { \
 	OSSL_Check_Kind(obj, cCipher); \
 	GetCipher(obj, ciphp); \
+	if (!ciphp->cipher) { \
+		rb_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
+	} \
 } while (0)
 
 /*
