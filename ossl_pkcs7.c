@@ -133,6 +133,8 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     SafeGetPKCS7(pkcs7, p7);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(data)) data = ossl_pkcs7_get_data(pkcs7);
+    if(!NIL_P(data) && PKCS7_is_detached(p7))
+	flg |= PKCS7_DETACHED;
     in = NIL_P(data) ? NULL : ossl_obj2bio(data);
     if(!(out = BIO_new(BIO_s_mem()))){
         BIO_free(in);
