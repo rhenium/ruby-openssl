@@ -68,6 +68,10 @@ certs.each{|cert|
 
 puts "========== Create Cert Store and Verify Certs =========="
 store = X509::Store.new
+store.add_cert(ca)
+#store.add_path("./cert")
+#store.add_file("./0cert.pem")
+
 #store.purpose = X509::PURPOSE_SSL_CLIENT
 #store.purpose = X509::PURPOSE_SSL_SERVER
 #store.purpose = X509::PURPOSE_NS_SSL_SERVER
@@ -83,9 +87,7 @@ store.purpose = X509::PURPOSE_SMIME_SIGN
 #store.trust = X509::TRUST_OBJECT_SIGN
 #store.trust = X509::TRUST_OCSP_SIGN
 #store.trust = X509::TRUST_OCSP_REQUEST
-store.add_cert(ca)
-#store.add_path("./cert")
-#store.add_file("./0cert.pem")
+
 verify_with_store(store, certs, verify_cb)
 
 puts "========== Load CRL =========="
