@@ -120,6 +120,7 @@ static VALUE
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
+    X509 *x509;
     VALUE buffer;
 
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
@@ -131,17 +132,23 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))) {
 	ossl_raise(eX509CertError, "");
     }
+
     /*
      * TODO:
      * Check if we could free old X509
      X509_free(DATA_PTR(self));
     */
-    if (!PEM_read_bio_X509(in, (X509 **)&DATA_PTR(self), NULL, NULL)) {
+    x509 = PEM_read_bio_X509(in, (X509 **)&DATA_PTR(self), NULL, NULL);
+    if (!x509) {
+	BIO_reset(in);
+	
+	x509 = d2i_X509_bio(in, (X509 **)&DATA_PTR(self));
+    }
+    if (!x509) {
 	BIO_free(in);
 	ossl_raise(eX509CertError, "");
     }
     BIO_free(in);
-
     return self;
 }
 
