@@ -139,7 +139,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     BIO *in;
     VALUE buffer, gen;
 
-    GetPKeyDH(self, pkey);
+    GetPKey(self, pkey);
     rb_scan_args(argc, argv, "11", &buffer, &gen);
     if (FIXNUM_P(buffer)) {
 	if (!NIL_P(gen)) {

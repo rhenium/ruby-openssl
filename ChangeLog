@@ -1,3 +1,6 @@
+Fri, 06 Jun 2003 08:13:09 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_pkey_dh.c: fix #initialize - pointed out by Dave Symonds <ds@seul.org>
+
 Tue, 03 Jun 2003 15:46:01 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* examples/ssl/svr.rb: CTX fixes by Stef Telford <stef@chronozon.artofdns.com> (Thanks!)
 
