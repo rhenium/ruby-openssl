@@ -1,3 +1,6 @@
+Thu, 26 Jun 2003 20:35:16 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* ossl_pkcs7.c: Typo cleanup.
+
 Thu, 26 Jun 2003 19:58:49 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_pkcs7.c: PKCS7#verify sets the content to @data.
 

@@ -521,12 +521,12 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
     msg = ERR_reason_error_string(ERR_get_error());
     ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
-    data = ossl_protec_membio2str(out, &status);
+    data = ossl_protect_membio2str(out, &status);
     ossl_pkcs7_set_data(self, data);
     BIO_free(in);
     BIO_free(out);
     sk_X509_free(x509s);
-    if(status) rb_jump_buf(status);
+    if(status) rb_jump_tag(status);
 
     return (ok == 1) ? Qtrue : Qfalse;
 }
