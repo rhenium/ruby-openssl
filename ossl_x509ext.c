@@ -150,7 +150,7 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 
 	GetX509ExtFactory(self, ctx);
 
-	ctx->crl = ossl_x509crl_get_X509_CRL(crl);
+	ctx->crl = DupX509CRLPtr(crl);
 
 	return crl;
 }

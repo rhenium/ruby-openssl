@@ -37,16 +37,25 @@ VALUE eX509CRLError;
  * PUBLIC
  */
 X509_CRL *
-ossl_x509crl_get_X509_CRL(VALUE obj)
+GetX509CRLPtr(VALUE obj)
 {
-	X509_CRL *crl, *new;
+	X509_CRL *crl;
 	
 	SafeGetX509CRL(obj, crl);
 
-	if (!(new = X509_CRL_dup(crl))) {
-		ossl_raise(eX509CRLError, "");
-	}
-	return new;
+	return crl;
+}
+
+X509_CRL *
+DupX509CRLPtr(VALUE obj)
+{
+	X509_CRL *crl;
+	
+	SafeGetX509CRL(obj, crl);
+
+	CRYPTO_add(&crl->references, 1, CRYPTO_LOCK_X509_CRL);
+	
+	return crl;
 }
 
 /*

@@ -275,21 +275,15 @@ ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
 }
 
 static VALUE
-ossl_pkcs7_add_crl(VALUE self, VALUE x509crl)
+ossl_pkcs7_add_crl(VALUE self, VALUE crl)
 {
 	PKCS7 *pkcs7;
-	X509_CRL *crl;
 	
 	GetPKCS7(self, pkcs7);
 
-	crl = ossl_x509crl_get_X509_CRL(x509crl);
-
-	if (!PKCS7_add_crl(pkcs7, crl)) { /* DUPs crl - free it! */
-		X509_CRL_free(crl);
+	if (!PKCS7_add_crl(pkcs7, GetX509CRLPtr(crl))) { /* NO DUP needed! */
 		ossl_raise(ePKCS7Error, "");
 	}
-	X509_CRL_free(crl);
-
 	return self;
 }
 

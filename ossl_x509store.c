@@ -248,27 +248,22 @@ ossl_x509store_get_chain(VALUE self)
 }
 
 static VALUE 
-ossl_x509store_add_crl(VALUE self, VALUE crlst)
+ossl_x509store_add_crl(VALUE self, VALUE crl)
 {
 	ossl_x509store *storep;
-	X509_CRL *crl;
 
 	GetX509Store(self, storep);
 	
-	crl = ossl_x509crl_get_X509_CRL(crlst);
-
-	if (!X509_STORE_add_crl(storep->store->ctx, crl)) { /* FIXME: NO DUP needed */
-		X509_CRL_free(crl);
+	if (!X509_STORE_add_crl(storep->store->ctx, GetX509CRLPtr(crl))) { /* NO DUP needed */
 		ossl_raise(eX509StoreError, "");
 	}
-	X509_CRL_free(crl);
 
 	/*
 	 * Check CRL
 	 */
 	X509_STORE_CTX_set_flags(storep->store, X509_V_FLAG_CRL_CHECK);
 
-	return crlst;
+	return crl;
 }
 
 static VALUE 

@@ -95,7 +95,7 @@ DupX509CertPtr(VALUE obj)
 	
 	SafeGetX509(obj, x509);
 	
-	CRYPTO_add(&x509->references,1,CRYPTO_LOCK_X509);
+	CRYPTO_add(&x509->references, 1, CRYPTO_LOCK_X509);
 	
 	return x509;
 }
