@@ -132,17 +132,13 @@ ossl_pkey_initialize(VALUE self)
     return self;
 }
 
-#warning FIXME: Is #to_der broken?
-#define BROKEN 0
 static VALUE
 ossl_pkey_to_der(VALUE self)
 {
     EVP_PKEY *pkey;
     X509_PUBKEY *key;
     VALUE str;
-#if BROKEN
     ASN1_OCTET_STRING *oc;
-#endif
     
     GetPKey(self, pkey);
     if (!(key = X509_PUBKEY_new())) {
@@ -152,18 +148,15 @@ ossl_pkey_to_der(VALUE self)
 	X509_PUBKEY_free(key);
 	ossl_raise(ePKeyError, "");
     }
-#if BROKEN
+
     oc = ASN1_item_pack(key, ASN1_ITEM_rptr(X509_PUBKEY), NULL);
     str = rb_str_new(oc->data, oc->length);
+
     X509_PUBKEY_free(key);
     ASN1_OCTET_STRING_free(oc);
-#else
-    str = rb_str_new(key->public_key->data, key->public_key->length);
-    X509_PUBKEY_free(key);
-#endif
+
     return str;
 }
-#undef BROKEN
 
 static VALUE
 ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
