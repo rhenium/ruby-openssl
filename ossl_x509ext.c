@@ -298,6 +298,24 @@ ossl_x509ext_get_critical(VALUE obj)
     return X509_EXTENSION_get_critical(ext) ? Qtrue : Qfalse;
 }
 
+static VALUE
+ossl_x509ext_to_der(VALUE obj)
+{
+    X509_EXTENSION *ext;
+    unsigned char *p;
+    int len;
+    VALUE str;
+
+    GetX509Ext(obj, ext);
+    p = NULL;
+    if((len = i2d_X509_EXTENSION(ext, &p)) < 0)
+        ossl_raise(eX509ExtError, NULL);
+    str = rb_str_new(p, len);
+    free(p);
+
+    return str;
+}
+
 /*
  * INIT
  */
@@ -319,12 +337,10 @@ Init_ossl_x509ext()
 	
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
     rb_undef_method(CLASS_OF(cX509Ext), "new");
-/*
-    rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);
-    rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
- */
+/*  rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc); */
+/*  rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1); */
     rb_define_method(cX509Ext, "oid", ossl_x509ext_get_oid, 0);
     rb_define_method(cX509Ext, "value", ossl_x509ext_get_value, 0);
     rb_define_method(cX509Ext, "critical?", ossl_x509ext_get_critical, 0);
+    rb_define_method(cX509Ext, "to_der", ossl_x509ext_to_der, 0);
 }
-

@@ -1,3 +1,6 @@
+Wed, 02 Jul 2003 06:04:45 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_x509ext.c: add X509::Extension#to_der (ossl_x509ext_to_der).
+
 Wed, 02 Jul 2003 02:34:21 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* lib/net/https.rb: revised. (tested on Ruby-1.8.0-previre3)
 	* lib/net/protocols.rb: ditto
