@@ -5,14 +5,17 @@ include OpenSSL
 include X509
 include PKey
 
-p ca = Certificate.new(File.open("./0cert.pem").read)
-p ca_key = RSA.new(File.open("./0key.pem").read)
+p ca = Certificate.new(File.read("./0cert.pem"))
+p ca_key = RSA.new(File.read("./0key.pem")) {
+  print "Enter password: "
+  gets.chop!
+}
 
-p spki = Netscape::SPKI.new(File.open("./spki.pem").read)
+p spki = Netscape::SPKI.new(File.read("./spki.pem"))
 p key = spki.public_key
 p new = Certificate.new
 
-p dn = File.open("./spki_dn.txt").read
+dn = "/CN=X/O=Ruby community/OU=Test/C=CZ"
 dn = dn[1..dn.size]
 name = []
 dn.split("/").each {|i| name << i.split("=")}
@@ -34,7 +37,9 @@ p ext4 = ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:alwa
 new.extensions = [ext1, ext2, ext3, ext4]
 p new.sign(ca_key, Digest::SHA1.new)
 
-f = File.new("./spki_cert.pem","w")
-f.write new.to_pem
-f.close
+File.open("./spki_cert.pem","w") {|f|
+  f << new.to_pem
+}
+
+puts "DONE."
 
