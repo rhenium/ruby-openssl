@@ -8,6 +8,8 @@ include OpenSSL
 
 $stdout.sync = true
 
+cn = ARGV.shift || 'SubCA'
+
 getopts nil, "csrout:"
 csrout = $OPT_csrout || "csr.pem"
 
@@ -36,7 +38,7 @@ File.open(keypair_file, "w", 0400) do |f|
   f << keypair.export(Cipher::DES.new(:EDE3, :CBC), &CAConfig::PASSWD_CB)
 end
 
-name = CAConfig::NAME.dup << ['CN','Sub CA']
+name = CAConfig::NAME.dup << ['CN', cn]
 
 puts "Generating CSR for #{name.inspect}"
 

@@ -13,7 +13,7 @@ def usage
   exit
 end
 
-getopts nil, 'type:client', 'out:', 'force', 'noakid'
+getopts nil, 'type:client', 'out:', 'force'
 
 cert_type = $OPT_type
 out_file = $OPT_out || 'cert.pem'
@@ -79,13 +79,11 @@ when "terminalsubca"
   key_usage << "cRLSign" << "keyCertSign"
 when "server"
   basic_constraint = "CA:FALSE"
-  key_usage << "nonRepudiation" << "digitalSignature" << "keyEncipherment"
-  key_usage << "dataEncipherment"
+  key_usage << "digitalSignature" << "keyEncipherment"
   ext_key_usage << "serverAuth"
 when "ocsp"
   basic_constraint = "CA:FALSE"
-  key_usage << "nonRepudiation" << "digitalSignature" << "keyEncipherment"
-  key_usage << "dataEncipherment"
+  key_usage << "nonRepudiation" << "digitalSignature"
   ext_key_usage << "serverAuth" << "OCSPSigning"
 when "client"
   basic_constraint = "CA:FALSE"
@@ -104,13 +102,8 @@ ex << ef.create_extension("nsComment","Ruby/OpenSSL Generated Certificate")
 ex << ef.create_extension("subjectKeyIdentifier", "hash")
 #ex << ef.create_extension("nsCertType", "client,email")
 ex << ef.create_extension("keyUsage", key_usage.join(",")) unless key_usage.empty?
-if $OPT_noakid
-  # For cross certification, with OpenSSL, akid seems to block to find a
-  # cross-cert path.  RFC2510 defines this field as a 'MUST' field so use this
-  # option carefully.
-else
-  ex << ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
-end
+#ex << ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
+#ex << ef.create_extension("authorityKeyIdentifier", "keyid:always")
 ex << ef.create_extension("extendedKeyUsage", ext_key_usage.join(",")) unless ext_key_usage.empty?
 
 ex << ef.create_extension("crlDistributionPoints", CAConfig::CDP_LOCATION) if CAConfig::CDP_LOCATION

@@ -35,7 +35,7 @@ crl = if FileTest.exist?(CAConfig::CRL_FILE)
     X509::CRL.new
   end
 
-crl.issuer = ca.issuer
+crl.issuer = ca.subject
 crl.last_update = Time.now
 crl.next_update = Time.now + CAConfig::CRL_DAYS * 24 * 60 * 60
 

@@ -1,3 +1,8 @@
+Thu, 11 Jul 2003 02:23:04 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/ca/init_sub_ca.rb: Add a command line option for CN.
+	* examples/ca/gen_crl.rb: CRL issuer was wrong!  Oops.
+	* examples/ca/gen_cert.rb: Changed keyUsage bits of each cert type.
+
 Thu, 10 Jul 2003 12:32:56 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: Prototype for sk2ary
 	* ocsp.c: Typo in ossl_ocspbres_add_status (sk_X509_pop_free -> sk_X509_EXTENSION_pop_free)
