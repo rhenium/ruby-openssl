@@ -1,3 +1,7 @@
+Sun, 29 Jun 2003 20:14:00 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/ca/gen_clientee_from_csr.rb: Typo fixed.
+	* examples/ca/gen_clientee_from_scratch.rb: Ditto.
+
 Sun, 29 Jun 2003 19:14:44 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/cert_store.rb: Show BN in hex format.
 	  Show valid time in 'from ... to ...' format.

@@ -17,7 +17,7 @@ csr = X509::Request.new(File.open(csr_file).read)
 unless csr.verify(csr.public_key)
   raise "CSR sign verification failed."
 end
-# Only checks signature here.  You must verify CSR according to your CP/CPS.
+# Only checks signature here.  You must verify CSR according to your CP/CSP.
 
 $stdout.sync = true
 
@@ -55,10 +55,10 @@ ef.issuer_certificate = ca
 ext1 = ef.create_extension("basicConstraints","CA:FALSE")
 ext2 = ef.create_extension("nsComment","Ruby/OpenSSL Generated Certificate")
 ext3 = ef.create_extension("subjectKeyIdentifier", "hash")
-ext3 = ef.create_extension("nsCertType", "client,email")
-ext3 = ef.create_extension("keyUsage", "digitalSignature,keyEncipherment")
-ext4 = ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
-cert.extensions = [ext1, ext2, ext3, ext4]
+ext4 = ef.create_extension("nsCertType", "client,email")
+ext5 = ef.create_extension("keyUsage", "digitalSignature,keyEncipherment")
+ext6 = ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
+cert.extensions = [ext1, ext2, ext3, ext4, ext5, ext6]
 cert.sign(ca_keypair, Digest::SHA1.new)
 
 # For backup
@@ -68,7 +68,7 @@ File.open(cert_file, "w", 0644) do |f|
   f << cert.to_pem
 end
 
-puts "Writing cer.pem..."
+puts "Writing cert.pem..."
 FileUtils.copy(cert_file, "cert.pem")
 
 puts "DONE. (Generated certificate for '#{cert.subject}')"
