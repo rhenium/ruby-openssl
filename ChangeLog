@@ -1,3 +1,9 @@
+Mon, 24 Feb 2003 08:47:40 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* Released as 0.2.0-pre0
+
+Mon, 24 Feb 2003 08:46:33 +0100 -- Michal Rokos <michal@rokos.homeip.net>
+	* Brought Ruby1.6 compatibility layer (see ruby_missing.h). Currently #dup, #copy is known to be broken
+
 Fri, 21 Feb 2003 19:30:31 +0100 -- Michal Rokos <michal@rokos.homeip.net>
 	* x509name.c: added new method #hash to behave as openssl [name.hash.to_s(16)]
 
