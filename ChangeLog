@@ -1,3 +1,6 @@
+Tue, 01 Jul 2003 17:28:29 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
+	* ossl_pkcs7.c: PKCS7#singner renamed to PKCS7#signers.
+
 Tue, 01 Jul 2003 17:11:40 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509ext.c: X509::Extension#oid,value,critical? is builtin.
 	* lib/openssl/x509.rb: X509::Extension#to_a is implented by Ruby.
