@@ -154,7 +154,6 @@ ossl_ssl_verify_failure(VALUE dummy)
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
-    int verify_ok = preverify_ok;
     VALUE args, cb, result;
     SSL *ssl;
 
@@ -165,20 +164,18 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
         rb_ary_push(args, cb);
         rb_ary_push(args, preverify_ok ? Qtrue : Qfalse);
         rb_ary_push(args, ossl_x509store_new(ctx));
-	result = rb_rescue(ossl_ssl_call_verify_cb, args,
+        result = rb_rescue(ossl_ssl_call_verify_cb, args,
                            ossl_ssl_verify_failure, Qnil);
-        if(result == Qtrue){
-            X509_STORE_CTX_set_error(ctx, X509_V_OK);
-            verify_ok = 1;
-        }
-        else{
+        if(result != Qtrue){
             if(X509_STORE_CTX_get_error(ctx) == X509_V_OK)
                 X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-            verify_ok = 0;
+            return 0; /* verify NG. */
         }
+        X509_STORE_CTX_set_error(ctx, X509_V_OK);
+        return 1;     /* verify OK. */
     }
     
-    return verify_ok;
+    return preverify_ok;
 }
 
 static VALUE
