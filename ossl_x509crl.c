@@ -173,6 +173,29 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
 }
 
 static VALUE 
+ossl_x509crl_get_signature_algorithm(VALUE self)
+{
+    X509_CRL *crl;
+    BIO *out;
+    BUF_MEM *buf;
+    VALUE str;
+
+    GetX509CRL(self, crl);
+	
+    if (!(out = BIO_new(BIO_s_mem()))) {
+	ossl_raise(eX509CertError, "");
+    }
+    if (!i2a_ASN1_OBJECT(out, crl->sig_alg->algorithm)) {
+	BIO_free(out);
+	ossl_raise(eX509CertError, "");
+    }
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
+    BIO_free(out);
+    return str;
+}
+
+static VALUE 
 ossl_x509crl_get_issuer(VALUE self)
 {
     X509_CRL *crl;
@@ -505,6 +528,7 @@ Init_ossl_x509crl()
     
     rb_define_method(cX509CRL, "version", ossl_x509crl_get_version, 0);
     rb_define_method(cX509CRL, "version=", ossl_x509crl_set_version, 1);
+    rb_define_method(cX509CRL, "signature_algorithm", ossl_x509crl_get_signature_algorithm, 0);
     rb_define_method(cX509CRL, "issuer", ossl_x509crl_get_issuer, 0);
     rb_define_method(cX509CRL, "issuer=", ossl_x509crl_set_issuer, 1);
     rb_define_method(cX509CRL, "last_update", ossl_x509crl_get_last_update, 0);

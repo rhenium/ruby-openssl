@@ -323,6 +323,29 @@ ossl_x509_set_serial(VALUE self, VALUE num)
 }
 
 static VALUE 
+ossl_x509_get_signature_algorithm(VALUE self)
+{
+    X509 *x509;
+    BIO *out;
+    BUF_MEM *buf;
+    VALUE str;
+
+    GetX509(self, x509);
+	
+    if (!(out = BIO_new(BIO_s_mem()))) {
+	ossl_raise(eX509CertError, "");
+    }
+    if (!i2a_ASN1_OBJECT(out, x509->cert_info->signature->algorithm)) {
+	BIO_free(out);
+	ossl_raise(eX509CertError, "");
+    }
+    BIO_get_mem_ptr(out, &buf);
+    str = rb_str_new(buf->data, buf->length);
+    BIO_free(out);
+    return str;
+}
+
+static VALUE 
 ossl_x509_get_subject(VALUE self)
 {
     X509 *x509;
@@ -647,6 +670,7 @@ Init_ossl_x509cert()
     rb_define_method(cX509Cert, "to_text", ossl_x509_to_text, 0);
     rb_define_method(cX509Cert, "version", ossl_x509_get_version, 0);
     rb_define_method(cX509Cert, "version=", ossl_x509_set_version, 1);
+    rb_define_method(cX509Cert, "signature_algorithm", ossl_x509_get_signature_algorithm, 0);
     rb_define_method(cX509Cert, "serial", ossl_x509_get_serial, 0);
     rb_define_method(cX509Cert, "serial=", ossl_x509_set_serial, 1);
     rb_define_method(cX509Cert, "subject", ossl_x509_get_subject, 0);
