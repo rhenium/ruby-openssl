@@ -217,7 +217,7 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
     X509_STORE *store;
     X509 *cert;
 
-    cert = DupX509CertPtr(arg);
+    cert = GetX509CertPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
     X509_STORE_add_cert(store, cert);
 
@@ -230,7 +230,7 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
     X509_STORE *store;
     X509_CRL *crl;
 
-    crl = DupX509CRLPtr(arg);
+    crl = GetX509CRLPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
     X509_STORE_add_crl(store, crl);
 
