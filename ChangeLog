@@ -4,6 +4,15 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.16  2002/01/04 11:22:55  majkl
+	* SelfDispatching used for X509:: Name, Extension, Attribute
+		def XXX.new(arg)
+			XXX.send("new_from_#{arg.type.name.downcase}", arg)
+		end
+
+	* RSA,DSA - 'new_from_pem', 'generate' singleton methods defined
+		'new' - implemented in Ruby space
+
 Revision 1.15  2002/01/04 11:12:45  majkl
 	* Further checking (Check_SafeStr, memory leaks)
 
