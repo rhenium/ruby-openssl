@@ -388,7 +388,11 @@ ossl_pkcs7_data_verify(int argc, VALUE *argv, VALUE self)
 		result = PKCS7_dataVerify(store, &ctx, bio, pkcs7, si);
 		
 		if (result <= 0) {
+/*
+ * TODO, FIXME
+ * Bring back Debug support
 			OSSL_Debug("result < 0! (%s)", OSSL_ErrMsg());
+ */
 			return Qfalse;
 		}
 		

@@ -99,6 +99,9 @@ void ossl_raise(VALUE, const char *, ...);
  * Debug
  */
 extern VALUE dOSSL;
+/*
+ * TODO, FIXME
+ * Bring back debug support - Microsoft C++ doesn't support this
 #define OSSL_Debug(fmt, ...) do { \
 	if (dOSSL == Qtrue) { \
 		fprintf(stderr, "OSSL_DEBUG: "); \
@@ -106,6 +109,7 @@ extern VALUE dOSSL;
 		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
 	} \
 } while (0)
+ */
 
 /*
  * Include all parts

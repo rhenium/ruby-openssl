@@ -37,6 +37,9 @@ OpenSSL::
   HMAC::
     * Move it to Digest module?
     
+  PKCS7::
+    * Support attributes ((signed_)attributes)
+
   PKey::
     * Factory? RSA#initialize -> PKey.new("RSA")?
 
