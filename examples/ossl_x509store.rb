@@ -22,11 +22,11 @@ def verify_with_store(store, certs, callback)
     print "serial = #{cert.serial}: "
 
     # verify with block
-    result = store.verify(cert, &callback)
-    print result ? "Yes " : "No "
-    if store.error != X509::V_OK
-      puts store.error_string.inspect
-    end
+    #result = store.verify(cert, &callback)
+    #print result ? "Yes " : "No "
+    #if store.error != X509::V_OK
+    #  puts store.error_string.inspect
+    #end
 
     # verify with callback
     print store.verify(cert) ? "Yes " : "No "
@@ -35,12 +35,12 @@ def verify_with_store(store, certs, callback)
     end
 
     # verify by StoreContext
-    ctx = X509::StoreContext.new(store)
-    ctx.cert = cert
-    print ctx.verify ? "Yes " : "No "
-    if ctx.error != X509::V_OK
-      puts ctx.error_string.inspect
-    end
+    #ctx = X509::StoreContext.new(store)
+    #ctx.cert = cert
+    #print ctx.verify ? "Yes " : "No "
+    #if ctx.error != X509::V_OK
+    #  puts ctx.error_string.inspect
+    #end
 
     puts
   }
