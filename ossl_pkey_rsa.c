@@ -91,21 +91,27 @@ ossl_rsa_generate_cb(int p, int n, void *arg)
 }
 
 static RSA *
-rsa_generate(int size)
+rsa_generate(int size, int exp)
 {
     void (*cb)(int, int, void *) = NULL;
 	
     if (rb_block_given_p()) {
 	cb = ossl_rsa_generate_cb;
     }
-    return RSA_generate_key(size, RSA_F4, cb, NULL);
+    return RSA_generate_key(size, exp, cb, NULL);
 }
 
 static VALUE
-ossl_rsa_s_generate(VALUE klass, VALUE size)
+ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 {
-    RSA *rsa = rsa_generate(FIX2INT(size)); /* err handled by rsa_instance */
-    VALUE obj = rsa_instance(klass, rsa);
+    RSA *rsa;
+    VALUE size, exp;
+    VALUE obj;
+
+    rb_scan_args(argc, argv, "11", &size, &exp);
+
+    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2INT(exp)); /* err handled by rsa_instance */
+    obj = rsa_instance(klass, rsa);
 
     if (obj == Qfalse) {
 	RSA_free(rsa);
@@ -129,7 +135,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &pass);
 
     if (FIXNUM_P(buffer)) {
-	rsa = rsa_generate(FIX2INT(buffer));
+	rsa = rsa_generate(FIX2INT(buffer), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
 	if (!rsa) {
 	    ossl_raise(eRSAError, "");
 	}
@@ -526,7 +532,7 @@ Init_ossl_rsa()
 
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
-    rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, 1);
+    rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
 	
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
