@@ -69,7 +69,6 @@ GetX509NamePtr(VALUE obj)
 /*
  * Private
  */
-#if 0
 static VALUE
 ossl_x509name_s_allocate(VALUE klass)
 {
@@ -120,66 +119,36 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	return self;
 }
-#endif
 
-/*
- * Iterator for ossl_x509name_new_from_hash
- */
-static int
-ossl_x509name_hash_i(VALUE key, VALUE value, X509_NAME *name)
-{
-	int type;
-	
-	StringValue(key);
-	StringValue(value);
-	
-	type = ASN1_PRINTABLE_type(StringValuePtr(value), -1);
-
-	if (!X509_NAME_add_entry_by_txt(name, StringValuePtr(key), type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
-		X509_NAME_free(name);
-		ossl_raise(eX509NameError, "");
-	}
-	return ST_CONTINUE;
-}
-
-static VALUE 
-ossl_x509name_s_new_from_hash(VALUE klass, VALUE hash)
+static VALUE
+ossl_x509name_to_s(VALUE self)
 {
 	X509_NAME *name;
-	VALUE obj;
-	
-	Check_Type(hash, T_HASH);
 
-	if (!(name = X509_NAME_new())) {
-		ossl_raise(eX509NameError, "");
-	}
-	st_foreach(RHASH(hash)->tbl, ossl_x509name_hash_i, name);
+	GetX509Name(self, name);
 
-	WrapX509Name(klass, obj, name);
-
-	return obj;
+	return rb_str_new2(X509_NAME_oneline(name, NULL, 0));
 }
 
 static VALUE 
-ossl_x509name_to_h(VALUE self)
+ossl_x509name_to_a(VALUE self)
 {
 	X509_NAME *name;
 	X509_NAME_ENTRY *entry;
 	int i,entries;
 	char long_name[512];
 	const char *short_name;
-	VALUE hash;
+	VALUE ary;
 	
 	GetX509Name(self, name);
 
 	entries = X509_NAME_entry_count(name);
 
-	hash = rb_hash_new();
-
 	if (entries < 0) {
 		rb_warning("name entries < 0!");
-		return hash;
+		return rb_ary_new();
 	}
+	ary = rb_ary_new2(entries);
 
 	for (i=0; i<entries; i++) {
 		if (!(entry = X509_NAME_get_entry(name, i))) {
@@ -190,9 +159,9 @@ ossl_x509name_to_h(VALUE self)
 		}
 		short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
 
-		rb_hash_aset(hash, rb_str_new2(short_name), rb_str_new(entry->value->data, entry->value->length));
+		rb_ary_push(ary, rb_assoc_new(rb_str_new2(short_name), rb_str_new(entry->value->data, entry->value->length)));
 	}
-	return hash;
+	return ary;
 }
 
 /*
@@ -205,7 +174,10 @@ Init_ossl_x509name()
 
 	cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
 	
-	rb_define_singleton_method(cX509Name, "new_from_hash", ossl_x509name_s_new_from_hash, 1);
-	rb_define_method(cX509Name, "to_h", ossl_x509name_to_h, 0);
+	rb_define_singleton_method(cX509Name, "allocate", ossl_x509name_s_allocate, 0);
+	rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
+	
+	rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
+	rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
 }
 

@@ -68,11 +68,7 @@ class TC_Certificate < Test::Unit::TestCase
     assert_instance_of(Name, $x509.subject, "subject")
     assert_equal("", $x509.subject.to_s, "subject")
     $x509.subject = Name::new(a)
-    ##
-    # TODO
-    # FIXME
-    # fix X509::Name::new first
-    # assert_equal(a, $x509.subject.to_a, "subject =")
+    assert_equal(a, $x509.subject.to_a, "subject =")
   end
   def test_04issuer
     a = [["C", "CZ"], ["O", "OpenSSL for Ruby"], ["OU", "Development"], ["CN", "CA"]]
@@ -80,11 +76,7 @@ class TC_Certificate < Test::Unit::TestCase
     assert_instance_of(Name, $x509.issuer, "issuer")
     assert_equal("", $x509.issuer.to_s, "issuer")
     $x509.issuer = Name::new(a)
-    ##
-    # TODO
-    # FIXME
-    # fix X509::Name::new firts
-    # assert_equal(a, $x509.issuer.to_a, "issuer =")
+    assert_equal(a, $x509.issuer.to_a, "issuer =")
   end
   def test_05not_before
     t = Time.now

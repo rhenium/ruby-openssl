@@ -3,6 +3,11 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Wed, 26 Jun 2002 15:28:03 +0100 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509name.c: port to new Ruby interface, dropped 'self dipathing' (Only allowed param is Array or nil), fixed the reason why TC failed
+	* x509.rb: dropped 'self dispatching'
+	* tc_x509cert.rb: more tests enabled (X509::Name fixed)
+	
 Tue, 18 Jun 2002 22:43:23 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.c: fix UTC -> local time conversion
 	* x509cert.c: use X509_time_adj

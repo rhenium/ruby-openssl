@@ -21,58 +21,6 @@
 module OpenSSL
 module X509
 
-class Name
-  def Name::new(arg)
-    type = arg.class
-    while type
-      method = "new_from_#{type.name.downcase}".intern
-      return Name::send(method, arg) if Name::respond_to? method
-      type = type.superclass
-    end
-    raise TypeError, "Don't how to make new #{self} from #{arg.class}"
-    ###Name::send("new_from_#{arg.class.name.downcase}", arg)
-  end
-  #
-  # Name::new_from_hash(hash) is built-in method
-  # 
-  def Name::new_from_string(str) # we're expecting string like "/A=B/C=D/E=F"
-    hash = Hash::new
-    key = val = nil # speed optim.
-    ary = str.split("/")
-    ary.shift # first item is "" - so skip it
-    ary.each {|item|
-      key, val = item.split("=")
-      hash[key] = val
-    }
-    Name::new_from_hash(hash)
-    ###ary.collect! {|item| item.split("=") }
-    ###Name::new_from_array(ary)
-  end
-
-  def Name::new_from_array(ary) # [["A","B"],["C","D"],["E","F"]]
-    hash = Hash::new
-    ary.each {|key, val|
-      hash[key] = val
-    }
-    Name::new_from_hash(hash)
-  end
-  #
-  # to_h is built-in method
-  # 
-  def to_s # "/A=B/C=D/E=F"
-    hash = self.to_h
-    str = ""
-    hash.keys.each do |key|
-      str += "/" + key + "=" + hash[key]
-    end
-    str
-  end
-      
-  def to_a # [["A","B"],["C","D"],["E","F"]]
-    to_h.to_a
-  end
-end # Name
-    
 class ExtensionFactory
   def create_extension(*arg)
     if arg.size == 1 then arg = arg[0] end
