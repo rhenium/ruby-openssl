@@ -53,7 +53,7 @@ end
 
 key_plain_file = "./#{cert.serial}key-plain.pem"
 puts "Writing #{key_plain_file}."
-File.open(key_plain_file, "w", 0600) do |f|
+File.open(key_plain_file, "w", 0400) do |f|
   f << key.to_pem
 end
 
