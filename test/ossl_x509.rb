@@ -58,5 +58,8 @@ p ext4 = maker.create_extension(["authorityKeyIdentifier", "keyid:always,issuer:
 #puts ext1.to_str
 p new.add_extension(ext4)
 p new.sign(key, Digest::MD5.new)
+puts "===PEM==="
 puts new.to_str
+puts "===DER==="
+p new.to_der
 

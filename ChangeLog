@@ -3,6 +3,11 @@ $Id$
 Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
+$Log$
+Revision 1.6  2001/11/19 12:44:57  majkl
+added X509::Certificate .to_der
+
+
 2001/11/18 (ossl-0.0.9)
 	* all project is moved to savannah.gnu.org
 	* applied patch to make yielding optional (GOTOU Yuuzou - thanks!)

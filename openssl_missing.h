@@ -31,6 +31,8 @@
 #define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup((int (*)())i2d_DSAPublicKey, \
 	(char *(*)())d2i_DSAPublicKey,(char *)dsa)
 #endif
+#define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((int (*)())i2d_X509_REVOKED, \
+	(char *(*)())d2i_X509_REVOKED, (char *)rev)
 
 /* to pkcs7.h */
 #define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((int (*)())i2d_PKCS7_SIGNER_INFO, \

@@ -45,11 +45,16 @@ static void ossl_x509revoked_free(ossl_x509revoked *revp)
 VALUE ossl_x509revoked_new2(X509_REVOKED *rev)
 {
 	ossl_x509revoked *revp = NULL;
+	X509_REVOKED *new = NULL;
 	VALUE obj;
 
+	if (!(new = X509_REVOKED_dup(rev))) {
+		rb_raise(eX509RevokedError, "%s", ossl_error());
+	}
+	
 	MakeX509Revoked(obj, revp);
-	revp->revoked = ((X509_REVOKED *)ASN1_dup((int (*)())i2d_X509_REVOKED, (char *(*)())d2i_X509_REVOKED, (char *)rev));
-
+	revp->revoked = new;
+	
 	return obj;
 }
 
@@ -59,7 +64,7 @@ X509_REVOKED *ossl_x509revoked_get_X509_REVOKED(VALUE self)
 
 	GetX509Revoked(self, revp);
 
-	return ((X509_REVOKED *)ASN1_dup((int (*)())i2d_X509_REVOKED, (char *(*)())d2i_X509_REVOKED, (char *)revp->revoked));
+	return X509_REVOKED_dup(revp->revoked);
 }
 
 /*

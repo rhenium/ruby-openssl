@@ -135,6 +135,29 @@ static VALUE ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
+static VALUE ossl_x509_to_der(VALUE self)
+{
+	ossl_x509 *x509p = NULL;
+	BIO *out = NULL;
+	BUF_MEM *buf = NULL;
+	VALUE str;
+	
+	GetX509(self, x509p);
+
+	if (!(out = BIO_new(BIO_s_mem()))) {
+		rb_raise(eX509CertificateError, "%s", ossl_error());
+	}
+	if (!i2d_X509_bio(out, x509p->x509)) {
+		BIO_free(out);
+		rb_raise(eX509CertificateError, "%s", ossl_error());
+	}
+	BIO_get_mem_ptr(out, &buf);
+	str = rb_str_new(buf->data, buf->length);
+	BIO_free(out);
+	
+	return str;
+}
+
 static VALUE ossl_x509_to_pem(VALUE self)
 {
 	ossl_x509 *x509p = NULL;
@@ -590,6 +613,7 @@ void Init_ossl_x509(VALUE mX509)
 	cX509Certificate = rb_define_class_under(mX509, "Certificate", rb_cObject);
 	rb_define_singleton_method(cX509Certificate, "new", ossl_x509_s_new, -1);
 	rb_define_method(cX509Certificate, "initialize", ossl_x509_initialize, -1);
+	rb_define_method(cX509Certificate, "to_der", ossl_x509_to_der, 0);
 	rb_define_method(cX509Certificate, "to_pem", ossl_x509_to_pem, 0);
 	rb_define_method(cX509Certificate, "to_str", ossl_x509_to_str, 0);
 	rb_define_method(cX509Certificate, "version", ossl_x509_get_version, 0);

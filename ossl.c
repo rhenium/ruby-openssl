@@ -24,11 +24,14 @@ void ossl_check_type(VALUE obj, VALUE klass)
 #ifdef OSSL_DEBUG
 inline char *ossl_error() {
 	char *ret = NULL, *err = NULL;
-	int err_len = NULL;
+	int ret_len = 0;
 	
 	err = ERR_error_string(ERR_get_error(), NULL);
-	ret = malloc(strlen(err)+strlen(__FILE__)+(sizeof(__LINE__)*3)+5);
-	sprintf(ret, "%s [%s:%d]", err, __FILE__, __LINE__);
+	ret_len = strlen(err)+strlen(__FILE__)+(sizeof(__LINE__)*3)+5;
+	ret = malloc(ret_len+1);
+	if (snprintf(ret, ret_len, "%s [%s:%d]", err, __FILE__, __LINE__) > ret_len) {
+		rb_bug("BUFFER OVERFLOW IN ossl_error());
+	}
 
 	return ret;
 }
