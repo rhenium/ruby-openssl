@@ -1,5 +1,6 @@
 Thu, 26 Jun 2003 05:48:07 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* openssl_missing.c: addded X509_STORE_{set,get}_ex_data().
+	* extconf.rb: checks X509_STORE_set_ex_data().
 	* ossl.h: added data conversion utilities.
 	* ossl.c: ditto.
 
