@@ -3,6 +3,10 @@ $Id$
 Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
+2001/11/16
+	* added yielding when generating RSA key (see test/ossl_pkey.rb)
+	* added yielding when generating DSA key (see test/ossl_pkey.rb)
+
 2001/11/15
 	* PKCS7::Signer - introduced
 	* PKCS7 - yield Signer when verifiing data

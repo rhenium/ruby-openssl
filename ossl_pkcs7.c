@@ -54,7 +54,6 @@ VALUE ePKCS7Error;
  */
 typedef struct ossl_pkcs7_st {
 	PKCS7 *pkcs7;
-	/*PKCS7_SIGNER_INFO *si;*/
 } ossl_pkcs7;
 
 typedef struct ossl_pkcs7si_st {
@@ -264,8 +263,9 @@ static VALUE ossl_pkcs7_add_signer(VALUE self, VALUE pkey, VALUE signer)
 	if (!PKCS7_add_signer(p7p->pkcs7, si)) {
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
-	PKCS7_add_signed_attribute(si, NID_pkcs9_contentType, V_ASN1_OBJECT, OBJ_nid2obj(NID_pkcs7_data));
-	/*p7p->si = si;*/
+
+	if (PKCS7_type_is_signed(p7p->pkcs7))
+		PKCS7_add_signed_attribute(si, NID_pkcs9_contentType, V_ASN1_OBJECT, OBJ_nid2obj(NID_pkcs7_data));
 	
 	return self;
 }
@@ -554,7 +554,7 @@ static VALUE ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
 	if (!(si = PKCS7_SIGNER_INFO_new())) {
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
-	if (!(PKCS7_SIGNER_INFO_set(si, x509, pkey, (EVP_MD *)md))) {
+	if (!(PKCS7_SIGNER_INFO_set(si, x509, pkey, md))) {
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	p7sip->signer = si;

@@ -131,6 +131,20 @@ static VALUE ossl_dsa_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
+/*
+ * CB for yielding when generating DSA params
+ */
+static void ossl_dsa_generate_cb(int p, int n, void *arg)
+{
+	VALUE ary;
+
+	ary = rb_ary_new2(2);
+	rb_ary_store(ary, 0, INT2NUM(p));
+	rb_ary_store(ary, 1, INT2NUM(n));
+	
+	rb_yield(ary);
+}
+
 static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_dsa *dsap = NULL;
@@ -155,7 +169,7 @@ static VALUE ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 			if (!RAND_bytes(seed, seed_len)) {
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
-			if (!(dsa = DSA_generate_parameters(FIX2INT(buffer), seed, seed_len, &counter, &h, NULL, NULL))) {
+			if (!(dsa = DSA_generate_parameters(FIX2INT(buffer), seed, seed_len, &counter, &h, ossl_dsa_generate_cb, NULL))) { /* arg to cb = NULL */
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
 			if (!DSA_generate_key(dsa)) {

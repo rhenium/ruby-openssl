@@ -7,7 +7,15 @@ include Cipher
 include Digest
 
 puts "==RSA=="
-p rsa = RSA.new(512)
+p rsa = PKey::RSA.new(512) {|p, n| #the same as in OpenSSL
+  if (p==0) then putc "." #BN_generate_prime
+  elsif (p==1) then putc "+" #BN_generate_prime
+  elsif (p==2) then putc "*" #searching good prime, n = #of try, but also data from BN_generate_prime
+  elsif (p==3) then putc "\n" #found good prime, n==0 - p, n==1 - q, but also data from BN_generate_prime
+  else putc "*" #BN_generate_prime
+  end
+}
+
 puts ".......=sign'n'verify"
 txt = <<END
 Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.jp>.
@@ -75,7 +83,14 @@ p enc = rsa.public_encrypt(txt2)
 p rsa.private_decrypt(enc)
 
 puts "==DSA=="
-p dsa = DSA.new(512)
+p dsa = PKey::DSA.new(512) {|p, n| #the same as in OpenSSL
+  if (p==0) then putc "."
+  elsif (p==1) then putc "+"
+  elsif (p==2) then putc "*" #(2,1)=>found q
+  elsif (p==3) then putc "\n" #(3,1)=>generated g
+  else putc "*"
+  end
+}
 puts ".......=sign'n'verify"
 p sig = dsa.sign(DSS.new, txt)
 p dsa.verify(DSS.new, sig, txt)

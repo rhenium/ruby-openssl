@@ -29,6 +29,9 @@
 VALUE cX509Store;
 VALUE eX509StoreError;
 
+/*
+ * General callback for OpenSSL verify
+ */
 int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
 
 /*
@@ -71,7 +74,7 @@ VALUE ossl_x509store_new2(X509_STORE_CTX *ctx)
 	X509_STORE_CTX_init(ctx2, X509_STORE_dup(ctx->ctx), X509_dup(ctx->cert), NULL);
 	*/
 	storep->store = ctx;
-	storep->protect = 1;
+	storep->protect = 1; /* we're using pointer without DUP - don't free this one */
 	
 	return obj;
 }
@@ -82,6 +85,7 @@ X509_STORE *ossl_x509store_get_X509_STORE(VALUE obj)
 	
 	GetX509Store(obj, storep);
 	
+	storep->protect = 1; /* we gave out internal pointer without DUP - don't free this one */
 	return storep->store->ctx;
 }
 
@@ -97,17 +101,17 @@ X509_STORE_CTX *ossl_x509store_get_X509_STORE_CTX(VALUE obj)
  * TODO:
  * clean entries when garbage collecting
  */
-typedef struct verify_cb_db_st {
+typedef struct ossl_session_db_st {
 	void *key;
 	VALUE data;
-	struct verify_cb_db_st *next;
-} verify_cb_db;
+	struct ossl_session_db_st *next;
+} ossl_session_db;
 
-verify_cb_db *db_root;
+ossl_session_db *db_root;
 
-static VALUE verify_cb_get(void *key)
+static VALUE ossl_session_db_get(void *key)
 {
-	verify_cb_db *item = db_root;
+	ossl_session_db *item = db_root;
 
 	rb_thread_critical = 1;
 	while (item) {
@@ -121,21 +125,21 @@ static VALUE verify_cb_get(void *key)
 	return Qnil;
 }
 
-static void verify_cb_set(void *key, VALUE data)
+static VALUE ossl_session_db_set(void *key, VALUE data)
 {
-	verify_cb_db *item = db_root, *last = NULL;
+	ossl_session_db *item = db_root, *last = NULL;
 	
 	rb_thread_critical = 1;
 	while (item) {
 		if (item->key == key) {
 			item->data = data;
 			rb_thread_critical = 0;
-			return;
+			return VALUE;
 		}
 		last = item;
 		item = last->next;
 	}
-	if (!(item = (verify_cb_db *)malloc(sizeof(verify_cb_db)))) {
+	if (!(item = (ossl_session_db *)malloc(sizeof(ossl_session_db)))) {
 		rb_thread_critical = 0;
 		rb_raise(ePKCS7Error, "MALLOC ERROR");
 	}
@@ -146,6 +150,8 @@ static void verify_cb_set(void *key, VALUE data)
 		last->next = item;
 	else db_root = item;
 	rb_thread_critical = 0;
+
+	return VALUE;
 }
 
 /*
@@ -312,7 +318,7 @@ int ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 	/*
 	 * Get Proc from verify_cb Database
 	 */
-	proc = verify_cb_get((void *)ctx->ctx);
+	proc = ossl_session_db_get((void *)ctx->ctx);
 	
 	if (!NIL_P(proc)) {
 		store_ctx = ossl_x509store_new2(ctx);
@@ -433,7 +439,7 @@ static VALUE ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
 	/*
 	 * Associate verify_cb with Store in DB
 	 */
-	verify_cb_set((void *)storep->store->ctx, proc);	
+	ossl_session_db_set((void *)storep->store->ctx, proc);	
 	rb_ivar_set(self, rb_intern("@verify_callback"), proc);
 	
 	return proc;
@@ -445,7 +451,7 @@ static VALUE ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
 void Init_ossl_x509store(VALUE mX509)
 {
 	/*
-	 * verify_cb DB INIT
+	 * INIT verify_cb DB
 	 */
 	db_root = NULL;
 	

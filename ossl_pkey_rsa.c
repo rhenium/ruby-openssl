@@ -131,6 +131,20 @@ static VALUE ossl_rsa_s_new(int argc, VALUE *argv, VALUE klass)
 	return obj;
 }
 
+/*
+ * CB for yielding when generating RSA data
+ */
+static void ossl_rsa_generate_cb(int p, int n, void *arg)
+{
+	VALUE ary;
+
+	ary = rb_ary_new2(2);
+	rb_ary_store(ary, 0, INT2NUM(p));
+	rb_ary_store(ary, 1, INT2NUM(n));
+	
+	rb_yield(ary);
+}
+
 static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 {
 	ossl_rsa *rsap = NULL;
@@ -150,7 +164,7 @@ static VALUE ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 		}
 	} else switch (TYPE(buffer)) {
 		case T_FIXNUM:
-			if (!(rsa = RSA_generate_key(FIX2INT(buffer), RSA_F4, NULL, NULL))) {
+			if (!(rsa = RSA_generate_key(FIX2INT(buffer), RSA_F4, ossl_rsa_generate_cb, NULL))) { /* arg to cb = NULL */
 				rb_raise(eRSAError, "%s", ossl_error());
 			}
 			break;
