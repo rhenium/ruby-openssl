@@ -386,15 +386,23 @@ BIGNUM_SHIFT(rshift);
 
 #define BIGNUM_RAND(func)								\
 	static VALUE									\
-	ossl_bn_s_##func(VALUE klass, VALUE bits, VALUE top, VALUE bottom)		\
+	ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)				\
 	{										\
 		BIGNUM *result;								\
-		VALUE obj;								\
+		int bottom = 0, top = 0;						\
+		VALUE bits, fill, odd, obj;						\
 											\
+		switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {		\
+			case 3:								\
+				bottom = (odd == Qtrue) ? 1 : 0;			\
+				/* fall through */					\
+			case 2:								\
+				top = FIX2INT(fill);					\
+		}									\
 		if (!(result = BN_new())) {						\
 			OSSL_Raise(eBNError, "");					\
 		}									\
-		if (!BN_##func(result, NUM2INT(bits), NUM2INT(top), NUM2INT(bottom))) {	\
+		if (!BN_##func(result, NUM2INT(bits), top, bottom)) {			\
 			BN_free(result);						\
 			OSSL_Raise(eBNError, "");					\
 		}									\
@@ -645,8 +653,8 @@ Init_ossl_bn()
 	 * set_word
 	 * get_word */
 
-	rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, 3);
-	rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, 3);
+	rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, -1);
+	rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, -1);
 	rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);
 	rb_define_singleton_method(cBN, "pseudo_rand_range", ossl_bn_s_pseudo_rand_range, 1);
 

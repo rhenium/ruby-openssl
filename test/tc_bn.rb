@@ -101,48 +101,58 @@ class TC_BN < Test::Unit::TestCase
     assert_equal((n1**n3) % n2, bn1.mod_exp(bn3, bn2).to_i, "mod_exp")
   end
   def test_bit
+    bn = BN::new("0")
+    
+    assert_equal(BN::new("8"), bn.set_bit!(3), "set_bit!")
+    assert_equal(BN::new("32"), bn << 2, "<<")
+    assert_equal(BN::new("4"), bn >> 1, ">>")
+    assert(bn.bit_set?(3), "bit_set?")
+    assert(!bn.bit_set?(0), "bit_set?")
+    assert(!bn.clear_bit!(3).bit_set?(3), "clear_bit!")
 ##
 # TODO
-# set_bit!(bit)
-# clear_bit!(bit)
 # mask_bits!(bit)
-# bit_set?(bit)
-# << bit
-# >> bit
   end
   def test_rand
-##
-# TODO
-# rand(bits, top, bottom)
-# pseudo_rand(bits, top, bottom)
-# rand(max)
-# pseudo_rand
-  end
-  def test_prime
+    len = 10
+    min = BN::new("0")
+    max = BN::new((2**len).to_s)
+
+    bn1 = BN::rand(len)
+    
+    assert(bn1.between?(min, max), "rand")
+    assert(BN::pseudo_rand(len).between?(min, max), "rand")
+    assert(BN::rand(10, 0, true).odd?, "rand")
+    assert(BN::pseudo_rand(10, 0, true).odd?, "rand")
+    assert(BN::rand_range(max).between?(min, max), "rand_range")
+    assert(BN::pseudo_rand_range(max).between?(min, max), "rand_range")
+    assert_equal(bn1.num_bits, len, "num_bits")
+    assert_equal(len / 8 + 1, bn1.num_bytes, "num_bytes")
 ##
 # TODO
 # ::generate_prime(...)
 # prime?(...)
 # prime_fasttest?(...)
   end
-  def test_info
-##
-# TODO
-# num_bytes
-# num_bits
-  end
   def test_assign
-##
-# TODO
-# dup()
-# copy(bn)
+    bn1 = BN::new("1234567890")
+    bn2 = BN::new("0")
+
+    assert(bn1.dup == bn1, "dup")
+    assert(bn2.copy(bn1) == bn1, "copy")
   end
   def test_cmp
-##
-# TODO
-# cmp aka <=>
-# ucmp
-# eql? aka == aka ===
+    bn1 = BN::new("-1")
+    bn2 = BN::new("0")
+    bn3 = BN::new("1")
+    bn4 = BN::new("1")
+
+    assert_equal(-1, bn1 <=> bn2, "cmp aka <=>")
+    assert_equal(0, bn3 <=> bn4, "cmp aka <=>")
+    assert_equal(1, bn3 <=> bn2, "cmp aka <=>")
+    assert_equal(0, bn1.ucmp(bn3), "ucmp")
+    assert(bn3 == bn3, "eql? aka == aka ===")
+    assert(!(bn1 == bn4), "eql? aka == aka ===")
   end
   def tear_down
     ##

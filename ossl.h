@@ -99,10 +99,10 @@ void ossl_raise(VALUE, const char *, ...);
  * Debug
  */
 extern VALUE dOSSL;
-#define OSSL_Debug(args...) do { \
+#define OSSL_Debug(fmt, ...) do { \
 	if (dOSSL == Qtrue) { \
 		fprintf(stderr, "OSSL_DEBUG: "); \
-		fprintf(stderr, args); \
+		fprintf(stderr, fmt, ##__VA_ARGS__); \
 		fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
 	} \
 } while (0)
