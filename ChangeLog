@@ -1,6 +1,6 @@
 Sat, 14 Jun 2003 17:12:52 +9000 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_x509store.c: added DupX509StorePtr().
-	* ossl_ssl.c: added SSLContext#store_ctx.
+	* ossl_ssl.c: added SSLContext#store_ctx. Thanks NaHi.
 
 Sat, 14 Jun 2003 13:31:10 +0900 -- GOTOU Yuuzou <gotoyuzo@notwork.org>
 	* ossl_ssl.c: disable password callback.
