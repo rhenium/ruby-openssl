@@ -184,19 +184,37 @@ ossl_x509name_digest(VALUE self, VALUE digest)
 }
 #endif
 
-static VALUE
-ossl_x509name_cmp(VALUE self, VALUE other)
+static int
+ossl_x509name_cmp0(VALUE self, VALUE other)
 {
     X509_NAME *name1, *name2;
-    int result;
 
     GetX509Name(self, name1);
     SafeGetX509Name(other, name2);
-    result = X509_NAME_cmp(name1, name2);
+
+    return X509_NAME_cmp(name1, name2);
+}
+
+static VALUE
+ossl_x509name_cmp(VALUE self, VALUE other)
+{
+    int result;
+
+    result = ossl_x509name_cmp0(self, other);
     if (result < 0) return INT2FIX(-1);
-    if (result >= 1) return INT2FIX(1);
+    if (result > 1) return INT2FIX(1);
 
     return INT2FIX(0);
+}
+
+static VALUE
+ossl_x509name_eql(VALUE self, VALUE other)
+{
+    int result;
+
+    result = ossl_x509name_cmp0(self, other);
+
+    return (result == 0) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -230,7 +248,7 @@ Init_ossl_x509name()
 
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
     rb_define_alias(cX509Name, "<=>", "cmp");
+    rb_define_method(cX509Name, "eql?", ossl_x509name_eql, 1);
 
     rb_define_method(cX509Name, "hash", ossl_x509name_hash, 0);
 }
-
