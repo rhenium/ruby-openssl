@@ -99,17 +99,21 @@ ossl_x509revoked_get_serial(VALUE self)
 
 	GetX509Rev(self, rev);
 
-	return INT2NUM(ASN1_INTEGER_get(rev->serialNumber));
+	return LONG2NUM(ASN1_INTEGER_get(rev->serialNumber));
 }
 
 static VALUE 
 ossl_x509revoked_set_serial(VALUE self, VALUE serial)
 {
 	X509_REVOKED *rev;
+	long num;
 
 	GetX509Rev(self, rev);
 
-	if (!ASN1_INTEGER_set(rev->serialNumber, NUM2INT(serial))) {
+	if ((num = NUM2LONG(serial)) < 0) {
+		ossl_raise(eX509RevError, "Serial cannot be < 0!");
+	}
+	if (!ASN1_INTEGER_set(rev->serialNumber, num)) {
 		ossl_raise(eX509RevError, "");
 	}
 	return serial;

@@ -3,6 +3,10 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Fri, 14 Jun 2002 10:32:46 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* x509cert.c: minor cleanups
+	* x509revoked.c: ditto.
+
 Thu, 13 Jun 2002 15:15:58 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ossl.h: Dropped OSSL_Check_Type macro; update related files
 

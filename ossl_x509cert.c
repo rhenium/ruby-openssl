@@ -64,9 +64,9 @@ ossl_x509_new_from_file(VALUE filename)
 
 	SafeStringValue(filename);
 	
-	if (!(fp = fopen(StringValuePtr(filename), "r")))
+	if (!(fp = fopen(StringValuePtr(filename), "r"))) {
 		ossl_raise(eX509CertError, "%s", strerror(errno));
-
+	}
 	x509 = PEM_read_X509(fp, NULL, NULL, NULL);
 	fclose(fp);
 
@@ -124,6 +124,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	VALUE buffer;
 
 	if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
+		/* create just empty X509Cert */
 		return self;
 	}
 	StringValue(buffer);
@@ -225,13 +226,17 @@ ossl_x509_to_req(VALUE self)
 {
 	X509 *x509;
 	X509_REQ *req;
+	VALUE obj;
 	
 	GetX509(self, x509);
 	
 	if (!(req = X509_to_X509_REQ(x509, NULL, EVP_md5()))) {
 		ossl_raise(eX509CertError, "");
 	}
-	return ossl_x509req_new(req);
+	obj = ossl_x509req_new(req);
+	X509_REQ_free(req);
+
+	return obj;
 }
  */
 
@@ -239,13 +244,10 @@ static VALUE
 ossl_x509_get_version(VALUE self)
 {
 	X509 *x509;
-	long ver;
 
 	GetX509(self, x509);
 	
-	ver = X509_get_version(x509);
-
-	return LONG2FIX(ver);
+	return LONG2NUM(X509_get_version(x509));
 }
 
 static VALUE 
@@ -256,7 +258,7 @@ ossl_x509_set_version(VALUE self, VALUE version)
 
 	GetX509(self, x509);
 
-	if ((ver = FIX2LONG(version)) < 0) {
+	if ((ver = NUM2LONG(version)) < 0) {
 		ossl_raise(eX509CertError, "version must be >= 0!");
 	}
 	if (!X509_set_version(x509, ver)) {
@@ -269,40 +271,26 @@ static VALUE
 ossl_x509_get_serial(VALUE self)
 {
 	X509 *x509;
-	ASN1_INTEGER *asn1int;
-	long serial;
 
 	GetX509(self, x509);
 	
-	if (!(asn1int = X509_get_serialNumber(x509))) { /* NO DUP - don't free */
-		ossl_raise(eX509CertError, "");
-	}
-	serial = ASN1_INTEGER_get(asn1int);
-
-	return LONG2FIX(serial);
+	return LONG2NUM(ASN1_INTEGER_get(X509_get_serialNumber(x509)));
 }
 
 static VALUE 
 ossl_x509_set_serial(VALUE self, VALUE serial)
 {
 	X509 *x509;
-	ASN1_INTEGER *asn1int;
+	long num;
 
 	GetX509(self, x509);
-	
-	if (!(asn1int = ASN1_INTEGER_new())) {
+
+	if ((num = NUM2LONG(serial)) < 0) {
+		ossl_raise(eX509CertError, "Serial cannot be < 0!");
+	}
+	if (!ASN1_INTEGER_set(x509->cert_info->serialNumber, num)) {
 		ossl_raise(eX509CertError, "");
 	}
-	if (!ASN1_INTEGER_set(asn1int, FIX2LONG(serial))) {
-		ASN1_INTEGER_free(asn1int);
-		ossl_raise(eX509CertError, "");
-	}
-	if (!X509_set_serialNumber(x509, asn1int)) { /* DUPs asn1int - FREE it */
-		ASN1_INTEGER_free(asn1int);
-		ossl_raise(eX509CertError, "");
-	}
-	ASN1_INTEGER_free(asn1int);
-	
 	return serial;
 }
 
