@@ -2,6 +2,7 @@
 
 require 'fox'
 require 'openssl'
+require 'time'
 
 include Fox
 
@@ -35,6 +36,9 @@ module CertDumpSupport
     }.reverse.join("\n")
   end
 
+  def bn_label(bn)
+    sprintf("%X", bn).scan(/../).join(" ")
+  end
 end
 
 class CertDump
@@ -54,6 +58,8 @@ class CertDump
       subject
     when 'Issuer'
       issuer
+    when 'Valid time'
+      valid_time
     when 'Not before'
       not_before
     when 'Not after'
@@ -75,6 +81,8 @@ class CertDump
       subject_line
     when 'Issuer'
       issuer_line
+    when 'Valid time'
+      valid_time_line
     when 'Not before'
       not_before_line
     when 'Not after'
@@ -97,7 +105,7 @@ private
   end
 
   def serial
-    @cert.serial.to_s
+    bn_label(@cert.serial)
   end
 
   def serial_line
@@ -120,6 +128,17 @@ private
     name_label(@cert.issuer)
   end
 
+  def valid_time
+    <<EOS
+Not before: #{not_before}
+Not after: #{not_after}
+EOS
+  end
+
+  def valid_time_line
+    "from #{@cert.not_before.iso8601} to #{@cert.not_after.iso8601}"
+  end
+
   def not_before
     @cert.not_before.to_s
   end
@@ -137,11 +156,11 @@ private
   end
 
   def public_key
-    @cert.public_key.to_s
+    @cert.public_key.to_text
   end
 
   def public_key_line
-    public_key.gsub(/[\r\n]/, '')
+    "#{@cert.public_key.class} -- " << public_key.scan(/\A[^\n]*/)[0] << '...'
   end
 
   def ext(tag)
@@ -283,7 +302,7 @@ class RevokedDump
 private
 
   def serial
-    @revoked.serial.to_s
+    bn_label(@revoked.serial)
   end
 
   def serial_line
@@ -441,8 +460,9 @@ class CertStoreWindow < FXMainWindow
       items << ['Serial', wrap.get_dump_line('Serial')]
       items << ['Subject', wrap.get_dump_line('Subject')]
       items << ['Issuer', wrap.get_dump_line('Issuer')]
-      items << ['Not before', wrap.get_dump_line('Not before')]
-      items << ['Not after', wrap.get_dump_line('Not after')]
+      items << ['Valid time', wrap.get_dump_line('Valid time')]
+      #items << ['Not before', wrap.get_dump_line('Not before')]
+      #items << ['Not after', wrap.get_dump_line('Not after')]
       items << ['Public key', wrap.get_dump_line('Public key')]
       cert.extensions.each do |ext|
 	items << [ext.oid, ext.value]

@@ -1,3 +1,7 @@
+Sun, 29 Jun 2003 19:14:44 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/cert_store.rb: Show BN in hex format.
+	  Show valid time in 'from ... to ...' format.
+
 Sun, 29 Jun 2003 19:07:01 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* exapmles/ca: CA maintenance scripts examples.
 	* examples/ca/ca_config.rb: configuration.
