@@ -9,13 +9,14 @@ include OpenSSL
 
 def usage
   myname = File::basename($0)
-  $stderr.puts "Usage: #{myname} csr_file [--type (client|server|ca|ocsp)]"
+  $stderr.puts "Usage: #{myname} [--type (client|server|ca|ocsp)] csr_file"
   exit
 end
 
 getopts nil, 'type:client'
 
 cert_type = $OPT_type
+p cert_type
 csr_file = ARGV.shift or usage
 ARGV.empty? or usage
 
@@ -23,6 +24,16 @@ csr = X509::Request.new(File.open(csr_file).read)
 unless csr.verify(csr.public_key)
   raise "CSR sign verification failed."
 end
+if csr.public_key.n.num_bits < CAConfig::CERT_KEY_LENGTH_MIN
+  raise "Key length too short"
+end
+if csr.public_key.n.num_bits > CAConfig::CERT_KEY_LENGTH_MAX
+  raise "Key length too long"
+end
+if csr.subject.to_a[0, CAConfig::NAME.size] != CAConfig::NAME
+  iraise "DN does not match"
+end
+
 # Only checks signature here.  You must verify CSR according to your CP/CPS.
 
 $stdout.sync = true
@@ -74,7 +85,7 @@ when "ocsp"
 when "client"
   basic_constraint = "CA:FALSE"
   key_usage << "nonRepudiation" << "digitalSignature" << "keyEncipherment"
-  ext_key_usage << "clientAuth" << "codeSigning" << "emailProtection"
+  ext_key_usage << "clientAuth" << "emailProtection"
 else
   raise "unknonw cert type \"#{cert_type}\" is specified."
 end
@@ -86,7 +97,7 @@ ex = []
 ex << ef.create_extension("basicConstraints", basic_constraint, true)
 ex << ef.create_extension("nsComment","Ruby/OpenSSL Generated Certificate")
 ex << ef.create_extension("subjectKeyIdentifier", "hash")
-ex << ef.create_extension("nsCertType", "client,email")
+#ex << ef.create_extension("nsCertType", "client,email")
 ex << ef.create_extension("keyUsage", key_usage.join(",")) unless key_usage.empty?
 ex << ef.create_extension("authorityKeyIdentifier", "keyid:always,issuer:always")
 ex << ef.create_extension("extendedKeyUsage", ext_key_usage.join(",")) unless ext_key_usage.empty?

@@ -23,7 +23,8 @@ keypair_file = ARGV.shift
 
 $stdout.sync = true
 
-name_ary = name_str.scan(/\/([^\/]+)/).collect { |i| i[0].split("=") }
+name_ary = name_str.scan(/\s*([^\/,]+)\s*/).collect { |i| i[0].split("=") }
+p name_ary
 name = X509::Name.new(name_ary)
 
 keypair = nil
