@@ -1,3 +1,7 @@
+Sun, 18 May 2003 16:27:39 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ssl.c: Unwrap SSL_CTX and SSL
+	* x509store.c: Use {get|set}_ex instead of my DB for CallBacks
+
 Wed, 23 Apr 2003 22:19:14 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* ossl_pkey.c: Is #to_der broken?
 

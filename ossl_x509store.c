@@ -43,7 +43,7 @@ int ossl_x509store_verify_cb(int, X509_STORE_CTX *);
  * Struct
  */
 typedef struct ossl_x509store_st {
-    int protect;
+    int protect; /* We have to use this since there is no reference counting for X509_STORE_CTX */
     X509_STORE_CTX *store;
 } ossl_x509store;
 
@@ -94,69 +94,6 @@ ossl_x509store_get_X509_STORE(VALUE obj)
     storep->protect = Qtrue;
 
     return storep->store->ctx;
-}
-
-/*
- * verify_cb DATABASE for Stores
- * TODO:
- * clean entries when garbage collecting
- */
-typedef struct ossl_session_db_st {
-    void *key;
-    VALUE data;
-    struct ossl_session_db_st *next;
-} ossl_session_db;
-
-ossl_session_db *db_root;
-
-static VALUE 
-ossl_session_db_get(void *key)
-{
-    ossl_session_db *item = db_root;
-
-    rb_thread_critical = 1;
-    while (item) {
-	if (item->key == key) {
-	    rb_thread_critical = 0;
-	    return item->data;
-	}
-	item = item->next;
-    }
-    rb_thread_critical = 0;
-
-    return Qnil;
-}
-
-static VALUE 
-ossl_session_db_set(void *key, VALUE data)
-{
-    ossl_session_db *item = db_root, *last = NULL;
-	
-    rb_thread_critical = 1;
-    while (item) {
-	if (item->key == key) {
-	    item->data = data;
-	    rb_thread_critical = 0;
-	    return data;
-	}
-	last = item;
-	item = last->next;
-    }
-    if (!(item = (ossl_session_db *)OPENSSL_malloc(sizeof(ossl_session_db)))) {
-	rb_thread_critical = 0;
-	ossl_raise(eX509StoreError, "");
-    }
-    item->key = key;
-    item->data = data;
-    item->next = NULL;
-    if (last) {
-	last->next = item;
-    } else {
-	db_root = item;
-    }
-    rb_thread_critical = 0;
-
-    return data;
 }
 
 /*
@@ -258,6 +195,8 @@ ossl_x509store_add_crl(VALUE self, VALUE crl)
     return crl;
 }
 
+static int ossl_x509store_vcb_idx;
+
 static VALUE 
 ossl_x509store_call_verify_cb_proc(VALUE args)
 {
@@ -284,10 +223,7 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
     VALUE proc, store_ctx, args, ret = Qnil;
 
-    /*
-     * Get Proc from verify_cb Database
-     */
-    proc = ossl_session_db_get((void *)ctx->ctx);
+    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_x509store_vcb_idx);
 	
     if (!NIL_P(proc)) {
 	store_ctx = ossl_x509store_new(ctx);
@@ -426,7 +362,7 @@ ossl_x509store_set_verify_cb(VALUE self, VALUE proc)
     /*
      * Associate verify_cb with Store in DB
      */
-    ossl_session_db_set((void *)storep->store->ctx, proc);
+    X509_STORE_CTX_set_ex_data(storep->store, ossl_x509store_vcb_idx, (void *)proc);
     rb_ivar_set(self, rb_intern("@verify_callback"), proc);
 
     return proc;
@@ -449,10 +385,7 @@ ossl_x509store_cleanup(VALUE self)
 void 
 Init_ossl_x509store()
 {
-    /*
-     * INIT verify_cb DB
-     */
-    db_root = NULL;
+    ossl_x509store_vcb_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_x509store_ex_vcb", NULL, NULL, NULL);
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 
