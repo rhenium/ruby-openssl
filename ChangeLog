@@ -1,3 +1,6 @@
+Mon, 14 Apr 2003 11:53:54 +0200 -- Michal Rokos <michal@rokos.homeip.net>
+	* ossl_pkey_{rsa|dsa|dh}.c: method #params for inspection of private and public numbers
+
 Wed, 09 Apr 2003 08:06:46 +0200 -- Michal Rokos <michal@rokos.homeip.net>
 	* ossl_x509{crl|req}.c: Allow to initialize with DER
 

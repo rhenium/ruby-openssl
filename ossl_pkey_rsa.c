@@ -129,7 +129,8 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &pass);
 
     if (FIXNUM_P(buffer)) {
-	if (!(rsa = rsa_generate(FIX2INT(buffer)))) {
+	rsa = rsa_generate(FIX2INT(buffer));
+	if (!rsa) {
 	    ossl_raise(eRSAError, "");
 	}
     }
@@ -153,11 +154,11 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 
 	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
 	}
+	BIO_free(in);
+
 	if (!rsa) {
-	    BIO_free(in);
 	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
 	}
-	BIO_free(in);
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 	RSA_free(rsa);
@@ -340,36 +341,32 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
     return str;
 }
 
-#if 0
 /*
- * Just sample
- * (it's not (maybe) wise to show private RSA values)
- * - if, then implement this via OpenSSL::BN
+ * Stores all parameters of key to the hash
+ * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
+ * Don't use :-)) (I's up to you)
  */
 static VALUE
-ossl_rsa_get_n(VALUE self)
+ossl_rsa_get_params(VALUE self)
 {
-    ossl_rsa *rsap = NULL;
-    BIO *out = NULL;
-    BUF_MEM *buf = NULL;
-    VALUE num;
+    EVP_PKEY *pkey;
+    VALUE hash;
 
-    GetRSA(self, rsap);
+    GetPKeyRSA(self, pkey);
 
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eRSAError, "");
-    }
-    if (!BN_print(out, rsap->rsa->n)) {
-	BIO_free(out);
-	ossl_raise(eRSAError, "");
-    }
-    BIO_get_mem_ptr(out, &buf);
-    num = rb_cstr2inum(buf->data, 16);
-    BIO_free(out);
+    hash = rb_hash_new();
 
-    return num;
+    rb_hash_aset(hash, rb_str_new2("n"), ossl_bn_new(pkey->pkey.rsa->n));
+    rb_hash_aset(hash, rb_str_new2("e"), ossl_bn_new(pkey->pkey.rsa->e));
+    rb_hash_aset(hash, rb_str_new2("d"), ossl_bn_new(pkey->pkey.rsa->d));
+    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(pkey->pkey.rsa->p));
+    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(pkey->pkey.rsa->q));
+    rb_hash_aset(hash, rb_str_new2("dmp1"), ossl_bn_new(pkey->pkey.rsa->dmp1));
+    rb_hash_aset(hash, rb_str_new2("dmq1"), ossl_bn_new(pkey->pkey.rsa->dmq1));
+    rb_hash_aset(hash, rb_str_new2("iqmp"), ossl_bn_new(pkey->pkey.rsa->iqmp));
+    
+    return hash;
 }
-#endif
 
 /*
  * Prints all parameters of key to buffer
@@ -476,6 +473,35 @@ ossl_rsa_verify(VALUE self, VALUE sig, VALUE data)
 #endif
 
 /*
+ * TODO: Test me
+extern BN_CTX *ossl_bn_ctx;
+
+static VALUE
+ossl_rsa_blinding_on(VALUE self)
+{
+    EVP_PKEY *pkey;
+    
+    GetPKeyRSA(self, pkey);
+
+    if (RSA_blinding_on(pkey->pkey.rsa, ossl_bn_ctx) != 1) {
+	ossl_raise(eRSAError, "");
+    }
+    return self;
+}
+
+static VALUE
+ossl_rsa_blinding_off(VALUE self)
+{
+    EVP_PKEY *pkey;
+    
+    GetPKeyRSA(self, pkey);
+    RSA_blinding_off(pkey->pkey.rsa);
+
+    return self;
+}
+ */
+
+/*
  * INIT
  */
 void
@@ -499,13 +525,20 @@ Init_ossl_rsa()
     rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, 1);
     rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, 1);
     rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, 1);
-    /* rb_define_method(cRSA, "n", ossl_rsa_get_n, 0); */
+
+    rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
+
 /*
  * TODO, FIXME
  * Find way how to support digest types
  *
     rb_define_method(cRSA, "syssign", ossl_rsa_sign, 2);
     rb_define_method(cRSA, "sysverify", ossl_rsa_verify, 3);
+ */
+/*
+ * TODO: Test it
+    rb_define_method(cRSA, "blinding_on!", ossl_rsa_blinding_on, 0);
+    rb_define_method(cRSA, "blinding_off!", ossl_rsa_blinding_off, 0);
  */
 }
 

@@ -214,6 +214,29 @@ ossl_dh_export(VALUE self)
 }
 
 /*
+ * Stores all parameters of key to the hash
+ * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
+ * Don't use :-)) (I's up to you)
+ */
+static VALUE
+ossl_dh_get_params(VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE hash;
+
+    GetPKeyDH(self, pkey);
+
+    hash = rb_hash_new();
+
+    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(pkey->pkey.dh->p));
+    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(pkey->pkey.dh->g));
+    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pkey->pkey.dh->pub_key));
+    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(pkey->pkey.dh->priv_key));
+    
+    return hash;
+}
+
+/*
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -282,6 +305,8 @@ Init_ossl_dh()
     rb_define_alias(cDH, "to_pem", "export");
     rb_define_alias(cDH, "to_s", "export");
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
+
+    rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }
 
 #else /* defined NO_DH */

@@ -67,6 +67,16 @@ ossl_x509_new_from_file(VALUE filename)
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
     x509 = PEM_read_X509(fp, NULL, NULL, NULL);
+    /*
+     * prepare for DER...
+#if !defined(OPENSSL_NO_FP_API)
+    if (!x509) {
+	rewind(fp);
+
+	x509 = d2i_X509_fp(fp, NULL);
+    }
+#endif
+    */
     fclose(fp);
     if (!x509) {
 	ossl_raise(eX509CertError, "");

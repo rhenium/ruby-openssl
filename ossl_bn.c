@@ -84,7 +84,7 @@ GetBNPtr(VALUE obj)
  * (Why just 1? Because Ruby itself isn't thread safe,
  *  we don't need to care about threads)
  */
-static BN_CTX *ossl_bn_ctx;
+BN_CTX *ossl_bn_ctx;
 
 static VALUE
 ossl_bn_alloc(VALUE klass)

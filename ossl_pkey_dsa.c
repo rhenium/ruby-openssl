@@ -245,6 +245,30 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Stores all parameters of key to the hash
+ * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
+ * Don't use :-)) (I's up to you)
+ */
+static VALUE
+ossl_dsa_get_params(VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE hash;
+
+    GetPKeyDSA(self, pkey);
+
+    hash = rb_hash_new();
+
+    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(pkey->pkey.dsa->p));
+    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(pkey->pkey.dsa->q));
+    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(pkey->pkey.dsa->g));
+    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pkey->pkey.dsa->pub_key));
+    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(pkey->pkey.dsa->priv_key));
+    
+    return hash;
+}
+
+/*
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -364,6 +388,8 @@ Init_ossl_dsa()
     rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
     rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
     rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
+
+    rb_define_method(cDSA, "params", ossl_dsa_get_params, 0);
 }
 
 #else /* defined NO_DSA */
