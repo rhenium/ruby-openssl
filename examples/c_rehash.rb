@@ -56,7 +56,11 @@ class CHashDir
       begin
 	OpenSSL::X509::CRL.new(str)
       rescue
-	nil
+	begin
+	  OpenSSL::X509::Request.new(str)
+	rescue
+	  nil
+	end
       end
     end
   end

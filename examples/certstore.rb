@@ -10,6 +10,7 @@ class CertStore
   attr_reader :other_ca
   attr_reader :ee
   attr_reader :crl
+  attr_reader :request
 
   def initialize(certs_dir)
     @trust_anchor = []
@@ -18,12 +19,12 @@ class CertStore
     @c_store.hash_dir(true)
     @crl_store = CrlStore.new(@c_store)
     @x509store = Store.new
-    @x509store.add_path(@certs_dir)
     @self_signed_ca = @other_ca = @ee = @crl = nil
 
-    # Uncomment thi line to let OpenSSL to check CRL for each certs.
+    # Uncomment this line to let OpenSSL to check CRL for each certs.
     # @x509store.flags = V_FLAG_CRL_CHECK | V_FLAG_CRL_CHECK_ALL
 
+    add_path
     scan_certs
   end
 
@@ -59,14 +60,26 @@ class CertStore
     end
   end
 
+  def scan_certs
+    @self_signed_ca = []
+    @other_ca = []
+    @ee = []
+    @crl = []
+    @request = []
+    load_certs
+  end
+
 private
+
+  def add_path
+    @x509store.add_path(@certs_dir)
+  end
 
   def do_verify(cert)
     error_map = {}
     crl_map = {}
     result = @x509store.verify(cert) do |ok, ctx|
       cert = ctx.current_cert
-      p cert.subject
       if ctx.current_crl
 	crl_map[cert.subject] = true
       end
@@ -106,14 +119,6 @@ private
       return true
     end
     false
-  end
-
-  def scan_certs
-    @self_signed_ca = []
-    @other_ca = []
-    @ee = []
-    @crl = []
-    load_certs
   end
 
   def load_certs

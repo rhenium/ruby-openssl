@@ -1,3 +1,10 @@
+Thu, 11 Jul 2003 02:30:55 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+	* examples/gen_csr.rb: Add 'key' option to specify keypair file.
+	  We need this feature for creating cross certificate.
+	* examples/c_rehash.rb, certstore.rb, cert_store_view.rb: Add Request
+	  support.
+	* examples/cert2text.rb: Instead of `openssl x509|req|crl -text`.
+
 Thu, 11 Jul 2003 02:23:04 +0900 -- NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 	* examples/ca/init_sub_ca.rb: Add a command line option for CN.
 	* examples/ca/gen_crl.rb: CRL issuer was wrong!  Oops.

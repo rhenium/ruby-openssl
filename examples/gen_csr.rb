@@ -14,12 +14,12 @@ EOS
   exit
 end
 
-getopts nil, "csrout:", "keyout:"
+getopts nil, "key:", "csrout:", "keyout:"
+keypair_file = $OPT_key
 csrout = $OPT_csrout || "csr.pem"
 keyout = $OPT_keyout || "keypair.pem"
 
 name_str = ARGV.shift or usage()
-keypair_file = ARGV.shift
 
 $stdout.sync = true
 

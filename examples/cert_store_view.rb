@@ -11,7 +11,7 @@ include Fox
 module CertDumpSupport
   def cert_label(cert)
     subject_alt_name =
-    cert.extensions.find { |ext| ext.oid == 'subjectAltName' }
+      cert.extensions.find { |ext| ext.oid == 'subjectAltName' }
     if subject_alt_name
       subject_alt_name.value.split(/\s*,\s/).each do |alt_name_pair|
 	alt_tag, alt_name = alt_name_pair.split(/:/)
@@ -361,6 +361,86 @@ private
   end
 end
 
+class RequestDump
+  include CertDumpSupport
+
+  def initialize(req)
+    @req = req
+  end
+
+  def get_dump(tag)
+    case tag
+    when 'Version'
+      version
+    when 'Signature Algorithm'
+      signature_algorithm
+    when 'Subject'
+      subject
+    when 'Public key'
+      public_key
+    else
+      attributes(tag)
+    end
+  end
+
+  def get_dump_line(tag)
+    case tag
+    when 'Version'
+      version_line
+    when 'Signature Algorithm'
+      signature_algorithm_line
+    when 'Subject'
+      subject_line
+    when 'Public key'
+      public_key_line
+    else
+      attributes_line(tag)
+    end
+  end
+
+private
+
+  def version
+    "Version: #{@req.version + 1}"
+  end
+
+  def version_line
+    version
+  end
+
+  def signature_algorithm
+    @req.signature_algorithm
+  end
+
+  def signature_algorithm_line
+    signature_algorithm
+  end
+
+  def subject
+    name_text(@req.subject)
+  end
+
+  def subject_line
+    @req.subject.to_s
+  end
+
+  def public_key
+    @req.public_key.to_text
+  end
+
+  def public_key_line
+    "#{@req.public_key.class} -- " << public_key.scan(/\A[^\n]*/)[0] << '...'
+  end
+
+  def attributes(tag)
+    "(unknown)"
+  end
+
+  def attributes_line(tag)
+    attributes(tag).tr("\r\n", '')
+  end
+end
+
 class CertStoreView < FXMainWindow
   class CertTree
     include CertDumpSupport
@@ -385,8 +465,24 @@ class CertStoreView < FXMainWindow
       @other_ca_node = add_item_last(nil, "Intermediate CA")
       @ee_node = add_item_last(nil, "Personal")
       @crl_node = add_item_last(nil, "CRL")
+      @request_node = add_item_last(nil, "Request")
       @verify_path_node = add_item_last(nil, "Certification path")
+      show_certs(cert_store)
+    end
+
+    def show_certs(cert_store)
+      remove_items(@self_signed_ca_node)
+      remove_items(@other_ca_node)
+      remove_items(@ee_node)
+      remove_items(@crl_node)
+      remove_items(@request_node)
       import_certs(cert_store)
+    end
+
+    def show_request(req)
+      node = add_item_last(@request_node, name_label(req.subject), req)
+      @tree.selectItem(node)
+      @observer.show_item(req)
     end
 
     def show_verify_path(verify_path)
@@ -419,6 +515,9 @@ class CertStoreView < FXMainWindow
 	crl.revoked.each do |revoked|
 	  add_item_last(node, bn_label(revoked.serial), revoked)
 	end
+      end
+      cert_store.request.each do |req|
+	add_item_last(@requestnode, name_label(req.subject), req)
       end
     end
 
@@ -456,6 +555,12 @@ class CertStoreView < FXMainWindow
       open_node(node)
       node
     end
+
+    def remove_items(node)
+      while node.getNumChildren > 0
+	@tree.removeItem(node.getFirst)
+      end
+    end
   end
 
   class CertInfo
@@ -486,6 +591,8 @@ class CertStoreView < FXMainWindow
 	show_crl(item)
       when OpenSSL::X509::Revoked
 	show_revoked(item)
+      when OpenSSL::X509::Request
+	show_request(item)
       else
 	raise NotImplementedError.new("Unknown item type #{item.class}.")
       end
@@ -534,6 +641,19 @@ class CertStoreView < FXMainWindow
 	items << [ext.oid, wrap.get_dump_line(ext.oid)]
       end
       show_items(revoked, items)
+    end
+
+    def show_request(req)
+      wrap = RequestDump.new(req)
+      items = []
+      items << ['Version', wrap.get_dump_line('Version')]
+      items << ['Signature Algorithm', wrap.get_dump_line('Signature Algorithm')]
+      items << ['Subject', wrap.get_dump_line('Subject')]
+      items << ['Public key', wrap.get_dump_line('Public key')]
+      req.attributes.each do |attr|
+	items << [attr.attr, wrap.get_dump_line(attr.oid)]
+      end
+      show_items(req, items)
     end
 
     def show_items(obj, items)
@@ -587,6 +707,8 @@ class CertStoreView < FXMainWindow
 	show_crl(item, tag)
       when OpenSSL::X509::Revoked
 	show_revoked(item, tag)
+      when OpenSSL::X509::Request
+	show_request(item, tag)
       else
 	raise NotImplementedError.new("Unknown item type #{item.class}.")
       end
@@ -606,6 +728,11 @@ class CertStoreView < FXMainWindow
 
     def show_revoked(revoked, tag)
       wrap = RevokedDump.new(revoked)
+      @detail.text = wrap.get_dump(tag)
+    end
+
+    def show_request(request, tag)
+      wrap = RequestDump.new(request)
       @detail.text = wrap.get_dump(tag)
     end
   end
@@ -639,6 +766,8 @@ class CertStoreView < FXMainWindow
     FXMenuTitle.new(menubar, "&Tool", nil, tool_menu)
     FXMenuCommand.new(tool_menu, "&Verify\tCtl-N").connect(SEL_COMMAND,
       method(:on_cmd_tool_verify))
+    FXMenuCommand.new(tool_menu, "&Show Request\tCtl-R").connect(SEL_COMMAND,
+      method(:on_cmd_tool_request))
 
     base_frame = FXHorizontalFrame.new(self, LAYOUT_FILL_X | LAYOUT_FILL_Y)
     splitter_horz = FXSplitter.new(base_frame, LAYOUT_SIDE_TOP | LAYOUT_FILL_X |
@@ -682,12 +811,16 @@ class CertStoreView < FXMainWindow
   end
 
   def show_init
-    show_tree
+    @cert_tree.show(@cert_store)
     show_item(nil)
   end
 
-  def show_tree
-    @cert_tree.show(@cert_store)
+  def show_certs
+    @cert_tree.show_certs(@cert_store)
+  end
+
+  def show_request(req)
+    @cert_tree.show_request(req)
   end
 
   def show_verify_path(verify_path)
@@ -703,7 +836,9 @@ class CertStoreView < FXMainWindow
   end
 
   def verify(certfile)
-    show_verify_path(verify_certfile(certfile))
+    path = verify_certfile(certfile)
+    show_certs	# CRL could be change.
+    show_verify_path(path)
   end
 
 private
@@ -734,10 +869,23 @@ private
     1
   end
 
+  def on_cmd_tool_request(sender, sel, ptr)
+    dialog = FXFileDialog.new(self, "Show request")
+    dialog.filename = ''
+    dialog.patternList = ["All Files (*)", "PEM formatted certificate (*.pem)"]
+    if dialog.execute != 0
+      req = @cert_store.generate_cert(dialog.filename)
+      show_request(req)
+    end
+    1
+  end
+
   def verify_certfile(filename)
     begin
       cert = @cert_store.generate_cert(filename)
-      @cert_store.verify(cert)
+      result = @cert_store.verify(cert)
+      @cert_store.scan_certs
+      result
     rescue
       show_error($!)
       []
@@ -751,10 +899,10 @@ private
 end
 
 GC.start
-getopts nil, "trust_file:", "cert:"
+getopts nil, "trustCA:", "cert:"
 
 certs_dir = ARGV.shift or raise "#{$0} cert_dir"
-trust_file = $OPT_trust_file
+trust_file = $OPT_trustCA
 certfile = $OPT_cert
 app = FXApp.new("CertStore", "FoxTest")
 cert_store = CertStore.new(certs_dir)
