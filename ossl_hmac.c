@@ -12,12 +12,8 @@
 
 #include "ossl.h"
 
-#define WrapHMAC(obj, ctx) do { \
-	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
-	} \
-	obj = Data_Wrap_Struct(cHMAC, 0, CRYPTO_free, ctx); \
-} while (0)
+#define MakeHMAC(obj, ctx) \
+	obj = Data_Make_Struct(cHMAC, HMAC_CTX, 0, CRYPTO_free, ctx)
 #define GetHMAC(obj, ctx) do { \
 	Data_Get_Struct(obj, HMAC_CTX, ctx); \
 	if (!ctx) { \
@@ -44,10 +40,7 @@ ossl_hmac_s_allocate(VALUE klass)
 	HMAC_CTX *ctx;
 	VALUE obj;
 
-	if (!(ctx = OPENSSL_malloc(sizeof(HMAC_CTX)))) {
-		OSSL_Raise(eHMACError, "");
-	}
-	WrapHMAC(obj, ctx);
+	MakeHMAC(obj, ctx);
 	
 	return obj;
 }

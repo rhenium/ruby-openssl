@@ -11,8 +11,22 @@
 #include "ossl.h"
 #include "st.h" /* For st_foreach -- ST_CONTINUE */
 
-#define WrapX509Name(obj, name) obj = Data_Wrap_Struct(cX509Name, 0, X509_NAME_free, name)
-#define GetX509Name(obj, name) Data_Get_Struct(obj, X509_NAME, name)
+#define WrapX509Name(klass, obj, name) do { \
+	if (!name) { \
+		rb_raise(rb_eRuntimeError, "Name wasn't initialized."); \
+	} \
+	obj = Data_Wrap_Struct(klass, 0, X509_NAME_free, name); \
+} while (0)
+#define GetX509Name(obj, name) do { \
+	Data_Get_Struct(obj, X509_NAME, name); \
+	if (!name) { \
+		rb_raise(rb_eRuntimeError, "Name wasn't initialized."); \
+	} \
+} while (0)
+#define SafeGetX509Name(obj, name) do { \
+	OSSL_Check_Kind(obj, cX509Name); \
+	GetX509Name(obj, name); \
+} while (0)
 
 /*
  * Classes
@@ -26,17 +40,18 @@ VALUE eX509NameError;
 VALUE 
 ossl_x509name_new(X509_NAME *name)
 {
-	X509_NAME *new = NULL;
+	X509_NAME *new;
 	VALUE obj;
 
-	if (!name)
+	if (!name) {
 		new = X509_NAME_new();
-	else new = X509_NAME_dup(name);
-	
-	if (!new)
+	} else {
+		new = X509_NAME_dup(name);
+	}
+	if (!new) {
 		OSSL_Raise(eX509NameError, "");
-	
-	WrapX509Name(obj, new);
+	}
+	WrapX509Name(cX509Name, obj, new);
 
 	return obj;
 }
@@ -44,16 +59,13 @@ ossl_x509name_new(X509_NAME *name)
 X509_NAME *
 ossl_x509name_get_X509_NAME(VALUE obj)
 {
-	X509_NAME *name = NULL, *new;
+	X509_NAME *name, *new;
 
-	OSSL_Check_Type(obj, cX509Name);
-	
-	GetX509Name(obj, name);
+	SafeGetX509Name(obj, name);
 
 	if (!(new = X509_NAME_dup(name))) {
 		OSSL_Raise(eX509NameError, "");
-	}
-	
+	}	
 	return new;
 }
 
@@ -71,36 +83,35 @@ ossl_x509name_hash_i(VALUE key, VALUE value, X509_NAME *name)
 	key = rb_String(key);
 	value = rb_String(value);
 	
-	if (!(id = OBJ_ln2nid(RSTRING(key)->ptr)))
+	if (!(id = OBJ_ln2nid(RSTRING(key)->ptr))) {
 		if (!(id = OBJ_sn2nid(RSTRING(key)->ptr))) {
 			X509_NAME_free(name);
 			OSSL_Raise(eX509NameError, "OBJ_name2nid:");
 		}
-
+	}
 	type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
 
 	if (!X509_NAME_add_entry_by_NID(name, id, type, RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
 		X509_NAME_free(name);
 		OSSL_Raise(eX509NameError, "");
 	}
-
 	return ST_CONTINUE;
 }
 
 static VALUE 
 ossl_x509name_s_new_from_hash(VALUE klass, VALUE hash)
 {
-	X509_NAME *name = NULL;
+	X509_NAME *name;
 	VALUE obj;
 	
 	Check_Type(hash, T_HASH);
 
-	if (!(name = X509_NAME_new()))
+	if (!(name = X509_NAME_new())) {
 		OSSL_Raise(eX509NameError, "");
-
+	}
 	st_foreach(RHASH(hash)->tbl, ossl_x509name_hash_i, name);
 
-	WrapX509Name(obj, name);
+	WrapX509Name(klass, obj, name);
 
 	return obj;
 }
@@ -108,11 +119,11 @@ ossl_x509name_s_new_from_hash(VALUE klass, VALUE hash)
 static VALUE 
 ossl_x509name_to_h(VALUE self)
 {
-	X509_NAME *name = NULL;
-	X509_NAME_ENTRY *entry = NULL;
-	int i,entries = 0;
+	X509_NAME *name;
+	X509_NAME_ENTRY *entry;
+	int i,entries;
 	char long_name[512];
-	const char *short_name = NULL;
+	const char *short_name;
 	VALUE hash;
 	
 	GetX509Name(self, name);
@@ -124,7 +135,7 @@ ossl_x509name_to_h(VALUE self)
 	if (entries < 0) {
 		rb_warning("name entries < 0!");
 		return hash;
-	}	
+	}
 
 	for (i=0; i<entries; i++) {
 		if (!(entry = X509_NAME_get_entry(name, i))) {
@@ -137,7 +148,6 @@ ossl_x509name_to_h(VALUE self)
 
 		rb_hash_aset(hash, rb_str_new2(short_name), rb_str_new(entry->value->data, entry->value->length));
 	}
-
 	return hash;
 }
 
@@ -145,11 +155,12 @@ ossl_x509name_to_h(VALUE self)
  * INIT
  */
 void 
-Init_ossl_x509name(VALUE module)
+Init_ossl_x509name()
 {
-	eX509NameError = rb_define_class_under(module, "NameError", eOSSLError);
+	eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
 
-	cX509Name = rb_define_class_under(module, "Name", rb_cObject);
+	cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
+	
 	rb_define_singleton_method(cX509Name, "new_from_hash", ossl_x509name_s_new_from_hash, 1);
 	rb_define_method(cX509Name, "to_h", ossl_x509name_to_h, 0);
 }

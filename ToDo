@@ -3,7 +3,7 @@ TODO list for
 
 -----------------------------------------------------------------------
 OpenSSL::
-  * Move all Errors as child of OpenSSLError
+  [DONE] Move all Errors as child of OpenSSLError
   * Implement Ruby 1.8 style of creating instances (see StringIO)
   * Detailed object inspection (ie. all params for RSA)
   * How to support HW crypto engines?
@@ -24,10 +24,10 @@ OpenSSL::
     * DON'T FORGET TO ADD SUPPORT FOR BIN, AND MPI BACK!
     
   Cipher::
-    * Use Factory (Cipher.new("DES_EDE3_CBC"))?
+    [DONE] Use Factory (Cipher.new("DES_EDE3_CBC"))?
 
   Conf::
-    * Port it to new (0.9.7) interface
+    * Port it to new (0.9.7) interface (Already done??)
     
   Digest::
     [DONE] Use Factory (Digest.new("SHA1"))? [Used exactly like this: OpenSSL::Digest::Digest.new("SHA1")]
@@ -36,7 +36,6 @@ OpenSSL::
     * Move it to Digest module?
     
   PKey::
-    * Make it as class?
     * Factory? RSA#initialize -> PKey.new("RSA")?
 
   SSL::
@@ -44,3 +43,4 @@ OpenSSL::
 
   X509::
     * Rethink X509::Attribute, and X509::Extension
+    

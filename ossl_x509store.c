@@ -200,7 +200,7 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 	
 	GetX509Store(self, storep);
 	
-	OSSL_Check_Type(cert, cX509Certificate);
+	OSSL_Check_Type(cert, cX509Cert);
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!X509_STORE_add_cert(storep->store->ctx, x509)) {
@@ -323,7 +323,7 @@ ossl_x509store_verify(VALUE self, VALUE cert)
 
 	GetX509Store(self, storep);
 
-	OSSL_Check_Type(cert, cX509Certificate);
+	OSSL_Check_Type(cert, cX509Cert);
 	x509 = ossl_x509_get_X509(cert);
 	X509_STORE_CTX_set_cert(storep->store, x509);
 	
@@ -459,16 +459,16 @@ ossl_x509store_cleanup(VALUE self)
  * INIT
  */
 void 
-Init_ossl_x509store(VALUE module)
+Init_ossl_x509store()
 {
 	/*
 	 * INIT verify_cb DB
 	 */
 	db_root = NULL;
 	
-	eX509StoreError = rb_define_class_under(module, "StoreError", eOSSLError);
+	eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 
-	cX509Store = rb_define_class_under(module, "Store", rb_cObject);
+	cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
 	rb_define_singleton_method(cX509Store, "new", ossl_x509store_s_new, -1);
 	rb_define_method(cX509Store, "initialize", ossl_x509store_initialize, -1);
 

@@ -15,9 +15,7 @@ extern VALUE cBN;
 extern VALUE eBNError;
 
 /*
- * Made them private until somebody wants them
 VALUE ossl_bn_new(BIGNUM *);
-BIGNUM *ossl_bn_get_BIGNUM(VALUE);
  */
 
 void Init_ossl_bn(void);

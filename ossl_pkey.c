@@ -83,6 +83,7 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 	obj = ossl_pkey_new(pkey);
 	
 	GetPKey(obj, pkey);
+	DATA_PTR(obj) = NULL; /* Don't let GC to discard pkey! */
 	
 	return pkey;
 }
@@ -109,8 +110,6 @@ ossl_pkey_initialize(VALUE self)
 {
 	if (rb_obj_is_instance_of(self, cPKey)) {
 		rb_raise(rb_eNotImpError, "OpenSSL::PKey::PKey is an abstract class.");
-	} else {
-		rb_warn("PKey#initialize called! Something sucks here...");
 	}
 	return self;
 }

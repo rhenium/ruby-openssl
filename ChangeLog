@@ -3,6 +3,27 @@ ChangeLog for
 
 			### CHANGE LOG ###
 
+Fri,  7 Jun 2002 14:06:48 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* cipher.c: Checks around GetCipher
+	* digest.c: Use Make_Struct instead of Wrap_Struct and OPENSSL_malloc
+	* hmac.c: ditto.
+	* bn.c: Fixed creating new classes from subclasses (WrapXXX(klass,...))
+	* config.c: ditto.
+	* ns_spki.c: ditto.
+	* pkcs7.c: ditto.
+	* x509.h: C-level class rename: new are cX509Attr, cX509Cert, cX509Ext, cX509ExtFactory, cX509Req and Errors are renamed too.
+	* x509attr.c: ported to Ruby 1.8 interface and fixed new classes creation
+	* x509cert.c: ditto.
+	* x509crl.c: ditto.
+	* x509ext.c: ditto.
+	* x509name.c: ditto.
+	* x509req.c: ditto.
+	* x509revoked.c: ditto.
+	* x509store.c: ditto.
+	
+Thu,  6 Jun 2002 09:42:00 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
+	* pkey.c: Hopefully corrected nasty GC bug (ossl_pkey_get_EVP_PKEY)
+
 Thu,  6 Jun 2002 02:28:25 +0200 -- Michal Rokos <m.rokos@sh.cvut.cz>
 	* ssl.h: NEW (bits from ossl.h)
 	* ossl.h: is now tidy

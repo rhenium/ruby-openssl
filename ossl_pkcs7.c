@@ -10,11 +10,11 @@
  */
 #include "ossl.h"
 
-#define WrapPKCS7(obj, pkcs7) do { \
+#define WrapPKCS7(klass, obj, pkcs7) do { \
 	if (!pkcs7) { \
 		rb_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
 	} \
-	obj = Data_Wrap_Struct(cPKCS7, 0, PKCS7_free, pkcs7); \
+	obj = Data_Wrap_Struct(klass, 0, PKCS7_free, pkcs7); \
 } while (0)
 #define GetPKCS7(obj, pkcs7) do { \
 	Data_Get_Struct(obj, PKCS7, pkcs7); \
@@ -23,11 +23,11 @@
 	} \
 } while (0)
 
-#define WrapPKCS7si(obj, p7si) do { \
+#define WrapPKCS7si(klass, obj, p7si) do { \
 	if (!p7si) { \
 		rb_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
 	} \
-	obj = Data_Wrap_Struct(cPKCS7SignerInfo, 0, PKCS7_SIGNER_INFO_free, p7si); \
+	obj = Data_Wrap_Struct(klass, 0, PKCS7_SIGNER_INFO_free, p7si); \
 } while (0)
 #define GetPKCS7si(obj, p7si) do { \
 	Data_Get_Struct(obj, PKCS7_SIGNER_INFO, p7si); \
@@ -77,7 +77,7 @@ ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
 	if (!new) {
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	WrapPKCS7si(obj, new);
+	WrapPKCS7si(cPKCS7SignerInfo, obj, new);
 
 	return obj;
 }
@@ -109,7 +109,7 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	VALUE obj;
 	
 	OSSL_Check_Type(key, cPKey);
-	OSSL_Check_Type(cert, X509Certificate);
+	OSSL_Check_Type(cert, X509Cert);
 	StringValue(data);
 
 	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
@@ -133,7 +133,7 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 	X509_free(x509);
 	BIO_free(bio);
 	
-	WrapPKCS7(obj, pkcs7);
+	WrapPKCS7(cPKC7, obj, pkcs7);
 
 	return obj;
 }
@@ -148,7 +148,7 @@ ossl_pkcs7_s_allocate(VALUE klass)
 	if (!(pkcs7 = PKCS7_new())) {
 		OSSL_Raise(ePKCS7Error, "");
 	}
-	WrapPKCS7(obj, pkcs7);
+	WrapPKCS7(klass, obj, pkcs7);
 	
 	return obj;
 }
@@ -440,7 +440,7 @@ ossl_pkcs7_data_decode(VALUE self, VALUE key, VALUE cert)
 		rb_raise(ePKCS7Error, "Wrong content type - PKCS7 is not ENVELOPED");
 	}
 	OSSL_Check_Type(key, cPKey);
-	OSSL_Check_Type(cert, cX509Certificate);
+	OSSL_Check_Type(cert, cX509Cert);
 
 	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {
 		rb_raise(ePKCS7Error, "private key needed!");
@@ -494,9 +494,13 @@ ossl_pkcs7_to_pem(VALUE self)
 static VALUE
 ossl_pkcs7si_s_allocate(VALUE klass)
 {
+	PKCS7_SIGNER_INFO *p7si;
 	VALUE obj;
-	
-	obj = ossl_pkcs7si_new(NULL);
+
+	if (!(p7si = PKCS7_SIGNER_INFO_new())) {
+		OSSL_Raise(ePKCS7Error, "");
+	}
+	WrapPKCS7si(klass, obj, p7si);
 
 	return obj;
 }
@@ -512,7 +516,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 	GetPKCS7si(self, p7si);
 
 	OSSL_Check_Type(key, cPKey);
-	OSSL_Check_Type(cert, cX509Certificate);
+	OSSL_Check_Type(cert, cX509Cert);
 	md = ossl_digest_get_EVP_MD(digest);
 
 	if (rb_funcall(key, id_private_q, 0, NULL) != Qtrue) {

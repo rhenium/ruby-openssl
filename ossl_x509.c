@@ -17,13 +17,13 @@ Init_ossl_x509()
 {
 	mX509 = rb_define_module_under(mOSSL, "X509");
 	
-	Init_ossl_x509attr(mX509);
-	Init_ossl_x509cert(mX509);
-	Init_ossl_x509crl(mX509);
-	Init_ossl_x509ext(mX509);
-	Init_ossl_x509name(mX509);
-	Init_ossl_x509req(mX509);
-	Init_ossl_x509revoked(mX509);
-	Init_ossl_x509store(mX509);
+	Init_ossl_x509attr();
+	Init_ossl_x509cert();
+	Init_ossl_x509crl();
+	Init_ossl_x509ext();
+	Init_ossl_x509name();
+	Init_ossl_x509req();
+	Init_ossl_x509revoked();
+	Init_ossl_x509store();
 }
 

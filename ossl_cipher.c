@@ -11,7 +11,12 @@
 #include "ossl.h"
 
 #define MakeCipher(obj, klass, ciphp) obj = Data_Make_Struct(klass, ossl_cipher, 0, ossl_cipher_free, ciphp)
-#define GetCipher(obj, ciphp) Data_Get_Struct(obj, ossl_cipher, ciphp)
+#define GetCipher(obj, ciphp) do { \
+	Data_Get_Struct(obj, ossl_cipher, ciphp); \
+	if (!ciphp || !ciphp->cipher) { \
+		rb_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
+	} \
+} while (0)
 #define SafeGetCipher(obj, ciphp) do { \
 	OSSL_Check_Kind(obj, cCipher); \
 	GetCipher(obj, ciphp); \
@@ -67,12 +72,6 @@ ossl_cipher_s_allocate(VALUE klass)
 
 	MakeCipher(obj, klass, ciphp);
 	
-/*
- * NOT NEEDED IF STATIC
-	if (!(ciphp->ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX)))) {
-		OSSL_Raise(eCipherError, "");
-	}
- */
 	ciphp->init = Qfalse;
 	ciphp->cipher = NULL;
 

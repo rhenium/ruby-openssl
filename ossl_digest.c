@@ -10,12 +10,8 @@
  */
 #include "ossl.h"
 
-#define WrapDigest(klass, obj, ctx) do { \
-	if (!ctx) { \
-		rb_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
-	} \
-	obj = Data_Wrap_Struct(klass, 0, CRYPTO_free, ctx); \
-} while (0)
+#define MakeDigest(klass, obj, ctx) \
+	obj = Data_Make_Struct(klass, EVP_MD_CTX, 0, CRYPTO_free, ctx)
 #define GetDigest(obj, ctx) do { \
 	Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
 	if (!ctx) { \
@@ -56,10 +52,7 @@ ossl_digest_s_allocate(VALUE klass)
 	EVP_MD_CTX *ctx;
 	VALUE obj;
 
-	if (!(ctx = OPENSSL_malloc(sizeof(EVP_MD_CTX)))) {
-		OSSL_Raise(eDigestError, "Cannot allocate memory for a digest's CTX");
-	}
-	WrapDigest(klass, obj, ctx);
+	MakeDigest(klass, obj, ctx);
 	
 	return obj;
 }

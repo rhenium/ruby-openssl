@@ -62,6 +62,12 @@ extern VALUE mOSSL;
 extern VALUE eOSSLError;
 
 /*
+ * GetRealClass
+ * 
+#define RCLASS_OF(obj) rb_obj_class((obj))
+ */
+
+/*
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) ossl_check_kind(obj, klass)

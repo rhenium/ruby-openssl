@@ -10,11 +10,11 @@
  */
 #include "ossl.h"
 
-#define WrapConfig(obj, conf) do { \
+#define WrapConfig(klass, obj, conf) do { \
 	if (!conf) { \
 		rb_raise(rb_eRuntimeError, "Config wasn't intitialized!"); \
 	} \
-	obj = Data_Wrap_Struct(cConfig, 0, CONF_free, conf); \
+	obj = Data_Wrap_Struct(klass, 0, CONF_free, conf); \
 } while (0)
 #define GetConfig(obj, conf) do { \
 	Data_Get_Struct(obj, LHASH, conf); \
@@ -55,7 +55,7 @@ ossl_config_s_load(int argc, VALUE *argv, VALUE klass)
 					err_line, StringValuePtr(path));
 		}
 	}
-	WrapConfig(obj, conf);
+	WrapConfig(klass, obj, conf);
 
 	return obj;
 }
