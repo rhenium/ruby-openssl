@@ -137,7 +137,8 @@ void Init_ossl_digest(VALUE);
 /*
  * X509
  */
-VALUE ossl_x509_new2(X509 *);
+VALUE ossl_x509_new_null(void);
+VALUE ossl_x509_new(X509 *);
 VALUE ossl_x509_new_from_file(VALUE);
 X509 *ossl_x509_get_X509(VALUE);
 void Init_ossl_x509(VALUE);
@@ -151,42 +152,47 @@ void Init_ossl_x509crl(VALUE);
 /*
  * X509Name
  */
-VALUE ossl_x509name_new2(X509_NAME *);
+VALUE ossl_x509name_new_null(void);
+VALUE ossl_x509name_new(X509_NAME *);
 X509_NAME *ossl_x509name_get_X509_NAME(VALUE);
 void Init_ossl_x509name(VALUE);
 
 /*
  * X509Request
  */
-VALUE ossl_x509req_new2(X509_REQ *);
+VALUE ossl_x509req_new_null(void);
+VALUE ossl_x509req_new(X509_REQ *);
 X509_REQ *ossl_x509req_get_X509_REQ(VALUE);
 void Init_ossl_x509req(VALUE);
 
 /*
  * X509Revoked
  */
-VALUE ossl_x509revoked_new2(X509_REVOKED *);
+VALUE ossl_x509revoked_new_null(void);
+VALUE ossl_x509revoked_new(X509_REVOKED *);
 X509_REVOKED *ossl_x509revoked_get_X509_REVOKED(VALUE);
 void Init_ossl_x509revoked(VALUE);
 
 /*
  * X509Store
  */
-VALUE ossl_x509store_new2(X509_STORE_CTX *);
+VALUE ossl_x509store_new(X509_STORE_CTX *);
 X509_STORE *ossl_x509store_get_X509_STORE(VALUE);
 void Init_ossl_x509store(VALUE);
 
 /*
  * X509Extension
  */
-VALUE ossl_x509ext_new2(X509_EXTENSION *);
+VALUE ossl_x509ext_new_null(void);
+VALUE ossl_x509ext_new(X509_EXTENSION *);
 X509_EXTENSION *ossl_x509ext_get_X509_EXTENSION(VALUE);
 void Init_ossl_x509ext(VALUE);
 
 /*
  * X509Attribute
  */
-VALUE ossl_x509attr_new2(X509_ATTRIBUTE *);
+VALUE ossl_x509attr_new_null(void);
+VALUE ossl_x509attr_new(X509_ATTRIBUTE *);
 X509_ATTRIBUTE *ossl_x509attr_get_X509_ATTRIBUTE(VALUE);
 void Init_ossl_x509attr(VALUE);
 
@@ -218,19 +224,23 @@ void Init_ossl_pkey(VALUE);
 /*
  * RSA
  */
+#ifndef NO_RSA
 VALUE ossl_rsa_new_null();
 VALUE ossl_rsa_new(RSA *);
 RSA *ossl_rsa_get_RSA(VALUE);
 EVP_PKEY *ossl_rsa_get_EVP_PKEY(VALUE);
+#endif
 void Init_ossl_rsa(VALUE, VALUE, VALUE);
 
 /*
  * DSA
  */
+#ifndef NO_DSA
 VALUE ossl_dsa_new_null();
 VALUE ossl_dsa_new(DSA *);
 DSA *ossl_dsa_get_DSA(VALUE);
 EVP_PKEY *ossl_dsa_get_EVP_PKEY(VALUE);
+#endif
 void Init_ossl_dsa(VALUE, VALUE, VALUE);
 
 /*

@@ -47,17 +47,32 @@ ossl_x509name_free(ossl_x509name *namep)
  * Public
  */
 VALUE 
-ossl_x509name_new2(X509_NAME *name)
+ossl_x509name_new_null(void)
 {
 	ossl_x509name *namep = NULL;
-	X509_NAME *new = NULL;
 	VALUE obj;
 
 	MakeX509Name(obj, namep);
-	if (!(new = X509_NAME_dup(name))) {
+
+	if (!(namep->name = X509_NAME_new()))
 		rb_raise(eX509NameError, "%s", ossl_error());
-	}
-	namep->name = new;
+
+	return obj;
+}
+
+VALUE 
+ossl_x509name_new(X509_NAME *name)
+{
+	ossl_x509name *namep = NULL;
+	VALUE obj;
+
+	if (!name)
+		return ossl_x509name_new_null();
+	
+	MakeX509Name(obj, namep);
+
+	if (!(namep->name = X509_NAME_dup(name)))
+		rb_raise(eX509NameError, "%s", ossl_error());
 
 	return obj;
 }
@@ -67,6 +82,8 @@ ossl_x509name_get_X509_NAME(VALUE obj)
 {
 	ossl_x509name *namep = NULL;
 
+	OSSL_Check_Type(obj, cX509Name);
+	
 	GetX509Name(obj, namep);
 
 	return X509_NAME_dup(namep->name);
@@ -82,6 +99,7 @@ ossl_x509name_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 	
 	MakeX509Name(obj, namep);
+
 	rb_obj_call_init(obj, argc, argv);
 	
 	return obj;
@@ -125,6 +143,7 @@ ary_to_x509name(VALUE ary)
 		}
 		key = RARRAY(item)->ptr[0];
 		value = RARRAY(item)->ptr[1];
+
 		if (TYPE(key) != T_STRING || TYPE(value) != T_STRING) {
 			rb_raise(eX509NameError, "unsupported structure");
 		}
@@ -203,9 +222,9 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!name) {
+	if (!name)
 		rb_raise(eX509NameError, "%s", ossl_error());
-	}
+
 	namep->name = name;
 
 	return self;

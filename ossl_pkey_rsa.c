@@ -8,6 +8,8 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#ifndef NO_RSA
+
 #include "ossl.h"
 #include "ossl_pkey.h"
 
@@ -58,9 +60,9 @@ ossl_rsa_new_null()
 	
 	MakeRSA(obj, rsap);
 	
-	if (!(rsap->rsa = RSA_new())) {
+	if (!(rsap->rsa = RSA_new()))
 		rb_raise(eRSAError, "%s", ossl_error());
-	}
+
 	return obj;
 }
 
@@ -76,9 +78,9 @@ ossl_rsa_new(RSA *rsa)
 	MakeRSA(obj, rsap);
 	
 	rsap->rsa = (RSA_PRIVATE(rsa)) ? RSAPrivateKey_dup(rsa) : RSAPublicKey_dup(rsa);
-	if (!rsap->rsa) {
+
+	if (!rsap->rsa)
 		rb_raise(eRSAError, "%s", ossl_error());
-	}
 	
 	return obj;
 }
@@ -89,12 +91,14 @@ ossl_rsa_get_RSA(VALUE obj)
 	ossl_rsa *rsap = NULL;
 	RSA *rsa = NULL;
 	
+	OSSL_Check_Type(obj, cRSA);
+	
 	GetRSA(obj, rsap);
 
 	rsa = (RSA_PRIVATE(rsap->rsa)) ? RSAPrivateKey_dup(rsap->rsa) : RSAPublicKey_dup(rsap->rsa);
-	if (!rsa) {
+	
+	if (!rsa)
 		rb_raise(eRSAError, "%s", ossl_error());
-	}
 	
 	return rsa;
 }
@@ -105,6 +109,8 @@ ossl_rsa_get_EVP_PKEY(VALUE obj)
 	RSA *rsa = NULL;
 	EVP_PKEY *pkey = NULL;
 
+	OSSL_Check_Type(obj, cRSA);
+	
 	rsa = ossl_rsa_get_RSA(obj);
 
 	if (!(pkey = EVP_PKEY_new())) {
@@ -132,6 +138,7 @@ ossl_rsa_s_new(int argc, VALUE *argv, VALUE klass)
 	MakeRSA(obj, rsap);
 
 	rb_obj_call_init(obj, argc, argv);
+	
 	return obj;
 }
 
@@ -262,10 +269,12 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	
 	if (RSA_PRIVATE(rsap->rsa)) {
 		if (!PEM_write_bio_RSAPrivateKey(out, rsap->rsa, ciph, NULL, 0, NULL, pass)) {
+			BIO_free(out);
 			rb_raise(eRSAError, "%s", ossl_error());
 		}
 	} else {
 		if (!PEM_write_bio_RSAPublicKey(out, rsap->rsa)) {
+			BIO_free(out);
 			rb_raise(eRSAError, "%s", ossl_error());
 		}
 	}
@@ -290,15 +299,15 @@ ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 	Check_Type(buffer, T_STRING);
 	size = RSA_size(rsap->rsa);
 	
-	if (!(enc_text = malloc(size + 16))) {
+	if (!(enc_text = OPENSSL_malloc(size + 16))) {
 		rb_raise(eRSAError, "Memory alloc error");
 	}
 	if ((len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		free(enc_text);
+		OPENSSL_free(enc_text);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	enc = rb_str_new(enc_text, len);
-	free(enc_text);
+	OPENSSL_free(enc_text);
 
 	return enc;
 }
@@ -316,15 +325,15 @@ ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 	Check_Type(buffer, T_STRING);
 	size = RSA_size(rsap->rsa);
 	
-	if (!(txt = malloc(size + 16))) {
+	if (!(txt = OPENSSL_malloc(size + 16))) {
 		rb_raise(eRSAError, "Memory alloc error");
 	}
 	if ((len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		free(txt);
+		OPENSSL_free(txt);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	text = rb_str_new(txt, len);
-	free(txt);
+	OPENSSL_free(txt);
 
 	return text;
 }
@@ -342,19 +351,20 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 	if (!RSA_PRIVATE(rsap->rsa)) {
 		rb_raise(eRSAError, "This key is PUBLIC only!");
 	}
+	
 	Check_Type(buffer, T_STRING);
 	
 	size = RSA_size(rsap->rsa);
 	
-	if (!(enc_text = malloc(size + 16))) {
+	if (!(enc_text = OPENSSL_malloc(size + 16))) {
 		rb_raise(eRSAError, "Memory alloc error");
 	}
 	if ((len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, enc_text, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		free(enc_text);
+		OPENSSL_free(enc_text);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	enc = rb_str_new(enc_text, len);
-	free(enc_text);
+	OPENSSL_free(enc_text);
 
 	return enc;
 }
@@ -376,15 +386,15 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 	
 	size = RSA_size(rsap->rsa);
 
-	if (!(txt = malloc(size + 16))) {
+	if (!(txt = OPENSSL_malloc(size + 16))) {
 		rb_raise(eRSAError, "Memory alloc error");
 	}
 	if ((len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr, txt, rsap->rsa, RSA_PKCS1_PADDING)) < 0) {
-		free(txt);
+		OPENSSL_free(txt);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	text = rb_str_new(txt, len);
-	free(txt);
+	OPENSSL_free(txt);
 
 	return text;
 }
@@ -407,6 +417,7 @@ ossl_rsa_get_n(VALUE self)
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	if (!BN_print(out, rsap->rsa->n)) {
+		BIO_free(out);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	BIO_get_mem_ptr(out, &buf);
@@ -429,29 +440,33 @@ ossl_rsa_to_der(VALUE self)
 	GetRSA(self, rsap);
 
 	rsa = (RSA_PRIVATE(rsap->rsa)) ? RSAPrivateKey_dup(rsap->rsa):RSAPublicKey_dup(rsap->rsa);
-	if (!rsa) {
+	
+	if (!rsa)
 		rb_raise(eRSAError, "%s", ossl_error());
-	}
+
 	if (!(pkey = EVP_PKEY_new())) {
 		RSA_free(rsa);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	if (!EVP_PKEY_assign_RSA(pkey, rsap->rsa)) {
-		RSA_free(rsa);
+		/*RSA_free(rsa);*/
 		EVP_PKEY_free(pkey);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}	
 	if (!(key = X509_PUBKEY_new())) {
+		/*RSA_free(rsa);*/
 		EVP_PKEY_free(pkey);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	if (!X509_PUBKEY_set(&key, pkey)) {
-		EVP_PKEY_free(pkey);
+		/*RSA_free(rsa);*/
+		/* EVP_PKEY_free(pkey) = this does X509_PUBKEY_free!! */
 		X509_PUBKEY_free(key);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 
 	str = rb_str_new(key->public_key->data, key->public_key->length);
+	/*RSA_free(rsa);*/
 	/* EVP_PKEY_free(pkey) = this does X509_PUBKEY_free!! */
 	X509_PUBKEY_free(key);
 
@@ -477,6 +492,7 @@ ossl_rsa_to_str(VALUE self)
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	if (!RSA_print(out, rsap->rsa, 0)) { //offset = 0
+		BIO_free(out);
 		rb_raise(eRSAError, "%s", ossl_error());
 	}
 	BIO_get_mem_ptr(out, &buf);
@@ -550,7 +566,8 @@ ossl_rsa_verify(VALUE self, VALUE digest, VALUE text)
 /*
  * INIT
  */
-void Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+void
+Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 {
 	eRSAError = rb_define_class_under(mPKey, "RSAError", ePKeyError);
 
@@ -576,4 +593,14 @@ void Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 	rb_define_method(cRSA, "verify", ossl_rsa_verify, 3);
  */
 }
+
+#else /* defined NO_RSA */
+
+void
+Init_ossl_rsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+{
+	rb_warning("RSA keys will NOT be avaible: OpenSSL is compiled without RSA support.");
+}
+
+#endif /* NO_RSA */
 

@@ -8,11 +8,12 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#ifndef NO_HMAC
+
 #include <openssl/hmac.h>
 #include "openssl_missing.h"
 
 /* to hmac.[ch] */
-#ifndef NO_HMAC
 int
 HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 {
@@ -20,10 +21,10 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
         	/* HMACerr(HMAC_CTX_COPY,HMAC_R_INPUT_NOT_INITIALIZED); */
         	return 0;
     	}
-
 	memcpy(out, in, sizeof(HMAC_CTX));
 
 	return 1;
 }
+
 #endif
 

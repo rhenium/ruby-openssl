@@ -8,6 +8,8 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#ifndef NO_DSA
+
 #include "ossl.h"
 #include "ossl_pkey.h"
 
@@ -58,9 +60,9 @@ ossl_dsa_new_null()
 	
 	MakeDSA(obj, dsap);
 	
-	if (!(dsap->dsa = DSA_new())) {
+	if (!(dsap->dsa = DSA_new()))
 		rb_raise(eDSAError, "%s", ossl_error());
-	}
+
 	return obj;
 }
 
@@ -76,9 +78,9 @@ ossl_dsa_new(DSA *dsa)
 	MakeDSA(obj, dsap);
 	
 	dsap->dsa = (DSA_PRIVATE(dsa)) ? DSAPrivateKey_dup(dsa) : DSAPublicKey_dup(dsa);
-	if (!dsap->dsa) {
+
+	if (!dsap->dsa)
 		rb_raise(eDSAError, "%s", ossl_error());
-	}
 	
 	return obj;
 }
@@ -89,12 +91,13 @@ ossl_dsa_get_DSA(VALUE obj)
 	ossl_dsa *dsap = NULL;
 	DSA *dsa = NULL;
 	
+	OSSL_Check_Type(obj, cDSA);
+	
 	GetDSA(obj, dsap);
 
 	dsa = (DSA_PRIVATE(dsap->dsa)) ? DSAPrivateKey_dup(dsap->dsa) : DSAPublicKey_dup(dsap->dsa);
-	if (!dsa) {
+	if (!dsa)
 		rb_raise(eDSAError, "%s", ossl_error());
-	}
 	
 	return dsa;
 }
@@ -105,6 +108,8 @@ ossl_dsa_get_EVP_PKEY(VALUE obj)
 	DSA *dsa = NULL;
 	EVP_PKEY *pkey = NULL;
 
+	OSSL_Check_Type(obj, cDSA);
+	
 	dsa = ossl_dsa_get_DSA(obj);
 
 	if (!(pkey = EVP_PKEY_new())) {
@@ -132,6 +137,7 @@ ossl_dsa_s_new(int argc, VALUE *argv, VALUE klass)
 	MakeDSA(obj, dsap);
 
 	rb_obj_call_init(obj, argc, argv);
+	
 	return obj;
 }
 
@@ -178,10 +184,12 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 			}
 			if (rb_block_given_p())
 				cb = ossl_dsa_generate_cb;
+
 			if (!(dsa = DSA_generate_parameters(FIX2INT(buffer), seed, seed_len, &counter, &h, cb, NULL))) { /* arg to cb = NULL */
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
 			if (!DSA_generate_key(dsa)) {
+				DSA_free(dsa);
 				rb_raise(eDSAError, "%s", ossl_error());
 			}
 			break;
@@ -269,10 +277,12 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 	
 	if (DSA_PRIVATE(dsap->dsa)) {
 		if (!PEM_write_bio_DSAPrivateKey(out, dsap->dsa, ciph, NULL, 0, NULL, pass)) {
+			BIO_free(out);
 			rb_raise(eDSAError, "%s", ossl_error());
 		}
 	} else {
 		if (!PEM_write_bio_DSAPublicKey(out, dsap->dsa)) {
+			BIO_free(out);
 			rb_raise(eDSAError, "%s", ossl_error());
 		}
 	}
@@ -296,29 +306,33 @@ ossl_dsa_to_der(VALUE self)
 	GetDSA(self, dsap);
 
 	dsa = (DSA_PRIVATE(dsap->dsa)) ? DSAPrivateKey_dup(dsap->dsa):DSAPublicKey_dup(dsap->dsa);
-	if (!dsa) {
+	
+	if (!dsa)
 		rb_raise(eDSAError, "%s", ossl_error());
-	}
+	
 	if (!(pkey = EVP_PKEY_new())) {
 		DSA_free(dsa);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 	if (!EVP_PKEY_assign_DSA(pkey, dsap->dsa)) {
-		DSA_free(dsa);
+		/*DSA_free(dsa);*/
 		EVP_PKEY_free(pkey);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}	
 	if (!(key = X509_PUBKEY_new())) {
+		/*DSA_free(dsa);*/
 		EVP_PKEY_free(pkey);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 	if (!X509_PUBKEY_set(&key, pkey)) {
-		EVP_PKEY_free(pkey);
+		/*DSA_free(dsa);*/
+		/* EVP_PKEY_free(pkey) = this does X509_PUBKEY_free!! */
 		X509_PUBKEY_free(key);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 
 	str = rb_str_new(key->public_key->data, key->public_key->length);
+	/*DSA_free(dsa);*/
 	/* EVP_PKEY_free(pkey) = this does X509_PUBKEY_free!! */
 	X509_PUBKEY_free(key);
 
@@ -344,6 +358,7 @@ ossl_dsa_to_str(VALUE self)
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 	if (!DSA_print(out, dsap->dsa, 0)) { //offset = 0
+		BIO_free(out);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 	BIO_get_mem_ptr(out, &buf);
@@ -393,6 +408,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	}
 	
 	if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, sig, &sig_len, dsap->dsa)) { /*type = 0*/
+		OPENSSL_free(sig);
 		rb_raise(eDSAError, "%s", ossl_error());
 	}
 
@@ -413,13 +429,13 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 	Check_SafeStr(sig);
 
 	ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len, RSTRING(sig)->ptr, RSTRING(sig)->len, dsap->dsa); /*type = 0*/
+
+	if (ret < 0)
+		rb_raise(eDSAError, "%s", ossl_error());
+
 	if (ret == 1)
 		return Qtrue;
-	else if (ret == 0)
-		return Qfalse;
-	
-	rb_raise(eDSAError, "%s", ossl_error());
-	return Qnil;
+	return Qfalse;
 }
 
 /*
@@ -443,4 +459,14 @@ Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
 	rb_define_method(cDSA, "sign_digest", ossl_dsa_sign, 1);
 	rb_define_method(cDSA, "verify_digest", ossl_dsa_verify, 2);
 }
+
+#else /* defined NO_DSA */
+
+void
+Init_ossl_dsa(VALUE mPKey, VALUE cPKey, VALUE ePKeyError)
+{
+	rb_warning("DSA keys will NOT be avaible: OpenSSL is compiled without DSA support.");
+}
+
+#endif /* NO_DSA */
 

@@ -43,8 +43,8 @@ static void
 ossl_config_free(ossl_config *configp)
 {
 	if (configp) {
-		if (configp->config)
-			CONF_free(configp->config);
+		if (configp->config) CONF_free(configp->config);
+		configp->config = NULL;
 		free(configp);
 	}
 }

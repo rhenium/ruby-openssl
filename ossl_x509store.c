@@ -20,8 +20,6 @@
 	if (!storep->store) rb_raise(eX509StoreError, "not initialized!");\
 }
 
-#define DefX509StoreConst(x) rb_define_const(cX509Store, #x, INT2FIX(X509_V_ERR_##x))
-
 /*
  * Classes
  */
@@ -58,10 +56,9 @@ ossl_x509store_free(ossl_x509store *storep)
  * Public functions
  */
 VALUE 
-ossl_x509store_new2(X509_STORE_CTX *ctx)
+ossl_x509store_new(X509_STORE_CTX *ctx)
 {
 	ossl_x509store *storep = NULL;
-	X509_STORE_CTX *ctx2 = NULL;
 	VALUE obj;
 
 	MakeX509Store(obj, storep);
@@ -85,6 +82,8 @@ X509_STORE *
 ossl_x509store_get_X509_STORE(VALUE obj)
 {
 	ossl_x509store *storep = NULL;
+	
+	OSSL_Check_Type(obj, cX509Store);
 	
 	GetX509Store(obj, storep);
 	
@@ -146,7 +145,8 @@ ossl_session_db_set(void *key, VALUE data)
 	item->next = NULL;
 	if (last)
 		last->next = item;
-	else db_root = item;
+	else
+		db_root = item;
 	rb_thread_critical = 0;
 
 	return data;
@@ -162,6 +162,7 @@ ossl_x509store_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 
 	MakeX509Store(obj, storep);
+
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -204,6 +205,7 @@ ossl_x509store_add_trusted(VALUE self, VALUE cert)
 	x509 = ossl_x509_get_X509(cert);
 
 	if (!X509_STORE_add_cert(storep->store->ctx, x509)) {
+		X509_free(x509);
 		rb_raise(eX509StoreError, "%s", ossl_error());
 	}
 	X509_free(x509);
@@ -235,7 +237,7 @@ ossl_x509store_get_chain(obj)
 	ary = rb_ary_new2(num);
 	for(i=0; i<num; i++) {
 		x509 = sk_X509_value(ctx.chain, i);
-		cert = ossl_x509_new2(x509);
+		cert = ossl_x509_new(x509);
 		rb_ary_push(ary, cert);
 	}
 	
@@ -252,9 +254,11 @@ ossl_x509store_add_crl(VALUE self, VALUE crlst)
 	GetX509Store(self, storep);
 	
 	OSSL_Check_Type(crlst, cX509CRL);
+
 	crl = ossl_x509crl_get_X509_CRL(crlst);
 
 	if (!X509_STORE_add_crl(storep->store->ctx, crl)) {
+		X509_CRL_free(crl);
 		rb_raise(eX509StoreError, "%s", ossl_error());
 	}
 	X509_CRL_free(crl);
@@ -326,8 +330,8 @@ ossl_x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 	proc = ossl_session_db_get((void *)ctx->ctx);
 	
 	if (!NIL_P(proc)) {
-		store_ctx = ossl_x509store_new2(ctx);
-		rb_funcall(store_ctx, rb_intern("protect"), 0, NULL); /* called default by ossl_..new2 */
+		store_ctx = ossl_x509store_new(ctx);
+		rb_funcall(store_ctx, rb_intern("protect"), 0, NULL); /* called default by ossl_..new */
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, proc);
 		rb_ary_store(args, 1, ok ? Qtrue : Qfalse);
@@ -398,7 +402,7 @@ ossl_x509store_get_cert(VALUE self)
 
 	GetX509Store(self, storep);
 	
-	return ossl_x509_new2(X509_STORE_CTX_get_current_cert(storep->store));
+	return ossl_x509_new(X509_STORE_CTX_get_current_cert(storep->store));
 }
 
 static VALUE 
@@ -495,6 +499,8 @@ Init_ossl_x509store(VALUE module)
 	rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);
 	rb_define_method(cX509Store, "load_locations", ossl_x509store_load_locations, 1);
 	
+#define DefX509StoreConst(x) rb_define_const(cX509Store, #x, INT2FIX(X509_V_ERR_##x))
+
 	DefX509StoreConst(UNABLE_TO_GET_ISSUER_CERT);
 	DefX509StoreConst(UNABLE_TO_GET_CRL);
 	DefX509StoreConst(UNABLE_TO_DECRYPT_CERT_SIGNATURE);

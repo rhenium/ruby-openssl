@@ -47,30 +47,49 @@ ossl_x509req_free(ossl_x509req *reqp)
  * Public functions
  */
 VALUE 
-ossl_x509req_new2(X509_REQ *req)
+ossl_x509req_new_null(void)
 {
 	ossl_x509req *reqp = NULL;
 	VALUE self;
 	
 	MakeX509Req(self, reqp);
-	if (!(reqp->request = X509_REQ_dup(req))) {
+
+	if (!(reqp->request = X509_REQ_new()))
 		rb_raise(eX509RequestError, "%s", ossl_error());
-	}
+
+	return self;
+}
+
+VALUE
+ossl_x509req_new(X509_REQ *req)
+{
+	ossl_x509req *reqp = NULL;
+	VALUE self;
+
+	if (!req)
+		return ossl_x509req_new_null();
+	
+	MakeX509Req(self, reqp);
+
+	if (!(reqp->request = X509_REQ_dup(req)))
+		rb_raise(eX509RequestError, "%s", ossl_error());
 
 	return self;
 }
 
 X509_REQ *
-ossl_x509req_get_X509_REQ(VALUE self)
+ossl_x509req_get_X509_REQ(VALUE obj)
 {
 	ossl_x509req *reqp = NULL;
 	X509_REQ *req = NULL;
 	
-	GetX509Req(self, reqp);
+	OSSL_Check_Type(obj, cX509Request);
 	
-	if (!(req = X509_REQ_dup(reqp->request))) {
+	GetX509Req(obj, reqp);
+	
+	if (!(req = X509_REQ_dup(reqp->request)))
 		rb_raise(eX509RequestError, "%s", ossl_error());
-	}
+
 	return req;
 }
 
@@ -84,6 +103,7 @@ ossl_x509req_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 	
 	MakeX509Req(obj, reqp);
+
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -115,9 +135,9 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!req) {
+	if (!req)
 		rb_raise(eX509RequestError, "%s", ossl_error());
-	}	
+
 	reqp->request = req;
 
 	return self;
@@ -186,7 +206,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 		rb_raise(eX509RequestError, "%s", ossl_error());
 	}
 
-	return ossl_x509req_new2(x509);
+	return ossl_x509req_new(x509);
 }
  */
 
@@ -233,7 +253,7 @@ ossl_x509req_get_subject(VALUE self)
 	if (!(name = X509_REQ_get_subject_name(reqp->request))) {
 		rb_raise(eX509RequestError, "%s", ossl_error());
 	}
-	subject = ossl_x509name_new2(name);
+	subject = ossl_x509name_new(name);
 	/*X509_NAME_free(name);*/
 	
 	return subject;
@@ -253,6 +273,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
 	if (!X509_REQ_set_subject_name(reqp->request, name)) {
 		rb_raise(eX509RequestError, "%s", ossl_error());
 	}
+	/*X509_NAME_free(name);*/
 
 	return subject;
 }
@@ -339,9 +360,10 @@ ossl_x509req_verify(VALUE self, VALUE key)
 	i = X509_REQ_verify(reqp->request, pkey);
 	EVP_PKEY_free(pkey);
 
-	if (i < 0) {
+	if (i < 0)
 		rb_raise(eX509RequestError, "%s", ossl_error());
-	} else if (i > 0)
+	
+	if (i > 0)
 		return Qtrue;
 
 	return Qfalse;
@@ -359,12 +381,14 @@ ossl_x509req_get_attributes(VALUE self)
 
 	count = X509_REQ_get_attr_count(reqp->request);
 
-	if(count > 0) ary = rb_ary_new2(count);
-	else return rb_ary_new();
+	if(count > 0) 
+		ary = rb_ary_new2(count);
+	else 
+		return rb_ary_new();
 
 	for (i=0; i<count; i++) {
 		attr = X509_REQ_get_attr(reqp->request, i);
-		rb_ary_push(ary, ossl_x509attr_new2(attr));
+		rb_ary_push(ary, ossl_x509attr_new(attr));
 	}
 
 	return ary;
@@ -387,8 +411,11 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	
 	for (i=0;i<RARRAY(ary)->len; i++) {
 		item = RARRAY(ary)->ptr[i];
+
 		OSSL_Check_Type(item, cX509Attribute);
+
 		attr = ossl_x509attr_get_X509_ATTRIBUTE(item);
+
 		if (!X509_REQ_add1_attr(reqp->request, attr)) {
 			rb_raise(eX509RequestError, "%s", ossl_error());
 		}
@@ -407,6 +434,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 	GetX509Req(self, reqp);
 
 	OSSL_Check_Type(attr, cX509Attribute);
+
 	if (!X509_REQ_add1_attr(reqp->request, ossl_x509attr_get_X509_ATTRIBUTE(attr))) {
 		rb_raise(eX509RequestError, "%s", ossl_error());
 	}

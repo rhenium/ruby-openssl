@@ -32,6 +32,7 @@ ossl_rand_seed(VALUE self, VALUE str)
 {
 	Check_SafeStr(str);
 	RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
+
 	return str;
 }
 
@@ -70,6 +71,7 @@ ossl_rand_bytes(VALUE self, VALUE len)
 	}
 	
 	if (!RAND_bytes(buffer, FIX2INT(len))) {
+		OPENSSL_free(buffer);
 		rb_raise(eRandomError, "%s", ossl_error());
 	}
 	
@@ -82,7 +84,8 @@ ossl_rand_bytes(VALUE self, VALUE len)
 /*
  * INIT
  */
-void Init_ossl_rand(VALUE mOSSL)
+void
+Init_ossl_rand(VALUE mOSSL)
 {
 	rb_define_method(mOSSL, "seed", ossl_rand_seed, 1);
 	rb_define_method(mOSSL, "load_random_file", ossl_rand_load_file, 1);

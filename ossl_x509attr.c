@@ -47,11 +47,28 @@ ossl_x509attr_free(ossl_x509attr *attrp)
  * public
  */
 VALUE 
-ossl_x509attr_new2(X509_ATTRIBUTE *attr)
+ossl_x509attr_new_null(void)
 {
 	ossl_x509attr *attrp = NULL;
 	VALUE obj;
 
+	MakeX509Attr(obj, attrp);
+
+	if (!(attrp->attribute = X509_ATTRIBUTE_new()))
+		rb_raise(eX509AttributeError, "%s", ossl_error());
+
+	return obj;
+}
+
+VALUE 
+ossl_x509attr_new(X509_ATTRIBUTE *attr)
+{
+	ossl_x509attr *attrp = NULL;
+	VALUE obj;
+
+	if (!attr)
+		return ossl_x509attr_new_null();
+	
 	MakeX509Attr(obj, attrp);
 
 	if (!(attrp->attribute = X509_ATTRIBUTE_dup(attr))) {
@@ -62,16 +79,18 @@ ossl_x509attr_new2(X509_ATTRIBUTE *attr)
 }
 
 X509_ATTRIBUTE *
-ossl_x509attr_get_X509_ATTRIBUTE(VALUE self)
+ossl_x509attr_get_X509_ATTRIBUTE(VALUE obj)
 {
 	ossl_x509attr *attrp = NULL;
 	X509_ATTRIBUTE *attr = NULL;
 
-	GetX509Attr(self, attrp);
+	OSSL_Check_Type(obj, cX509Attribute);
+	
+	GetX509Attr(obj, attrp);
 
-	if (!(attr = X509_ATTRIBUTE_dup(attrp->attribute))) {
+	if (!(attr = X509_ATTRIBUTE_dup(attrp->attribute)))
 		rb_raise(eX509AttributeError, "%s", ossl_error());
-	}
+
 	return attr;
 }
 
@@ -85,7 +104,9 @@ ossl_x509attr_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 
 	MakeX509Attr(obj, attrp);
+
 	rb_obj_call_init(obj, argc, argv);
+
 	return obj;
 }
 
@@ -146,9 +167,9 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!attr) {
+	if (!attr)
 		rb_raise(eX509AttributeError, "%s", ossl_error());
-	}
+
 	attrp->attribute = attr;
 
 	return self;

@@ -81,6 +81,8 @@ ossl_pkey_get_EVP_PKEY(VALUE obj)
 {
 	ossl_pkey *pkeyp = NULL;
 	
+	OSSL_Check_Type(obj, cPKey);
+	
 	GetPKey(obj, pkeyp);
 
 	return pkeyp->get_EVP_PKEY(obj);

@@ -4,11 +4,14 @@ Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
 All rights reserved.
 
 $Log$
+Revision 1.13  2001/12/21 20:10:12  majkl
+	* Memory checking
+
 Revision 1.12  2001/12/21 19:21:35  gotoyuzo
 	* fixed unusual usage of ## preprocessing token sequence.
 
 Revision 1.11  2001/12/13 18:08:58  majkl
-	* added bn methods (thanks to UNKNOWN <oss-ruby@technorama.net>
+	* added bn methods (thanks to UNKNOWN <oss-ruby@technorama.net>)
 	* simplify ossl_digest sources
 
 Revision 1.10  2001/11/29 13:17:24  majkl

@@ -28,8 +28,6 @@
 	if (!p7sip->signer) rb_raise(ePKCS7Error, "not initialized!");\
 }
 
-#define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2FIX(x))
-
 /*
  * Constants
  */
@@ -63,9 +61,8 @@ static void
 ossl_pkcs7_free(ossl_pkcs7 *pkcs7p)
 {
 	if (pkcs7p) {
-		if (pkcs7p->pkcs7) {
-			PKCS7_free(pkcs7p->pkcs7);
-		}
+		if (pkcs7p->pkcs7) PKCS7_free(pkcs7p->pkcs7);
+		pkcs7p->pkcs7 = NULL;
 		free(pkcs7p);
 	}
 }
@@ -74,9 +71,8 @@ static void
 ossl_pkcs7si_free(ossl_pkcs7si *p7sip)
 {
 	if (p7sip) {
-		if (p7sip->signer) {
-			PKCS7_SIGNER_INFO_free(p7sip->signer);
-		}
+		if (p7sip->signer) PKCS7_SIGNER_INFO_free(p7sip->signer);
+		p7sip->signer = NULL;
 		free(p7sip);
 	}
 }
@@ -123,6 +119,8 @@ ossl_pkcs7si_get_PKCS7_SIGNER_INFO(VALUE obj)
 	ossl_pkcs7si *p7sip = NULL;
 	PKCS7_SIGNER_INFO *si = NULL;
 	
+	OSSL_Check_Type(obj, cPKCS7SignerInfo);
+
 	GetPKCS7si(obj, p7sip);
 
 	if (!(si = PKCS7_SIGNER_INFO_dup(p7sip->signer))) {
@@ -162,6 +160,7 @@ static VALUE ossl_pkcs7_s_sign(VALUE klass, VALUE key, VALUE cert, VALUE data)
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	if (!(p7 = PKCS7_sign(x509, pkey, NULL, bio, 0))) {
+		BIO_free(bio);
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	BIO_free(bio);
@@ -182,6 +181,7 @@ ossl_pkcs7_s_new(int argc, VALUE *argv, VALUE klass)
 	MakePKCS7(obj, pkcs7p);
 	
 	rb_obj_call_init(obj, argc, argv);
+	
 	return obj;
 }
 
@@ -203,7 +203,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 				rb_raise(ePKCS7Error, "%s", ossl_error());
 			}
 			if(!PKCS7_set_type(p7, FIX2INT(arg1))) {
-				/*PKCS7_free(p7);*/
+				PKCS7_free(p7);
 				rb_raise(ePKCS7Error, "%s", ossl_error());
 			}
 			break;
@@ -213,6 +213,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 				rb_raise(ePKCS7Error, "%s", ossl_error());
 			}
 			if (!(p7 = PEM_read_bio_PKCS7(in, NULL, NULL, NULL))) {
+				BIO_free(in);
 				rb_raise(ePKCS7Error, "%s", ossl_error());
 			}
 			BIO_free(in);
@@ -322,10 +323,12 @@ ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	if (!PKCS7_RECIP_INFO_set(ri, ossl_x509_get_X509(cert))) {
+		PKCS7_RECIP_INFO_free(ri);
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 
 	if (!PKCS7_add_recipient_info(p7p->pkcs7, ri)) {
+		PKCS7_RECIP_INFO_free(ri);
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	
@@ -388,6 +391,7 @@ ossl_pkcs7_add_data(int argc, VALUE *argv, VALUE self)
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	if ((i = BIO_write(bio, RSTRING(data)->ptr, RSTRING(data)->len)) != RSTRING(data)->len) {
+		BIO_free(bio);
 		rb_raise(ePKCS7Error, "BIO_wrote %d, but should be %d!", i, RSTRING(data)->len);
 	}
 	if (!PKCS7_dataFinal(p7p->pkcs7, bio)) {
@@ -436,15 +440,15 @@ ossl_pkcs7_data_verify(VALUE self, VALUE x509store, VALUE detached)
 	} else {
 		bio = PKCS7_dataInit(p7p->pkcs7, NULL);
 	}
-	if (!bio) {
+	if (!bio)
 		rb_raise(ePKCS7Error, "%s", ossl_error());
-	}
 
 	/* We have to 'read' from bio to calculate digests etc. */
 	for (;;) {
 		i = BIO_read(bio, buf, sizeof(buf));
 		if (i <= 0) break;
 	}
+	/*BIO_free(bio);*/
 
 	sk = PKCS7_get_signer_info(p7p->pkcs7);
 	if (!sk) {
@@ -573,6 +577,7 @@ ossl_pkcs7si_initialize(int argc, VALUE *argv, VALUE self)
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	if (!(PKCS7_SIGNER_INFO_set(si, x509, pkey, md))) {
+		PKCS7_SIGNER_INFO_free(si);
 		rb_raise(ePKCS7Error, "%s", ossl_error());
 	}
 	p7sip->signer = si;
@@ -587,7 +592,7 @@ ossl_pkcs7si_get_name(VALUE self)
 
 	GetPKCS7si(self, p7sip);
 
-	return ossl_x509name_new2(p7sip->signer->issuer_and_serial->issuer);
+	return ossl_x509name_new(p7sip->signer->issuer_and_serial->issuer);
 }
 
 static VALUE
@@ -643,6 +648,8 @@ Init_pkcs7(VALUE mPKCS7)
 	rb_define_method(cPKCS7, "decode_data", ossl_pkcs7_data_decode, 2);
 	rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
 	
+#define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2FIX(x))
+
 	DefPKCS7Const(SIGNED);
 	DefPKCS7Const(ENVELOPED);
 	DefPKCS7Const(SIGNED_ENVELOPED);

@@ -58,6 +58,7 @@ ossl_cipher_free(ossl_cipher *ciphp)
 {
 	if (ciphp) {
 		if (ciphp->ctx) OPENSSL_free(ciphp->ctx);
+		ciphp->ctx = NULL;
 		free(ciphp);
 	}
 }
@@ -70,6 +71,8 @@ ossl_cipher_get_NID(VALUE obj)
 {
 	ossl_cipher *ciphp = NULL;
 
+	OSSL_Check_Type(obj, cCipher);
+
 	GetCipher(obj, ciphp);
 
 	return ciphp->nid; /*EVP_CIPHER_CTX_nid(ciphp->ctx);*/
@@ -79,6 +82,8 @@ const EVP_CIPHER *
 ossl_cipher_get_EVP_CIPHER(VALUE obj)
 {
 	ossl_cipher *ciphp = NULL;
+
+	OSSL_Check_Type(obj, cCipher);
 
 	GetCipher(obj, ciphp);
 
@@ -120,6 +125,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "11", &pass, &init_v);
 	
 	Check_SafeStr(pass);
+
 	if (NIL_P(init_v)) {
 		/*
 		 * TODO:
@@ -174,7 +180,9 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 	EVP_CIPHER_CTX_init(ciphp->ctx);
 
 	cipher = EVP_get_cipherbynid(ciphp->nid);
+	
 	/*if (!load_iv((unsigned char **)&header,&(cipher->iv[0]),8)) return(0); /* cipher = CIPHER_INFO */
+
 	EVP_BytesToKey(cipher, EVP_md5(), iv, RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	
 	if (!EVP_DecryptInit(ciphp->ctx, cipher, key, iv)) {
@@ -193,6 +201,7 @@ ossl_cipher_update(VALUE self, VALUE data)
 	VALUE str;
 
 	GetCipher(self, ciphp);
+
 	Check_SafeStr(data);
 	in = RSTRING(data)->ptr;
 	in_len = RSTRING(data)->len;
@@ -201,6 +210,7 @@ ossl_cipher_update(VALUE self, VALUE data)
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 	if (!EVP_CipherUpdate(ciphp->ctx, out, &out_len, in, in_len)) {
+		OPENSSL_free(out);
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 	
@@ -225,6 +235,7 @@ ossl_cipher_cipher(VALUE self)
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 	if (!EVP_CipherFinal(ciphp->ctx, out, &out_len)) {
+		OPENSSL_free(out);
 		rb_raise(eCipherError, "%s", ossl_error());
 	}
 	str = rb_str_new(out, out_len);

@@ -34,6 +34,7 @@ ossl_digest_free(ossl_digest *digestp)
 {
 	if (digestp) {
 		if (digestp->md) OPENSSL_free(digestp->md);
+		digestp->md = NULL;
 		free(digestp);
 	}
 }
@@ -46,6 +47,8 @@ ossl_digest_get_NID(VALUE obj)
 {
 	ossl_digest *digestp = NULL;
 	
+	OSSL_Check_Type(obj, cDigest);
+
 	GetDigest(obj, digestp);
 
 	return EVP_MD_CTX_type(digestp->md); /*== digestp->md->digest->type*/
@@ -55,6 +58,8 @@ const EVP_MD *
 ossl_digest_get_EVP_MD(VALUE obj)
 {
 	ossl_digest *digestp = NULL;
+
+	OSSL_Check_Type(obj, cDigest);
 
 	GetDigest(obj, digestp);
 
@@ -107,13 +112,13 @@ ossl_digest_digest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
+	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
 	digest = rb_str_new(digest_txt, digest_len);
-	free(digest_txt);
+	OPENSSL_free(digest_txt);
 	
 	return digest;
 }
@@ -137,12 +142,13 @@ ossl_digest_hexdigest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
+	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
-	if (!(hexdigest_txt = malloc(2*digest_len+1))) {
+	if (!(hexdigest_txt = OPENSSL_malloc(2*digest_len+1))) {
+		OPENSSL_free(digest_txt);
 		rb_raise(eDigestError, "Memory alloc error");
 	}
 	for (i = 0; i < digest_len; i++) {
@@ -151,8 +157,8 @@ ossl_digest_hexdigest(VALUE self)
 	}
 	hexdigest_txt[i + i] = '\0';
 	hexdigest = rb_str_new(hexdigest_txt, 2*digest_len);
-	free(digest_txt);
-	free(hexdigest_txt);
+	OPENSSL_free(digest_txt);
+	OPENSSL_free(hexdigest_txt);
 
 	return hexdigest;
 }
@@ -175,15 +181,15 @@ ossl_digest_hexdigest(VALUE self)
 		rb_raise(eDigestError, "%s", ossl_error());
 	}
 
-	if (!(digest_txt = malloc(EVP_MD_CTX_size(&final)))) {
+	if (!(digest_txt = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
 		rb_raise(eDigestError, "Cannot allocate memory for digest");
 	}
 	EVP_DigestFinal(&final, digest_txt, &digest_len);
 
 	hexdigest_txt = hex_to_string(digest_txt, digest_len);
 	hexdigest = rb_str_new2(hexdigest_txt);
-	free(digest_txt);
-	free(hexdigest_txt);
+	OPENSSL_free(digest_txt);
+	OPENSSL_free(hexdigest_txt);
 
 	return hexdigest;
 }
@@ -264,7 +270,7 @@ Init_ossl_digest(VALUE module)
  * automation for classes creation and initialize method binding
  */
 #define DefDigest(name, func) 							\
-	c##name = rb_define_class_under(module, #name, cDigest);			\
+	c##name = rb_define_class_under(module, #name, cDigest);		\
 	rb_define_method(c##name, "initialize", ossl_##func##_initialize, -1)
 
 /*

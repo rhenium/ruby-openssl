@@ -51,6 +51,8 @@ ossl_x509crl_get_X509_CRL(VALUE obj)
 	ossl_x509crl *crlp = NULL;
 	X509_CRL *crl = NULL;
 	
+	OSSL_Check_Type(obj, cX509CRL);
+	
 	GetX509CRL(obj, crlp);
 
 	if (!(crl = X509_CRL_dup(crlp->crl))) {
@@ -70,6 +72,7 @@ ossl_x509crl_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 
 	MakeX509CRL(obj, crlp);
+
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -96,14 +99,13 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 				rb_raise(eX509CRLError, "%s", ossl_error());
 			}
 			crl = PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
-			/*BIO_free(in);*/
+			BIO_free(in);
 			break;
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!crl) {
+	if (!crl)
 		rb_raise(eX509CRLError, "%s", ossl_error());
-	}
 
 	crlp->crl = crl;
 
@@ -152,7 +154,7 @@ ossl_x509crl_get_issuer(VALUE self)
 	
 	GetX509CRL(self, crlp);
 	
-	return ossl_x509name_new2(crlp->crl->crl->issuer);
+	return ossl_x509name_new(crlp->crl->crl->issuer);
 }
 
 static VALUE 
@@ -197,6 +199,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 	
 	if (!FIXNUM_P(sec))
 		rb_raise(eX509CRLError, "wierd time");
+
 	if (!ASN1_UTCTIME_set(crlp->crl->crl->lastUpdate, FIX2INT(sec))) {
 		rb_raise(eX509CRLError, "%s", ossl_error());
 	}
@@ -227,6 +230,7 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 	
 	if (!FIXNUM_P(sec))
 		rb_raise(eX509CRLError, "wierd time");
+
 	if (!ASN1_UTCTIME_set(crlp->crl->crl->nextUpdate, FIX2INT(sec))) {
 		rb_raise(eX509CRLError, "%s", ossl_error());
 	}
@@ -249,8 +253,9 @@ ossl_x509crl_get_revoked(VALUE self)
 		return rb_ary_new();
 
 	ary = rb_ary_new2(num);
+
 	for(i=0; i<num; i++) {
-		rb_ary_push(ary, ossl_x509revoked_new2((X509_REVOKED *)sk_X509_CRL_value(crlp->crl->crl->revoked, i)));
+		rb_ary_push(ary, ossl_x509revoked_new((X509_REVOKED *)sk_X509_CRL_value(crlp->crl->crl->revoked, i)));
 	}
 
 	return ary;
@@ -345,6 +350,7 @@ ossl_x509crl_verify(VALUE self, VALUE key)
 	OSSL_Check_Type(key, cPKey);
 	
 	pkey = ossl_pkey_get_EVP_PKEY(key);
+
 	result = X509_CRL_verify(crlp->crl, pkey);
 	EVP_PKEY_free(pkey);
 
@@ -416,11 +422,12 @@ ossl_x509crl_get_extensions(VALUE self)
 
 	if (count > 0) 
 		ary = rb_ary_new2(count);
-	else return rb_ary_new();
+	else
+		return rb_ary_new();
 
 	for (i=0; i<count; i++) {
 		ext = X509_CRL_get_ext(crlp->crl, i);
-		rb_ary_push(ary, ossl_x509ext_new2(ext));
+		rb_ary_push(ary, ossl_x509ext_new(ext));
 	}
 	
 	return ary;

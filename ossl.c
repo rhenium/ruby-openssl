@@ -11,6 +11,9 @@
 #include <openssl/err.h>
 #include "ossl.h"
 
+/*
+ * Check Types
+ */
 void ossl_check_type(VALUE obj, VALUE klass)
 {
 	if (rb_obj_is_kind_of(obj, klass) == Qfalse) {
@@ -20,24 +23,7 @@ void ossl_check_type(VALUE obj, VALUE klass)
 }
 
 /*
- * Debug prints
-#ifdef OSSL_DEBUG
-inline char *ossl_error() {
-	char *ret = NULL, *err = NULL;
-	int ret_len = 0;
-	
-	err = ERR_error_string(ERR_get_error(), NULL);
-	ret_len = strlen(err)+strlen(__FILE__)+(sizeof(__LINE__)*3)+5;
-	ret = malloc(ret_len+1);
-	if (snprintf(ret, ret_len, "%s [%s:%d]", err, __FILE__, __LINE__) > ret_len) {
-		rb_bug("BUFFER OVERFLOW IN ossl_error());
-	}
-
-	return ret;
-}
-#else
-#define ossl_error() ERR_error_string(ERR_get_error(), NULL)
-#endif
+ * Error messages
  */
 char *ossl_error(void)
 {
@@ -46,6 +32,7 @@ char *ossl_error(void)
 
 /*
  * On Windows platform there is no strptime function
+ * implementation in strptime.c
  */
 #ifndef HAVE_STRPTIME
 char *strptime(char *buf, char *fmt, struct tm *tm);
@@ -88,7 +75,8 @@ VALUE mPKCS7;
 /*
  * OSSL library init
  */
-void Init_openssl()
+void
+Init_openssl()
 {
 	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();

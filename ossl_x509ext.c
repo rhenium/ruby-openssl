@@ -67,17 +67,32 @@ ossl_x509extfactory_free(ossl_x509extfactory *extfactoryp)
  * Public
  */
 VALUE 
-ossl_x509ext_new2(X509_EXTENSION *ext)
+ossl_x509ext_new_null(void)
 {
 	ossl_x509ext *extp = NULL;
-	X509_EXTENSION *new = NULL;
 	VALUE obj;
 
 	MakeX509Ext(obj, extp);
-	if (!(new = X509_EXTENSION_dup(ext))) {
+	
+	if (!(extp->extension = X509_EXTENSION_new()))
 		rb_raise(eX509ExtensionError, "%s", ossl_error());
-	}
-	extp->extension = new;
+	
+	return obj;
+}
+
+VALUE 
+ossl_x509ext_new(X509_EXTENSION *ext)
+{
+	ossl_x509ext *extp = NULL;
+	VALUE obj;
+
+	if (!ext)
+		return ossl_x509ext_new_null();
+
+	MakeX509Ext(obj, extp);
+	
+	if (!(extp->extension = X509_EXTENSION_dup(ext)))
+		rb_raise(eX509ExtensionError, "%s", ossl_error());
 
 	return obj;
 }
@@ -87,7 +102,10 @@ ossl_x509ext_get_X509_EXTENSION(VALUE obj)
 {
 	ossl_x509ext *extp = NULL;
 
+	OSSL_Check_Type(obj, cX509Extension);
+	
 	GetX509Ext(obj, extp);
+
 	return X509_EXTENSION_dup(extp->extension);
 }
 
@@ -104,6 +122,7 @@ ossl_x509extfactory_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 	
 	MakeX509ExtFactory(obj, extfactoryp);
+
 	rb_obj_call_init(obj, argc, argv);
 
 	return obj;
@@ -322,12 +341,16 @@ ossl_x509ext_to_str(VALUE obj)
 	 * User defined user format
 	 */
 	nid = OBJ_obj2nid(X509_EXTENSION_get_object(extp->extension));
+
 	BIO_printf(out, "OID=%s, VALUE=", (nid == NID_undef)?"UNKNOWN":OBJ_nid2sn(nid)); /*OBJ_nid2ln(nid)*/
+
 	if (!X509V3_EXT_print(out, extp->extension, 0, 0)) {
+		BIO_free(out);
 		rb_raise(eX509ExtensionError, "%s", ossl_error());
 	}
 	critical = X509_EXTENSION_get_critical(extp->extension);
 	BIO_printf(out,", critical = %s\n", (critical)?"yes":"no");
+
 	BIO_get_mem_ptr(out, &buf);
 	str = rb_str_new(buf->data, buf->length);
 	BIO_free(out);
@@ -355,6 +378,7 @@ ossl_x509ext_to_a(VALUE obj)
 		rb_raise(eX509ExtensionError, "%s", ossl_error());
 	}
 	if (!X509V3_EXT_print(out, extp->extension, 0, 0)) {
+		BIO_free(out);
 		rb_raise(eX509ExtensionError, "%s", ossl_error());
 	}
 	BIO_get_mem_ptr(out, &buf);
@@ -373,7 +397,8 @@ ossl_x509ext_to_a(VALUE obj)
 /*
  * INIT
  */
-void Init_ossl_x509ext(VALUE module)
+void
+Init_ossl_x509ext(VALUE module)
 {
 
 	eX509ExtensionError = rb_define_class_under(module, "ExtensionError", rb_eStandardError);

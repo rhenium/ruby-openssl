@@ -45,11 +45,28 @@ ossl_x509_free(ossl_x509 *x509p)
 /*
  * public functions
  */
-VALUE 
-ossl_x509_new2(X509 *x509)
+VALUE
+ossl_x509_new_null(void)
 {
 	ossl_x509 *x509p = NULL;
 	VALUE obj;
+
+	MakeX509(obj, x509p);
+
+	if (!(x509p->x509 = X509_new()))
+		rb_raise(eX509CertificateError, "%s", ossl_error());
+
+	return obj;
+}
+		
+VALUE
+ossl_x509_new(X509 *x509)
+{
+	ossl_x509 *x509p = NULL;
+	VALUE obj;
+
+	if (!x509)
+		return ossl_x509_new_null();
 	
 	MakeX509(obj, x509p);
 	
@@ -70,6 +87,7 @@ ossl_x509_new_from_file(VALUE filename)
 	VALUE obj;
 
 	MakeX509(obj, x509p);
+	
 	path = RSTRING(filename)->ptr;
 	if ((fp = fopen(path, "r")) == NULL)
 		rb_raise(eX509CertificateError, "%s", strerror(errno));
@@ -85,12 +103,15 @@ ossl_x509_new_from_file(VALUE filename)
 }
 
 X509 *
-ossl_x509_get_X509(VALUE self)
+ossl_x509_get_X509(VALUE obj)
 {
 	ossl_x509 *x509p = NULL;
 	X509 *x509 = NULL;
 	
-	GetX509(self, x509p);
+	OSSL_Check_Type(obj, cX509Certificate);
+	
+	GetX509(obj, x509p);
+	
 	if (!(x509 = X509_dup(x509p->x509))) {
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
@@ -108,7 +129,9 @@ ossl_x509_s_new(int argc, VALUE *argv, VALUE klass)
 	VALUE obj;
 	
 	MakeX509(obj, x509p);
+	
 	rb_obj_call_init(obj, argc, argv);
+	
 	return obj;
 }
 
@@ -138,9 +161,9 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!x509) {
+	
+	if (!x509)
 		rb_raise(eX509CertificateError, "%s", ossl_error());
-	}	
 	
 	x509p->x509 = x509;
 
@@ -195,7 +218,7 @@ ossl_x509_to_pem(VALUE self)
 	return str;
 }
 
-static VALUE 
+static VALUE
 ossl_x509_to_str(VALUE self)
 {
 	ossl_x509 *x509p = NULL;
@@ -234,7 +257,7 @@ ossl_x509_to_req(VALUE self)
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 
-	return ossl_x509req_new2(req);
+	return ossl_x509req_new(req);
 }
  */
 
@@ -322,7 +345,7 @@ ossl_x509_get_subject(VALUE self)
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 
-	return ossl_x509name_new2(name);
+	return ossl_x509name_new(name);
 }
 
 static VALUE 
@@ -356,7 +379,7 @@ ossl_x509_get_issuer(VALUE self)
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
 	
-	return ossl_x509name_new2(name);
+	return ossl_x509name_new(name);
 }
 
 static VALUE 
@@ -369,6 +392,7 @@ ossl_x509_set_issuer(VALUE self, VALUE issuer)
 
 	OSSL_Check_Type(issuer, cX509Name);
 	name = ossl_x509name_get_X509_NAME(issuer);
+	
 	if (!X509_set_issuer_name(x509p->x509, name)) {
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}
@@ -406,11 +430,12 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
 	
 	if (!FIXNUM_P(sec))
 		rb_raise(eX509CertificateError, "wierd time");
+
 	if ((intsec = FIX2INT(sec)) < 0)
 		rb_raise(eX509CertificateError, "time < 0???");
-	if (!ASN1_UTCTIME_set(X509_get_notBefore(x509p->x509), intsec)) {
+
+	if (!ASN1_UTCTIME_set(X509_get_notBefore(x509p->x509), intsec))
 		rb_raise(eX509CertificateError, "%s", ossl_error());
-	}
 
 	return time;
 }
@@ -444,11 +469,12 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
 	
 	if (!FIXNUM_P(sec))
 		rb_raise(eX509CertificateError, "wierd time");
+	
 	if ((intsec = FIX2INT(sec)) < 0)
 		rb_raise(eX509CertificateError, "time < 0??");
-	if (!ASN1_UTCTIME_set(X509_get_notAfter(x509p->x509), FIX2INT(sec))) {
+	
+	if (!ASN1_UTCTIME_set(X509_get_notAfter(x509p->x509), FIX2INT(sec)))
 		rb_raise(eX509CertificateError, "%s", ossl_error());
-	}
 
 	return time;
 }
@@ -583,12 +609,14 @@ ossl_x509_get_extensions(VALUE self)
 
 	count = X509_get_ext_count(x509p->x509);
 
-	if (count > 0) ary = rb_ary_new2(count);
-	else return rb_ary_new();
+	if (count > 0)
+		ary = rb_ary_new2(count);
+	else
+		return rb_ary_new();
 
 	for (i=0; i<count; i++) {
 		ext = X509_get_ext(x509p->x509, i);
-		rb_ary_push(ary, ossl_x509ext_new2(ext));
+		rb_ary_push(ary, ossl_x509ext_new(ext));
 	}
 	
 	return ary;
@@ -632,6 +660,7 @@ ossl_x509_add_extension(VALUE self, VALUE ext)
 	GetX509(self, x509p);
 
 	OSSL_Check_Type(ext, cX509Extension);
+	
 	if (!X509_add_ext(x509p->x509, ossl_x509ext_get_X509_EXTENSION(ext), -1)) {
 		rb_raise(eX509CertificateError, "%s", ossl_error());
 	}

@@ -34,8 +34,8 @@ static void
 ossl_hmac_free(ossl_hmac *hmacp)
 {
 	if (hmacp) {
-		if (hmacp->hmac)
-			OPENSSL_free(hmacp->hmac);
+		if (hmacp->hmac) OPENSSL_free(hmacp->hmac);
+		hmacp->hmac = NULL;
 		free(hmacp);
 	}
 }
@@ -179,13 +179,13 @@ Init_hmac(VALUE module)
 	rb_define_alias(cHMAC, "to_str", "hexhmac");
 }
 
-#else
+#else /* NO_HMAC is defined */
 
 void
 Init_hmac(VALUE module)
 {
-	rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC");
+	rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC.");
 }
 
-#endif
+#endif /* NO_HMAC */
 

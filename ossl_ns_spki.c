@@ -33,6 +33,7 @@ ossl_spki_free(ossl_spki *spkip)
 {
 	if(spkip) {
 		if(spkip->spki) NETSCAPE_SPKI_free(spkip->spki);
+		spkip->spki = NULL;
 		free(spkip);
 	}
 }
@@ -78,9 +79,9 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 		default:
 			rb_raise(rb_eTypeError, "unsupported type");
 	}
-	if (!spki) {
+	if (!spki)
 		rb_raise(eSPKIError, "%s", ossl_error());
-	}
+
 	spkip->spki = spki;
 
 	return self;
@@ -99,7 +100,10 @@ ossl_spki_to_pem(VALUE self)
 		rb_raise(eSPKIError, "%s", ossl_error());
 	}
 
-	return rb_str_new2(data);
+	str = rb_str_new2(data);
+	OPENSSL_free(data);
+
+	return str;
 }
 
 static VALUE

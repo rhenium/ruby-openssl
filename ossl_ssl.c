@@ -141,7 +141,7 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX *ctx)
 	VALUE x509stc, args, ret;
 
 	if (!NIL_P(ssl_verify_callback_proc)) {
-		x509stc = ossl_x509store_new2(ctx);
+		x509stc = ossl_x509store_new(ctx);
 		rb_funcall(x509stc, rb_intern("protect"), 0, NULL);
 		args = rb_ary_new2(3);
 		rb_ary_store(args, 0, ssl_verify_callback_proc);
@@ -399,7 +399,7 @@ ssl_get_certificate(self)
 
     if((cert = SSL_get_certificate(p->ssl)) == NULL) return Qnil;
 
-	return ossl_x509_new2(cert);
+	return ossl_x509_new(cert);
 }
 
 static VALUE
@@ -417,7 +417,7 @@ ssl_get_peer_certificate(self)
 
     if((cert = SSL_get_peer_certificate(p->ssl)) == NULL) return Qnil;
 
-	return ossl_x509_new2(cert);
+	return ossl_x509_new(cert);
 }
 
 static VALUE
