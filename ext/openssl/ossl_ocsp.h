@@ -16,6 +16,9 @@ extern VALUE mOCSP;
 extern VALUE cOPCSReq;
 extern VALUE cOPCSRes;
 extern VALUE cOPCSBasicRes;
+
+OCSP_RESPONSE *GetOCSPResPtr(VALUE);
+VALUE ossl_ocspres_new(OCSP_RESPONSE *);
 #endif
 
 void Init_ossl_ocsp(void);

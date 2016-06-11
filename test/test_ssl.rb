@@ -1277,6 +1277,78 @@ end
     }
   end
 
+  def test_ocsp_stapling
+    issue_ocsp_signer
+    req_called, res_called = nil
+
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@svr_cert, @ca_cert, "sha1")
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
+    bres.sign(@ocsp_cert, @ocsp_key, [], 0)
+    res = OpenSSL::OCSP::Response.create(OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL, bres)
+
+    ctx_proc = proc { |ctx|
+      ctx.ocsp_request_cb = proc { |ssl|
+        req_called = true
+        res
+      }
+    }
+    start_server(ctx_proc: ctx_proc) do |svr, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      store = OpenSSL::X509::Store.new
+      store.add_cert(@ca_cert)
+      ctx.cert_store = store
+      ctx.ocsp_response_cb = proc { |ssl, received|
+        res_called = true
+        assert_not_nil received
+        assert_equal res.to_der, received.to_der
+        true
+      }
+      server_connect(port, ctx) { }
+    end
+
+    assert_equal true, req_called
+    assert_equal true, res_called
+  end
+
+  def test_ocsp_stapling_noack
+    called = false
+
+    ctx_proc = proc { |ctx| ctx.ocsp_request_cb = proc { |ssl| nil } }
+    start_server(ctx_proc: ctx_proc) do |svr, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ocsp_response_cb = proc { |ssl, res|
+        called = true
+        assert_nil res
+        true
+      }
+      server_connect(port, ctx) { }
+    end
+
+    assert_equal true, called
+  end
+
+  def test_ocsp_stapling_invalid_sign
+    issue_ocsp_signer
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@svr_cert, @ca_cert, "sha1")
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
+    bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert], 0)
+    res = OpenSSL::OCSP::Response.create(OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL, bres)
+
+    ctx_proc = proc { |ctx| ctx.ocsp_request_cb = proc { |ssl| res } }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |svr, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ocsp_response_cb = proc { |ssl, res|
+        false
+      }
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /invalid status response/) {
+        server_connect(port, ctx) { }
+      }
+    end
+  end
+
   private
 
   def start_server_version(version, ctx_proc = nil,
@@ -1313,5 +1385,14 @@ end
     assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET) {
       yield
     }
+  end
+
+  def issue_ocsp_signer
+    @ocsp_key = Fixtures.pkey("dsa1024")
+    @ocsp = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=OCSPSigner")
+    ocsp_exts = [
+      ["extendedKeyUsage", "OCSPSigning", true],
+    ]
+    @ocsp_cert = issue_cert(@ocsp, @ocsp_key, 4, ocsp_exts, @ca_cert, @ca_key)
   end
 end

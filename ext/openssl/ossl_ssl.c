@@ -43,7 +43,7 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
 	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
 	  id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
-	  id_i_verify_hostname;
+	  id_i_verify_hostname, id_i_ocsp_request_cb, id_i_ocsp_response_cb;
 static ID id_i_io, id_i_context, id_i_hostname;
 
 /*
@@ -725,6 +725,104 @@ ssl_info_cb(const SSL *ssl, int where, int val)
     }
 }
 
+#if !defined(OPENSSL_NO_OCSP) && defined(SSL_CTX_set_tlsext_status_cb)
+static VALUE
+call_ocsp_req_cb(VALUE ssl_obj)
+{
+    SSL *ssl;
+    OCSP_RESPONSE *resp;
+    VALUE ctx_obj, cb_proc, ret;
+    unsigned char *resp_der = NULL;
+    int len;
+
+    GetSSL(ssl_obj, ssl);
+    ctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb_proc = rb_attr_get(ctx_obj, id_i_ocsp_request_cb);
+
+    ret = rb_funcall(cb_proc, rb_intern("call"), 1, ssl_obj);
+    if (NIL_P(ret))
+	return Qfalse;
+
+    resp = GetOCSPResPtr(ret);
+    if ((len = i2d_OCSP_RESPONSE(resp, &resp_der)) <= 0)
+	ossl_raise(eSSLError, "i2d_OCSP_RESPONSE");
+    SSL_set_tlsext_status_ocsp_resp(ssl, resp_der, len);
+
+    return Qtrue;
+}
+
+static VALUE
+call_ocsp_res_cb(VALUE ssl_obj)
+{
+    SSL *ssl;
+    OCSP_RESPONSE *resp;
+    VALUE ctx_obj, cb_proc, res_obj;
+    const unsigned char *p;
+    int len, status;
+
+    GetSSL(ssl_obj, ssl);
+    ctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb_proc = rb_attr_get(ctx_obj, id_i_ocsp_response_cb);
+
+    if ((len = SSL_get_tlsext_status_ocsp_resp(ssl, &p)) == -1)
+	res_obj = Qnil;
+    else {
+	if (!(resp = d2i_OCSP_RESPONSE(NULL, &p, len)))
+	    ossl_raise(eSSLError, "d2i_OCSP_RESPONSE");
+	res_obj = rb_protect((VALUE (*)(VALUE))ossl_ocspres_new, (VALUE)resp, &status);
+	OCSP_RESPONSE_free(resp);
+	if (status)
+	    rb_jump_tag(status);
+    }
+
+    return rb_funcall(cb_proc, rb_intern("call"), 2, ssl_obj, res_obj);
+}
+
+static int
+ssl_status_cb(SSL *ssl, void *unused_arg)
+{
+    /*
+     * For a server:
+     * set an OCSP response with SSL_set_tlsext_status_ocsp_resp() and return
+     * SSL_TLSEXT_ERR_OK (when we set), SSL_TLSEXT_ERR_NOACK (when we don't)
+     * or SSL_TLSEXT_ERR_ALERT_FATAL (error).
+     *
+     * For a client:
+     * get the OCSP response with SSL_get_tlsext_status_ocsp_resp() and return a
+     * positive value (when acceptable), zero (not acceptable) or a negative
+     * value (error).
+     */
+    VALUE ret, ssl_obj;
+    int status = 0, is_server;
+
+    is_server = SSL_is_server(ssl);
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    if (!ssl_obj)
+	goto err;
+
+    if (is_server) {
+	ret = rb_protect(call_ocsp_req_cb, ssl_obj, &status);
+	if (status)
+	    goto err;
+
+	return RTEST(ret) ? SSL_TLSEXT_ERR_OK : SSL_TLSEXT_ERR_NOACK;
+    }
+    else {
+	ret = rb_protect(call_ocsp_res_cb, ssl_obj, &status);
+	if (status)
+	    goto err;
+
+	return RTEST(ret) ? 1 : 0;
+    }
+
+err:
+    if (status)
+	rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
+
+    return is_server ? SSL_TLSEXT_ERR_ALERT_FATAL : -1;
+}
+#endif
+
 /*
  * Gets various OpenSSL options.
  */
@@ -947,6 +1045,15 @@ ossl_sslctx_setup(VALUE self)
         SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
 	OSSL_Debug("SSL TLSEXT servername callback added");
     }
+
+#if !defined(OPENSSL_NO_OCSP) && defined(SSL_CTX_set_tlsext_status_cb)
+    if (!NIL_P(rb_attr_get(self, id_i_ocsp_request_cb)) ||
+	!NIL_P(rb_attr_get(self, id_i_ocsp_response_cb))) {
+	/* SSL_CTX_set_tlsext_status_type() does not exist in OpenSSL < 1.1.0...
+	 * Setting in ossl_ssl_initialize(). */
+	SSL_CTX_set_tlsext_status_cb(ctx, ssl_status_cb);
+    }
+#endif
 
     return Qtrue;
 }
@@ -1458,6 +1565,12 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     SSL_set_info_callback(ssl, ssl_info_cb);
     verify_cb = rb_attr_get(v_ctx, id_i_verify_callback);
     SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)verify_cb);
+
+#if !defined(OPENSSL_NO_OCSP) && defined(SSL_CTX_set_tlsext_status_cb)
+    /* This can't be set in SSL_CTX */
+    if (!NIL_P(rb_attr_get(v_ctx, id_i_ocsp_response_cb)))
+	SSL_set_tlsext_status_type(ssl, TLSEXT_STATUSTYPE_ocsp);
+#endif
 
     rb_call_super(0, NULL);
 
@@ -2545,6 +2658,54 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern("alpn_select_cb"), 1, 1, Qfalse);
 #endif
 
+#if !defined(OPENSSL_NO_OCSP) && defined(SSL_CTX_set_tlsext_status_cb)
+    /*
+     * A callback invoked on the server side when the client requested OCSP
+     * certificate status. The callback may return an OpenSSL::OCSP::Response or
+     * nil, if there is no suitable OCSP response. Exceptions raised in the
+     * callback cause the handshake to fail.
+     *
+     * === Example
+     *
+     *   ctx.ocsp_request_cb = proc do |ssl|
+     *     cert = ssl.cert
+     *     # find a response for cert
+     *     ocsp_response
+     *   end
+     */
+    rb_attr(cSSLContext, rb_intern("ocsp_request_cb"), 1, 1, Qfalse);
+    /*
+     * A callback invoked on the client side when the server returns the OCSP
+     * certificate status. The callback receives two values +ssl+, the
+     * OpenSSL::SSL:SSLSocket, and +ocsp_response+, the OCSP response. The OSCP
+     * response may be nil when the server doesn't provide. The response must be
+     * verified in this callback. The callback must return a boolean value. A
+     * true return means successful verification, a false return means there are
+     * errors in the OCSP response. A false return or an exception aborts the
+     * handshake.
+     *
+     * === Example
+     *
+     *   ctx.ocsp_response_cb = proc do |ssl, response|
+     *     next true unless response
+     *     next false unless response.status == OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL
+     *     basic = response.basic
+     *
+     *     # verify the signature on BasicResponse
+     *     next false unless basic.verify([], ssl.cert_store)
+     *
+     *     certid = OpenSSL::OCSP::CertificateId.new(*ssl.peer_cert_chain.take(2))
+     *     single = basic.find_response(certid)
+     *     next false unless single
+     *     next false unless single.cert_status == OpenSSL::OCSP::V_CERTSTATUS_GOOD
+     *
+     *     # validate the time when the response was issued
+     *     single.check_validity
+     *   end
+     */
+    rb_attr(cSSLContext, rb_intern("ocsp_response_cb"), 1, 1, Qfalse);
+#endif
+
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
@@ -2743,6 +2904,8 @@ Init_ossl_ssl(void)
     DefIVarID(alpn_select_cb);
     DefIVarID(servername_cb);
     DefIVarID(verify_hostname);
+    DefIVarID(ocsp_request_cb);
+    DefIVarID(ocsp_response_cb);
 
     DefIVarID(io);
     DefIVarID(context);

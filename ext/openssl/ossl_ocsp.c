@@ -475,6 +475,30 @@ ossl_ocspreq_to_der(VALUE self)
 /*
  * OCSP::Response
  */
+OCSP_RESPONSE *
+GetOCSPResPtr(VALUE obj)
+{
+    OCSP_RESPONSE *res;
+
+    SafeGetOCSPRes(obj, res);
+
+    return res;
+}
+
+VALUE
+ossl_ocspres_new(OCSP_RESPONSE *res)
+{
+    OCSP_RESPONSE *res_new;
+    VALUE obj;
+
+    obj = NewOCSPRes(cOCSPRes);
+    res_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_RESPONSE), res);
+    if (!res_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+    SetOCSPRes(obj, res_new);
+
+    return obj;
+}
 
 /* call-seq:
  *   OpenSSL::OCSP::Response.create(status, basic_response = nil) -> response
