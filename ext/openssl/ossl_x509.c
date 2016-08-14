@@ -26,6 +26,23 @@ ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
     return X509_time_adj_ex(s, off_days, 0, &sec);
 }
 
+VALUE
+ossl_x509algor_to_str(const X509_ALGOR *algo)
+{
+    BIO *out;
+
+    out = BIO_new(BIO_s_mem());
+    if (!out)
+        ossl_raise(eOSSLError, "BIO_new");
+
+    if (!i2a_ASN1_OBJECT(out, algo->algorithm)) {
+        BIO_free(out);
+        ossl_raise(eOSSLError, "i2a_ASN1_OBJECT");
+    }
+
+    return ossl_membio2str(out);
+}
+
 void
 Init_ossl_x509(void)
 {

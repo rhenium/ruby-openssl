@@ -1226,6 +1226,9 @@ Init_openssl(void)
      */
     Init_ossl_bn();
     Init_ossl_cipher();
+#ifndef OPENSSL_NO_CMS
+    Init_ossl_cms();
+#endif
     Init_ossl_config();
     Init_ossl_digest();
     Init_ossl_hmac();

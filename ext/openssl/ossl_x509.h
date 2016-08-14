@@ -21,6 +21,10 @@ extern VALUE mX509;
  * Note that the caller must check the NULL return.
  */
 ASN1_TIME *ossl_x509_time_adjust(ASN1_TIME *, VALUE);
+/*
+ * FIXME
+ */
+VALUE ossl_x509algor_to_str(const X509_ALGOR *);
 
 void Init_ossl_x509(void);
 

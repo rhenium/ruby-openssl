@@ -136,6 +136,43 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
     return ai;
 }
 
+VALUE
+ossl_asn1obj_to_str(const ASN1_OBJECT *obj)
+{
+    VALUE str, tmp = Qfalse;
+    int nid, ret;
+    char buf[80], *ptr = buf;
+
+    if (!obj)
+	ossl_raise(eASN1Error, "ossl_asn1obj_to_str: obj is NULL");
+
+    nid = OBJ_obj2nid(obj);
+    if (nid != NID_undef) {
+	const char *s;
+
+	s = OBJ_nid2sn(nid);
+	if (!s)
+	    s = OBJ_nid2ln(nid);
+	if (s)
+	    return rb_str_new2(s);
+    }
+
+    ret = OBJ_obj2txt(ptr, sizeof(buf), obj, 1);
+    if (ret > (int)sizeof(buf) - 1) {
+	ptr = ALLOCV(tmp, ret + 1);
+	ret = OBJ_obj2txt(ptr, ret + 1, obj, 1);
+    }
+    if (ret <= 0) {
+	ALLOCV_END(tmp);
+	ossl_raise(eASN1Error, "OBJ_obj2txt");
+    }
+
+    str = rb_str_new(ptr, ret);
+    ALLOCV_END(tmp);
+
+    return str;
+}
+
 /********/
 /*
  * ASN1 module
