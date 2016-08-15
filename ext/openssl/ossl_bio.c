@@ -25,6 +25,28 @@ ossl_obj2bio(volatile VALUE *pobj)
     return bio;
 }
 
+BIO *
+ossl_obj2bio_writable(VALUE obj)
+{
+    BIO *bio;
+    rb_io_t *fptr;
+    int fd;
+
+    Check_Type(obj, T_FILE);
+
+    GetOpenFile(obj, fptr);
+    rb_io_check_writable(fptr);
+    if ((fd = rb_cloexec_dup(fptr->fd)) < 0)
+	rb_sys_fail(0);
+    rb_update_max_fd(fd);
+    if (!(bio = BIO_new_fd(fd, BIO_CLOSE))) {
+	close(fd);
+	ossl_raise(eOSSLError, "BIO_new_fd");
+    }
+
+    return bio;
+}
+
 VALUE
 ossl_membio2str(BIO *bio)
 {
