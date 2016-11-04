@@ -35,6 +35,9 @@
 #if !defined(OPENSSL_NO_OCSP)
 #  include <openssl/ocsp.h>
 #endif
+#if !defined(OPENSSL_NO_TS)
+#  include <openssl/ts.h>
+#endif
 
 /*
  * Common Module
@@ -180,6 +183,7 @@ void ossl_debug(const char *, ...);
 #include "ossl_version.h"
 #include "ossl_x509.h"
 #include "ossl_engine.h"
+#include "ossl_ts.h"
 
 void Init_openssl(void);
 

@@ -1126,6 +1126,7 @@ Init_openssl(void)
     Init_ossl_ocsp();
     Init_ossl_engine();
     Init_ossl_asn1();
+    Init_ossl_ts();
 }
 
 #if defined(OSSL_DEBUG)
