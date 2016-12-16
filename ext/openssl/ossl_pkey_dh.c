@@ -493,26 +493,36 @@ ossl_dh_check_params(VALUE self)
 
 /*
  *  call-seq:
- *     dh.generate_key! -> self
+ *     dh.generate_key!         -> self
+ *     dh.generate_key!(length) -> self
  *
- * Generates a private and public key unless a private key already exists.
+ * Generates a new random private and public exponent pair.
  * If this DH instance was generated from public DH parameters (e.g. by
  * encoding the result of DH#public_key), then this method needs to be
  * called first in order to generate the per-session keys before performing
  * the actual key exchange.
  *
+ * If the optional parameter +length+ is given, a private exponent with that
+ * length (in bits) will be generated. This can be used to reduce calculation
+ * cost.
+ *
  * === Example
  *   dh = OpenSSL::PKey::DH.new(2048)
- *   public_key = dh.public_key #contains no private/public key yet
+ *   public_key = dh.public_key # contains no private/public key yet
  *   public_key.generate_key!
  *   puts public_key.private? # => true
  */
 static VALUE
-ossl_dh_generate_key(VALUE self)
+ossl_dh_generate_key(int argc, VALUE *argv, VALUE self)
 {
     DH *dh;
+    VALUE len_v;
+    long len;
 
+    rb_scan_args(argc, argv, "01", &len_v);
     GetDH(self, dh);
+    len = NIL_P(len_v) ? 0 : NUM2LONG(len_v);
+    DH_set_length(dh, len);
     if (!DH_generate_key(dh))
 	ossl_raise(eDHError, "Failed to generate key");
     return self;
@@ -628,7 +638,7 @@ Init_ossl_dh(void)
     rb_define_method(cDH, "to_der", ossl_dh_to_der, 0);
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
-    rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
+    rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, -1);
     rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
 
     DEF_OSSL_PKEY_BN(cDH, dh, p);

@@ -68,6 +68,13 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
+    assert_equal(1024-1, dh.priv_key.num_bits)
+
+    dh = Fixtures.pkey_dh("dh1024").public_key # creates a copy
+    assert_no_key(dh)
+    dh.generate_key!(320)
+    assert_key(dh)
+    assert_equal(320, dh.priv_key.num_bits)
   end
 
   def test_key_exchange
