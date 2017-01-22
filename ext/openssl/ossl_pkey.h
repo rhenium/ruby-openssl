@@ -34,6 +34,10 @@ EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
 
+#ifndef OSSL_USE_PROVIDER
+int ossl_lookup_pkey_type(VALUE type);
+#endif
+
 /*
  * Serializes _self_ in X.509 SubjectPublicKeyInfo format and returns the
  * resulting String. Sub-classes use this when overriding #to_der.
@@ -48,6 +52,11 @@ VALUE ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self,
 				   int to_der);
 
 void Init_ossl_pkey(void);
+
+/*
+ * PKeyContext
+ */
+void Init_ossl_pkey_ctx(void);
 
 /*
  * RSA

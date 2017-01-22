@@ -637,8 +637,8 @@ ossl_pkey_initialize_copy(VALUE self, VALUE other)
 #endif
 
 #ifndef OSSL_USE_PROVIDER
-static int
-lookup_pkey_type(VALUE type)
+int
+ossl_lookup_pkey_type(VALUE type)
 {
     const EVP_PKEY_ASN1_METHOD *ameth;
     int pkey_id;
@@ -682,7 +682,7 @@ ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key_ex");
 #else
-    int pkey_id = lookup_pkey_type(type);
+    int pkey_id = ossl_lookup_pkey_type(type);
     pkey = EVP_PKEY_new_raw_private_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key");
@@ -714,7 +714,7 @@ ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key_ex");
 #else
-    int pkey_id = lookup_pkey_type(type);
+    int pkey_id = ossl_lookup_pkey_type(type);
     pkey = EVP_PKEY_new_raw_public_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key");
@@ -1772,6 +1772,10 @@ Init_ossl_pkey(void)
 
     id_private_q = rb_intern("private?");
 
+    /*
+     * OpenSSL::PKey::PKeyContext and subclasses
+     */
+    Init_ossl_pkey_ctx();
     /*
      * INIT rsa, dsa, dh, ec
      */
