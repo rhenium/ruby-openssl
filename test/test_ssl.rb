@@ -1309,6 +1309,33 @@ end
     end
   end
 
+  def test_sigalgs_list
+    pend "SSL_CTX_set1_sigalgs_list() not supported" \
+      unless OpenSSL::SSL::SSLContext.method_defined?(:signature_algorithms=)
+    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
+
+    # Client-side
+    start_server(ignore_listener_error: true) do |port|
+      # Note that start_server sets only an RSA certificate
+      assert_handshake_error {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.signature_algorithms = "ECDSA+SHA256"
+        server_connect(port, ctx) { }
+      }
+
+      assert_nothing_raised {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.signature_algorithms = "RSA+SHA256"
+        server_connect(port, ctx) { }
+      }
+    end
+
+    # Server-side
+    ctx_proc = proc { |ctx|
+      ctx.signature_algorithms = a
+    }
+  end
+
   def test_security_level
     ctx = OpenSSL::SSL::SSLContext.new
     begin

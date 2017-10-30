@@ -1046,6 +1046,50 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     return v;
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10002000 && !defined(LIBRESSL_VERSION_NUMBER)
+/*
+ * call-seq:
+ *    ctx.signature_algorithms = "ECDSA+SHA256:RSA+SHA256"
+ *
+ * Sets the list of supported signature algorithms. FIXME: Complete this
+ *
+ * See also SSL_CTX_set1_sigalgs_list(3) for details.
+ */
+static VALUE
+ossl_sslctx_set_sigalgs(VALUE self, VALUE value)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    rb_check_frozen(self);
+    if (!SSL_CTX_set1_sigalgs_list(ctx, StringValueCStr(value)))
+	ossl_raise(eSSLError, "SSL_CTX_set1_sigalgs_list");
+    return value;
+}
+
+/*
+ * call-seq:
+ *    ctx.client_signature_algorithms = "ECDSA+SHA256:RSA+SHA256"
+ *
+ * Sets the list of supported signature algorithms for client authentication.
+ * This has effect only on the server side. If this is not called, the value set
+ * by #signature_algorithms= will be used.
+ *
+ * See also SSL_CTX_set1_client_sigalgs_list(3) for details.
+ */
+static VALUE
+ossl_sslctx_set_client_sigalgs(VALUE self, VALUE value)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    rb_check_frozen(self);
+    if (!SSL_CTX_set1_client_sigalgs_list(ctx, StringValueCStr(value)))
+	ossl_raise(eSSLError, "SSL_CTX_set1_sigalgs_list");
+    return value;
+}
+#endif
+
 #if !defined(OPENSSL_NO_EC)
 /*
  * call-seq:
@@ -2554,6 +2598,12 @@ Init_ossl_ssl(void)
 			     ossl_sslctx_set_minmax_proto_version, 2);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+#if OPENSSL_VERSION_NUMBER >= 0x10002000 && !defined(LIBRESSL_VERSION_NUMBER)
+    rb_define_method(cSSLContext, "signature_algorithms=",
+		     ossl_sslctx_set_sigalgs, 1);
+    rb_define_method(cSSLContext, "client_signature_algorithms=",
+		     ossl_sslctx_set_client_sigalgs, 1);
+#endif
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
     rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
