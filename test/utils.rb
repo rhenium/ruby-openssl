@@ -174,13 +174,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @server = nil
   end
 
-  def tls12_supported?
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    true
-  rescue
-  end
-
   def readwrite_loop(ctx, ssl)
     while line = ssl.gets
       ssl.write(line)
@@ -278,6 +271,54 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         assert_join_threads(threads)
       end
     }
+  end
+
+  def check_supported_protocol_versions
+    return @@supported_versions if defined?(@@supported_versions)
+
+    possible_versions = [
+      OpenSSL::SSL::SSL3_VERSION,
+      OpenSSL::SSL::TLS1_VERSION,
+      OpenSSL::SSL::TLS1_1_VERSION,
+      OpenSSL::SSL::TLS1_2_VERSION,
+      # OpenSSL 1.1.1
+      defined?(OpenSSL::SSL::TLS1_3_VERSION) && OpenSSL::SSL::TLS1_3_VERSION,
+    ].compact
+
+    # Prepare for testing & do sanity check
+    supported = []
+    possible_versions.each do |ver|
+      catch(:unsupported) {
+        ctx_proc = proc { |ctx|
+          begin
+            ctx.min_version = ctx.max_version = ver
+          rescue ArgumentError, OpenSSL::SSL::SSLError
+            throw :unsupported
+          end
+        }
+        start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+          begin
+            server_connect(port) { |ssl|
+              ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+            }
+          rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
+          else
+            supported << ver
+          end
+        end
+      }
+    end
+    assert_not_empty supported
+
+    @@supported_versions = supported
+  end
+
+  def tls11_supported?
+    check_supported_protocol_versions.include?(OpenSSL::SSL::TLS1_1_VERSION)
+  end
+
+  def tls12_supported?
+    check_supported_protocol_versions.include?(OpenSSL::SSL::TLS1_2_VERSION)
   end
 end
 

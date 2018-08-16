@@ -81,7 +81,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     add0_chain_supported = openssl?(1, 0, 2)
 
     if add0_chain_supported
-      ca2_key = Fixtures.pkey("rsa1024")
+      ca2_key = @ca_key
       ca2_exts = [
         ["basicConstraints", "CA:TRUE", true],
         ["keyUsage", "cRLSign, keyCertSign", true],
@@ -871,44 +871,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def check_supported_protocol_versions
-    possible_versions = [
-      OpenSSL::SSL::SSL3_VERSION,
-      OpenSSL::SSL::TLS1_VERSION,
-      OpenSSL::SSL::TLS1_1_VERSION,
-      OpenSSL::SSL::TLS1_2_VERSION,
-      # OpenSSL 1.1.1
-      defined?(OpenSSL::SSL::TLS1_3_VERSION) && OpenSSL::SSL::TLS1_3_VERSION,
-    ].compact
-
-    # Prepare for testing & do sanity check
-    supported = []
-    possible_versions.each do |ver|
-      catch(:unsupported) {
-        ctx_proc = proc { |ctx|
-          begin
-            ctx.min_version = ctx.max_version = ver
-          rescue ArgumentError, OpenSSL::SSL::SSLError
-            throw :unsupported
-          end
-        }
-        start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-          begin
-            server_connect(port) { |ssl|
-              ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-            }
-          rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
-          else
-            supported << ver
-          end
-        end
-      }
-    end
-    assert_not_empty supported
-
-    supported
-  end
-
   def test_set_params_min_version
     supported = check_supported_protocol_versions
     store = OpenSSL::X509::Store.new
@@ -1051,45 +1013,42 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_options_disable_versions
     # Note: Use of these OP_* flags has been deprecated since OpenSSL 1.1.0.
-    supported = check_supported_protocol_versions
-
-    if supported.include?(OpenSSL::SSL::TLS1_1_VERSION) &&
-        supported.include?(OpenSSL::SSL::TLS1_2_VERSION)
-      # Server disables ~ TLS 1.1
-      ctx_proc = proc { |ctx|
-        ctx.options |= OpenSSL::SSL::OP_NO_SSLv2 | OpenSSL::SSL::OP_NO_SSLv3 |
-          OpenSSL::SSL::OP_NO_TLSv1 | OpenSSL::SSL::OP_NO_TLSv1_1
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
-        # Client only supports TLS 1.1
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.min_version = ctx1.max_version = OpenSSL::SSL::TLS1_1_VERSION
-        assert_handshake_error { server_connect(port, ctx1) { } }
-
-        # Client only supports TLS 1.2
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.min_version = ctx2.max_version = OpenSSL::SSL::TLS1_2_VERSION
-        assert_nothing_raised { server_connect(port, ctx2) { } }
-      }
-
-      # Server only supports TLS 1.1
-      ctx_proc = proc { |ctx|
-        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
-        # Client disables TLS 1.1
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.options |= OpenSSL::SSL::OP_NO_TLSv1_1
-        assert_handshake_error { server_connect(port, ctx1) { } }
-
-        # Client disables TLS 1.2
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.options |= OpenSSL::SSL::OP_NO_TLSv1_2
-        assert_nothing_raised { server_connect(port, ctx2) { } }
-      }
-    else
-      pend "TLS 1.1 and TLS 1.2 must be supported; skipping"
+    unless tls11_supported? && tls12_supported?
+      pend "TLS 1.1 and TLS 1.2 must be supported"
     end
+
+    # Server disables ~ TLS 1.1
+    ctx_proc = proc { |ctx|
+      ctx.options |= OpenSSL::SSL::OP_NO_SSLv2 | OpenSSL::SSL::OP_NO_SSLv3 |
+        OpenSSL::SSL::OP_NO_TLSv1 | OpenSSL::SSL::OP_NO_TLSv1_1
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
+      # Client only supports TLS 1.1
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.min_version = ctx1.max_version = OpenSSL::SSL::TLS1_1_VERSION
+      assert_handshake_error { server_connect(port, ctx1) { } }
+
+      # Client only supports TLS 1.2
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.min_version = ctx2.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      assert_nothing_raised { server_connect(port, ctx2) { } }
+    }
+
+    # Server only supports TLS 1.1
+    ctx_proc = proc { |ctx|
+      ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
+      # Client disables TLS 1.1
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.options |= OpenSSL::SSL::OP_NO_TLSv1_1
+      assert_handshake_error { server_connect(port, ctx1) { } }
+
+      # Client disables TLS 1.2
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.options |= OpenSSL::SSL::OP_NO_TLSv1_2
+      assert_nothing_raised { server_connect(port, ctx2) { } }
+    }
   end
 
   def test_ssl_methods_constant
@@ -1330,6 +1289,9 @@ end
   def test_fallback_scsv
     pend "Fallback SCSV is not supported" unless \
       OpenSSL::SSL::SSLContext.method_defined?(:enable_fallback_scsv)
+    unless tls11_supported? && tls12_supported?
+      pend "TLS 1.1 and TLS 1.2 must be supported"
+    end
 
     start_server do |port|
       ctx = OpenSSL::SSL::SSLContext.new
