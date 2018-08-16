@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestCipher < OpenSSL::TestCase
   module Helper
@@ -132,7 +132,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal ct, cipher.update(pt) << cipher.final
     cipher = new_decryptor("aes-128-ctr", key: key, iv: iv, padding: 0)
     assert_equal pt, cipher.update(ct) << cipher.final
-  end if has_cipher?('aes-128-ctr')
+  end
 
   def test_ciphers
     OpenSSL::Cipher.ciphers.each{|name|
@@ -168,10 +168,8 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_authenticated
-    if has_cipher?('aes-128-gcm')
-      cipher = OpenSSL::Cipher.new('aes-128-gcm')
-      assert_predicate(cipher, :authenticated?)
-    end
+    cipher = OpenSSL::Cipher.new('aes-128-gcm')
+    assert_predicate(cipher, :authenticated?)
     cipher = OpenSSL::Cipher.new('aes-128-cbc')
     assert_not_predicate(cipher, :authenticated?)
   end
@@ -223,7 +221,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     cipher.update(ct2)
     assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
-  end if has_cipher?("aes-128-gcm")
+  end
 
   def test_aes_gcm_variable_iv_len
     # GCM spec Appendix B Test Case 5
@@ -246,7 +244,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal tag, cipher.auth_tag
     cipher = new_decryptor("aes-128-gcm", key: key, iv_len: 8, iv: iv, auth_tag: tag, auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
-  end if has_cipher?("aes-128-gcm")
+  end
 
   def test_aes_ocb_tag_len
     # RFC 7253 Appendix A; the second sample
@@ -298,14 +296,14 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
     assert_equal ct1, ct2
     assert_equal tag1, tag2
-  end if has_cipher?("aes-128-gcm")
+  end
 
   def test_non_aead_cipher_set_auth_data
     assert_raise(OpenSSL::Cipher::CipherError) {
       cipher = OpenSSL::Cipher.new("aes-128-cfb").encrypt
       cipher.auth_data = "123"
     }
-  end if has_cipher?("aes-128-gcm")
+  end
 
   private
 
@@ -322,7 +320,6 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
       kwargs.each {|k, v| cipher.send(:"#{k}=", v) }
     end
   end
-
 end
 
 end
