@@ -267,21 +267,32 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
 {
     VALUE str = Qnil;
     unsigned long e;
+    const char *file, *data;
+    int line, flags;
 
     if (fmt) {
 	str = rb_vsprintf(fmt, args);
     }
-    e = ERR_peek_last_error();
+    e = ERR_peek_last_error_line_data(&file, &line, &data, &flags);
     if (e) {
-	const char *msg = ERR_reason_error_string(e);
-
-	if (NIL_P(str)) {
-	    if (msg) str = rb_str_new_cstr(msg);
-	}
+	const char *reason = ERR_reason_error_string(e);
+	if (!reason)
+	    reason = "(null)";
+	if (NIL_P(str))
+	    str = rb_str_new_cstr(reason);
 	else {
-	    if (RSTRING_LEN(str)) rb_str_cat2(str, ": ");
-	    rb_str_cat2(str, msg ? msg : "(null)");
+	    rb_str_cat_cstr(str, ": ");
+	    rb_str_cat_cstr(str, reason);
 	}
+
+	if (flags & ERR_TXT_STRING) {
+	    if (!data)
+		data = "(null)";
+	    rb_str_cat_cstr(str, " (");
+	    rb_str_cat_cstr(str, data);
+	    rb_str_cat_cstr(str, ")");
+	}
+
 	ossl_clear_error();
     }
 
