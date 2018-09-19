@@ -133,11 +133,11 @@ VALUE ossl_to_der_if_possible(VALUE);
 /*
  * Debug
  */
-extern VALUE dOSSL;
+extern int dOSSL;
 
 #if defined(HAVE_VA_ARGS_MACRO)
 #define OSSL_Debug(...) do { \
-  if (dOSSL == Qtrue) { \
+  if (dOSSL) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
     fprintf(stderr, __VA_ARGS__); \
     fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \

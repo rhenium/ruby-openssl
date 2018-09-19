@@ -354,7 +354,7 @@ ossl_get_errors(void)
 /*
  * Debug
  */
-VALUE dOSSL;
+int dOSSL;
 
 #if !defined(HAVE_VA_ARGS_MACRO)
 void
@@ -362,7 +362,7 @@ ossl_debug(const char *fmt, ...)
 {
     va_list args;
 
-    if (dOSSL == Qtrue) {
+    if (dOSSL) {
 	fprintf(stderr, "OSSL_DEBUG: ");
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
@@ -379,7 +379,7 @@ ossl_debug(const char *fmt, ...)
 static VALUE
 ossl_debug_get(VALUE self)
 {
-    return dOSSL;
+    return dOSSL ? Qtrue : Qfalse;
 }
 
 /*
@@ -392,8 +392,7 @@ ossl_debug_get(VALUE self)
 static VALUE
 ossl_debug_set(VALUE self, VALUE val)
 {
-    dOSSL = RTEST(val) ? Qtrue : Qfalse;
-
+    dOSSL = RTEST(val);
     return val;
 }
 
@@ -1175,8 +1174,7 @@ Init_openssl(void)
     /*
      * Init debug core
      */
-    dOSSL = Qfalse;
-    rb_global_variable(&dOSSL);
+    dOSSL = 0;
 
     rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
     rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
