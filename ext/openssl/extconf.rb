@@ -172,6 +172,7 @@ have_func("SSL_CTX_set_post_handshake_auth")
 have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", "openssl/ts.h")
 have_func("SSL_CTX_load_verify_file")
 have_func("BN_check_prime")
+have_func("ERR_get_error_all")
 
 Logging::message "=== Checking done. ===\n"
 
