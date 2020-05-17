@@ -71,7 +71,7 @@ VALUE eDHError;
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey;
+    EVP_PKEY *pkey, *tmp;
     DH *dh;
     BIO *in;
     VALUE arg;
@@ -84,14 +84,22 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
             ossl_raise(eDHError, "DH_new");
     }
     else {
-	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(&arg);
-	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
-	if (!dh){
-	    OSSL_BIO_reset(in);
-	    dh = d2i_DHparams_bio(in, NULL);
-	}
-	BIO_free(in);
+        arg = ossl_to_der_if_possible(arg);
+        in = ossl_obj2bio(&arg);
+
+        dh = d2i_DHparams_bio(in, NULL);
+        if (!dh) {
+            OSSL_BIO_reset(in);
+            tmp = ossl_pkey_read_generic(in, Qnil);
+            if (tmp) {
+                if (EVP_PKEY_base_id(tmp) != EVP_PKEY_DH)
+                    rb_raise(eDHError, "incorrect pkey type: %s",
+                             OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+                dh = EVP_PKEY_get1_DH(tmp);
+                EVP_PKEY_free(tmp);
+            }
+        }
+        BIO_free(in);
 	if (!dh) {
 	    ossl_raise(eDHError, NULL);
 	}

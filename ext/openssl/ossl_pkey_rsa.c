@@ -94,23 +94,23 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(&arg);
 
-        tmp = ossl_pkey_read_generic(in, pass);
-        if (tmp) {
-            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_RSA)
-                rb_raise(eRSAError, "incorrect pkey type: %s",
-                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
-            rsa = EVP_PKEY_get1_RSA(tmp);
-            EVP_PKEY_free(tmp);
+        rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
+        if (!rsa) {
+            OSSL_BIO_reset(in);
+            rsa = d2i_RSAPublicKey_bio(in, NULL);
         }
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
-	}
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = d2i_RSAPublicKey_bio(in, NULL);
-	}
-	BIO_free(in);
+        if (!rsa) {
+            OSSL_BIO_reset(in);
+            tmp = ossl_pkey_read_generic(in, pass);
+            if (tmp) {
+                if (EVP_PKEY_base_id(tmp) != EVP_PKEY_RSA)
+                    rb_raise(eRSAError, "incorrect pkey type: %s",
+                             OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+                rsa = EVP_PKEY_get1_RSA(tmp);
+                EVP_PKEY_free(tmp);
+            }
+        }
+        BIO_free(in);
 	if (!rsa) {
             ossl_clear_error();
 	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
