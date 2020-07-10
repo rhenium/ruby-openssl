@@ -168,6 +168,9 @@ have_func("TS_RESP_CTX_set_time_cb")
 have_func("EVP_PBE_scrypt")
 have_func("SSL_CTX_set_post_handshake_auth")
 
+# added in 1.1.1
+have_func("EVP_PKEY_param_check")
+
 # added in 3.0.0
 have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", "openssl/ts.h")
 have_func("SSL_CTX_load_verify_file")
