@@ -1,3 +1,91 @@
+Version 3.0.0
+=============
+
+This is the first major version bump since v2.0, the first gem release. 
+
+
+Compatibility notes
+-------------------
+
+// FIXME
+* Deprecate the ability to modify `OpenSSL::PKey::PKey`. The upcoming OpenSSL 3.0
+  makes pkeys immutable. This means the following methods are deprecated for
+  future removal. Consider using `OpenSSL::PKey.from_data` instead.
+  [[GITHUB LINK]]()
+
+  - `OpenSSL::PKey::RSA#set_key`, `#set_factors`, `#set_crt_params`
+  - `OpenSSL::PKey::DSA#set_pqg`, `#set_key`
+  - `OpenSSL::PKey::DH#set_pqg`, `#set_key`, `#generate_key!`
+  - `OpenSSL::PKey::EC#private_key=`, `#public_key=`, `#group=`, `#generate_key!`
+
+* Deprecate loading non-standard public key encoding formats.
+  - `OpenSSL::PKey::RSA`: PEM or DER encoded "RSAPublicKey" format.
+  - `OpenSSL::PKey::DSA`: PEM encoded "DSAPublicKey" format.
+
+* Deprecate `OpenSSL::Engine`. The ENGINE API is being replaced by OpenSSL 3.0
+  with "Providers".
+
+* Deprecate `OpenSSL::PKey::EC::Point#mul(ary, ary [, bn])`. This feature has
+  been removed in recent OpenSSL/LibreSSL versions and will stop working.
+  [[GitHub #372]](https://github.com/ruby/openssl/issues/372)
+
+* Remove `OpenSSL::SSL::SSLContext#tmp_ecdh_callback`. This has been deprecated
+  since v2.0 and does not work with recent OpenSSL/LibreSSL versions.
+
+
+Supported platforms
+-------------------
+
+* OpenSSL 1.0.2 or later (up to 1.1.1; 3.0.0 is not released yet as of writing)
+* LibreSSL 3.1 or later
+* Ruby 2.3 or later
+
+
+Notable changes
+---------------
+
+* Enhance OpenSSL::PKey's common interface that can handle keys of any type.
+  [[GitHub #370]](https://github.com/ruby/openssl/issues/370)
+  - Key loading: Enhance `OpenSSL::PKey.read` to handle parameters-only PEM
+    formats, which used to be only possible with `OpenSSL::PKey::DH.new`.
+    [[GitHub #328]](https://github.com/ruby/openssl/issues/328)
+  - Key generation: Add `OpenSSL::PKey.generate_parameters` and
+    `OpenSSL::PKey.generate_key`.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Public key signing: Enhance `OpenSSL::PKey#{sign,verify}` take optional
+    algorithm-specific parameters.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Key agreement: Add `OpenSSL::PKey#derive`.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Low-level public key signing: Add `OpenSSL::PKey#{sign_raw,verify_raw}`.
+    [[GitHub #382]](https://github.com/ruby/openssl/issues/382)
+  - Key comparison: Add `OpenSSL::PKey#compare?` to conveniently check that two
+    keys have common parameters and a public key.
+    [[GitHub #383]](https://github.com/ruby/openssl/issues/383)
+
+* Add `OpenSSL::BN#set_flags` and `#get_flags`. This is used in combination with
+  OpenSSL::BN::CONSTTIME to do constant-time computation.
+  [[GitHub #417]](https://github.com/ruby/openssl/issues/417)
+
+* Add `OpenSSL::BN#abs` to get the absolute value of the BIGNUM.
+  [[GitHub #430]](https://github.com/ruby/openssl/issues/430)
+
+* Add `OpenSSL::SSL::SSLSocket#getbyte`.
+  [[GitHub #438]](https://github.com/ruby/openssl/issues/438)
+
+* Update various part of the code base to use the modern API. No breaking
+  changes are intended, however. Major ones are:
+  - Rewrite `OpenSSL::HMAC` around the EVP API.
+    [[GitHub #371]](https://github.com/ruby/openssl/issues/371)
+  - Let `OpenSSL::Config` use native OpenSSL API to parse config files.
+    [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
+
+* Turn `OpenSSL::SSL::SSLContext#tmp_dh_callback` a wrapper around `#tmp_dh=`.
+  This means the callback will no longer be called during the handshake, but
+  before it starts. Note that there has been no point in it being a callback
+  now that "export grade" cryptography is long gone.
+  [[GITHUB LINK]]
+
 Version 2.2.0
 =============
 
