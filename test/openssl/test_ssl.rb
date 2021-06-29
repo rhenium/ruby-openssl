@@ -1294,6 +1294,21 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_verify_hostname_without_hostname
+    start_server do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_hostname = true
+      ctx.cert_store = OpenSSL::X509::Store.new.tap { |s| s.add_cert(@ca_cert) }
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+
+      assert_warning(/verify_hostname.*hostname/) {
+        server_connect(port, ctx) { |ssl|
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+        }
+      }
+    end
+  end
+
   def test_connect_systemcallerror
     # SSL_connect() should fail with SSL_ERROR_SYSCALL and errno should be
     # kept intact from the underlying recv(2)/send(2).
