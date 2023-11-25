@@ -38,9 +38,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: "latest"
 
       - name: depends
-        run:  bundle install
+        run:  bundle install --prefer-local
 
       # Enable the verbose option in mkmf.rb to print the compiling commands.
       - name: enable mkmf verbose
@@ -153,9 +154,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: "latest"
 
       - name: depends
-        run:  bundle install
+        run:  bundle install --prefer-local
 
       - name: enable mkmf verbose
         run:  echo "MAKEFLAGS=V=1" >> $GITHUB_ENV
