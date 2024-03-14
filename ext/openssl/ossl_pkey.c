@@ -80,47 +80,17 @@ ossl_pkey_new(EVP_PKEY *pkey)
 }
 
 #if OSSL_OPENSSL_PREREQ(3, 0, 0)
-# include <openssl/decoder.h>
-
-static EVP_PKEY *
-ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
-{
-    void *ppass = (void *)pass;
-    OSSL_DECODER_CTX *dctx;
-    EVP_PKEY *pkey = NULL;
-    int pos = 0, pos2;
-
-    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, input_type, NULL, NULL,
-                                         selection, NULL, NULL);
-    if (!dctx)
-        goto out;
-    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
-                                             ppass) != 1)
-        goto out;
-    while (1) {
-        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
-            goto out;
-        if (BIO_eof(bio))
-            break;
-        pos2 = BIO_tell(bio);
-        if (pos2 < 0 || pos2 <= pos)
-            break;
-        ossl_clear_error();
-        pos = pos2;
-    }
-  out:
-    OSSL_BIO_reset(bio);
-    OSSL_DECODER_CTX_free(dctx);
-    return pkey;
-}
+# include <openssl/store.h>
 
 EVP_PKEY *
 ossl_pkey_read_generic(BIO *bio, VALUE pass)
 {
-    EVP_PKEY *pkey = NULL;
-    /* First check DER, then check PEM. */
-    const char *input_types[] = {"DER", "PEM"};
-    int input_type_num = (int)(sizeof(input_types) / sizeof(char *));
+    OSSL_STORE_CTX *ctx = OSSL_STORE_attach(bio, "file", NULL, NULL,
+                                            ossl_ui_method, (void *)pass, NULL,
+                                            NULL, NULL);
+    if (!ctx)
+        return NULL;
+
     /*
      * Non-zero selections to try to decode.
      *
@@ -135,48 +105,54 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
      *
      * See https://github.com/openssl/openssl/pull/21519 for details.
      *
-     * First check for private key formats (EVP_PKEY_KEYPAIR). This is to keep
-     * compatibility with ruby/openssl < 3.0 which decoded the following as a
-     * private key.
-     *
-     *     $ openssl ecparam -name prime256v1 -genkey -outform PEM
-     *     -----BEGIN EC PARAMETERS-----
-     *     BggqhkjOPQMBBw==
-     *     -----END EC PARAMETERS-----
-     *     -----BEGIN EC PRIVATE KEY-----
-     *     MHcCAQEEIAG8ugBbA5MHkqnZ9ujQF93OyUfL9tk8sxqM5Wv5tKg5oAoGCCqGSM49
-     *     AwEHoUQDQgAEVcjhJfkwqh5C7kGuhAf8XaAjVuG5ADwb5ayg/cJijCgs+GcXeedj
-     *     86avKpGH84DXUlB23C/kPt+6fXYlitUmXQ==
-     *     -----END EC PRIVATE KEY-----
-     *
-     * While the first PEM block is a proper encoding of ECParameters, thus
-     * OSSL_DECODER_from_bio() would pick it up, ruby/openssl used to return
-     * the latter instead. Existing applications expect this behavior.
-     *
-     * Note that normally, the input is supposed to contain a single decodable
-     * PEM block only, so this special handling should not create a new problem.
-     *
      * Note that we need to create the OSSL_DECODER_CTX variable each time when
      * we use the different selection as a workaround.
      * See https://github.com/openssl/openssl/issues/20657 for details.
      */
-    int selections[] = {
-        EVP_PKEY_KEYPAIR,
-        EVP_PKEY_KEY_PARAMETERS,
-        EVP_PKEY_PUBLIC_KEY
-    };
-    int selection_num = (int)(sizeof(selections) / sizeof(int));
-    int i, j;
+    EVP_PKEY *pkey = NULL;
+    while (!OSSL_STORE_eof(ctx)) {
+        OSSL_STORE_INFO *info = OSSL_STORE_load(ctx);
+        if (!info)
+            goto out;
 
-    for (i = 0; i < input_type_num; i++) {
-        for (j = 0; j < selection_num; j++) {
-            pkey = ossl_pkey_read(bio, input_types[i], selections[j], pass);
-            if (pkey) {
-                goto out;
-            }
+        /*
+         * Continue to try to decode after encountering a parameters PEM block.
+         * This is to keep compatibility with ruby/openssl < 3.0 which decoded
+         * the following "openssl ecparam" output as a private key.
+         *
+         *     $ openssl ecparam -name prime256v1 -genkey -outform PEM
+         *     -----BEGIN EC PARAMETERS-----
+         *     BggqhkjOPQMBBw==
+         *     -----END EC PARAMETERS-----
+         *     -----BEGIN EC PRIVATE KEY-----
+         *     MHcCAQEEIAG8ugBbA5MHkqnZ9ujQF93OyUfL9tk8sxqM5Wv5tKg5oAoGCCqGSM49
+         *     AwEHoUQDQgAEVcjhJfkwqh5C7kGuhAf8XaAjVuG5ADwb5ayg/cJijCgs+GcXeedj
+         *     86avKpGH84DXUlB23C/kPt+6fXYlitUmXQ==
+         *     -----END EC PRIVATE KEY-----
+         *
+         * OpenSSL::PKey.read normally expects a single decodable PEM block to
+         * appear in the string, but this is seen in the wild and we don't want
+         * to break existing applications.
+         */
+        switch (OSSL_STORE_INFO_get_type(info)) {
+          case OSSL_STORE_INFO_PARAMS:
+            pkey = OSSL_STORE_INFO_get1_PARAMS(info);
+            break;
+          case OSSL_STORE_INFO_PKEY:
+            if (pkey)
+                EVP_PKEY_free(pkey);
+            pkey = OSSL_STORE_INFO_get1_PKEY(info);
+            goto out;
+          case OSSL_STORE_INFO_PUBKEY:
+            if (pkey)
+                EVP_PKEY_free(pkey);
+            pkey = OSSL_STORE_INFO_get1_PUBKEY(info);
+            goto out;
         }
     }
+
   out:
+    OSSL_STORE_close(ctx);
     return pkey;
 }
 #else
