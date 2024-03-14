@@ -231,6 +231,100 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
     return (int)len;
 }
 
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# include <openssl/ui.h>
+
+const UI_METHOD *ossl_ui_method;
+static const UI_METHOD *default_ui_method;
+
+static int
+ui_open(UI *ui)
+{
+    if (RTEST((VALUE)UI_get0_user_data(ui)) || rb_block_given_p())
+        return 1;
+
+    int (*opener)(UI *ui) = UI_method_get_opener(default_ui_method);
+    if (opener != NULL)
+        return opener(ui);
+    return 1;
+}
+
+static int
+ui_write(UI *ui, UI_STRING *uis)
+{
+    if (RTEST((VALUE)UI_get0_user_data(ui)) || rb_block_given_p())
+        return 1;
+
+    int (*writer)(UI *ui, UI_STRING *uis) = UI_method_get_writer(default_ui_method);
+    if (writer != NULL)
+        return writer(ui, uis);
+    return 1;
+}
+
+static int
+ui_flush(UI *ui)
+{
+    if (RTEST((VALUE)UI_get0_user_data(ui)) || rb_block_given_p())
+        return 1;
+
+    int (*flusher)(UI *ui) = UI_method_get_flusher(default_ui_method);
+    if (flusher != NULL)
+        return flusher(ui);
+    return 1;
+}
+
+static int
+ui_read(UI *ui, UI_STRING *uis)
+{
+    VALUE ui_data = (VALUE)UI_get0_user_data(ui);
+    if (RTEST(ui_data))
+        return UI_set_result_ex(ui, uis, RSTRING_PTR(ui_data), RSTRING_LENINT(ui_data)) == 0;
+    if (rb_block_given_p()) {
+        int max_len = UI_get_result_maxsize(uis);
+        while (1) {
+            /*
+             * The block receives one value: false.
+             * This is the 'rwflag' parameter of pem_password_cb, which
+             * indicates whether if the callback is used for reading or writing.
+             * We only use this callback for reading, so it is always false.
+             */
+            int state;
+            VALUE pass = rb_protect(ossl_pem_passwd_cb0, Qfalse, &state);
+            if (state) {
+                /* TODO: Ignoring exceptions raised in the block */
+                rb_set_errinfo(Qnil);
+                return 0;
+            }
+            if (NIL_P(pass))
+                return 0;
+            long len = RSTRING_LEN(pass);
+            if (len > max_len) {
+                rb_warning("password must not be longer than %d bytes", max_len);
+                continue;
+            }
+            return UI_set_result_ex(ui, uis, RSTRING_PTR(pass), RSTRING_LENINT(pass)) == 0;
+        }
+    }
+
+    int (*reader)(UI *ui, UI_STRING *uis) = UI_method_get_reader(default_ui_method);
+    if (reader != NULL)
+        return reader(ui, uis);
+    return 1;
+}
+
+static int
+ui_close(UI *ui)
+{
+    if (RTEST((VALUE)UI_get0_user_data(ui)) || rb_block_given_p())
+        return 1;
+
+    int (*closer)(UI *ui) = UI_method_get_closer(default_ui_method);
+    if (closer != NULL)
+        return closer(ui);
+    return 1;
+}
+#endif
+
 /*
  * main module
  */
@@ -1145,6 +1239,24 @@ Init_openssl(void)
 
 #if !defined(HAVE_OPENSSL_110_THREADING_API)
     Init_ossl_locks();
+#endif
+
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    /*
+     * UI_METHOD for password callback (OpenSSL 3 or later)
+     */
+    UI_METHOD *ui_method;
+    if ((ui_method = UI_create_method("ruby/openssl password callback")) == NULL ||
+        UI_method_set_opener(ui_method, ui_open) != 0 ||
+        UI_method_set_writer(ui_method, ui_write) != 0 ||
+        UI_method_set_flusher(ui_method, ui_flush) != 0 ||
+        UI_method_set_reader(ui_method, ui_read) != 0 ||
+        UI_method_set_closer(ui_method, ui_close) != 0) {
+        UI_destroy_method(ui_method);
+        ossl_raise(eOSSLError, "UI_method initialization failed");
+    }
+    ossl_ui_method = ui_method;
+    default_ui_method = UI_get_default_method();
 #endif
 
     /*

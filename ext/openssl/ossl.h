@@ -131,6 +131,14 @@ VALUE ossl_pem_passwd_value(VALUE);
  * functions), uses the value. If not, but a block is given, yields to it.
  * If not either, fallbacks to PEM_def_callback() which reads from stdin. */
 int ossl_pem_passwd_cb(char *, int, int, void *);
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+/*
+ * UI_METHOD for password callback. The password may be supplied through
+ * UI_add_user_data() (type must be checked by the caller) or a block.
+ * If neither is given, it will fallback to the default UI_METHOD.
+ */
+extern const UI_METHOD *ossl_ui_method;
+#endif
 
 /*
  * Clear BIO* with this in PEM/DER fallback scenarios to avoid decoding
