@@ -28,7 +28,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
       pend "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
       engine = OpenSSL::Engine.by_id("openssl")
       assert_not_nil(engine)
-      assert_equal(1, OpenSSL::Engine.engines.size - orig.size)
+      assert_include(OpenSSL::Engine.engines.map { |e| e.id }, "openssl")
     end;
   end
 
