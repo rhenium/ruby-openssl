@@ -2859,6 +2859,7 @@ Init_ossl_ssl(void)
     rb_include_module(eSSLErrorWaitWritable, rb_mWaitWritable);
 
     Init_ossl_ssl_session();
+    Init_ossl_ssl_bio();
 
     /* Document-class: OpenSSL::SSL::SSLContext
      *
