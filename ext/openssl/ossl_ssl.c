@@ -1688,14 +1688,22 @@ peeraddr_ip_str(VALUE io)
                       rb_eSystemCallError, (VALUE)0);
 }
 
+static int
+is_real_socket(VALUE io)
+{
+    return RB_TYPE_P(io, T_FILE);
+}
+
 /*
  * call-seq:
  *    SSLSocket.new(io) => aSSLSocket
  *    SSLSocket.new(io, ctx) => aSSLSocket
  *    SSLSocket.new(io, ctx, sync_close:) => aSSLSocket
  *
- * Creates a new SSL socket from _io_ which must be a real IO object (not an
- * IO-like object that responds to read/write).
+ * Creates a new SSL socket from the underlying socket _io_ and _ctx_.
+ *
+ * _io_ must be an IO object, typically a TCPSocket or Socket from the socket
+ * library, or an IO-like object that supports the typical IO methods.
  *
  * If _ctx_ is provided the SSL Sockets initial params will be taken from
  * the context.
@@ -1708,6 +1716,22 @@ peeraddr_ip_str(VALUE io)
  *
  * This method will freeze the SSLContext if one is provided;
  * however, session management is still allowed in the frozen SSLContext.
+ *
+ * == Support for IO-like objects
+ *
+ * Support for IO-like objects was added in version 4.1 and is considered
+ * experimental. The requirements for the objects may change in future versions.
+ *
+ * As of version 4.1, SSLSocket expects the following methods to be compatible
+ * with core IO objects:
+ *
+ * - <tt>write_nonblock</tt> with the <tt>exception: false</tt> option
+ * - <tt>read_nonblock</tt> with the <tt>exception: false</tt> option
+ * - <tt>wait_readable</tt>
+ * - <tt>wait_writable</tt>
+ * - <tt>close</tt>
+ * - <tt>closed?</tt>
+ * - <tt>sync</tt> and <tt>flush</tt> (optional)
  */
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
@@ -1739,10 +1763,6 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     GetSSLCTX(v_ctx, ctx);
     rb_ivar_set(self, id_i_context, v_ctx);
     ossl_sslctx_setup(v_ctx);
-
-    if (rb_respond_to(io, rb_intern("nonblock=")))
-        rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
-    Check_Type(io, T_FILE);
 
     struct ossl_ssl_data *p = RB_ZALLOC(struct ossl_ssl_data);
     p->self = self;
@@ -1796,25 +1816,40 @@ ossl_ssl_setup(VALUE self)
 {
     SSL *ssl;
     struct ossl_ssl_data *p;
-    rb_io_t *fptr;
 
     GetSSL(self, ssl);
     p = ossl_ssl_data(ssl);
     if (ssl_started(ssl))
         return Qtrue;
 
-    GetOpenFile(p->io, fptr);
-    rb_io_check_readable(fptr);
-    rb_io_check_writable(fptr);
-    if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(p->io))))
-        ossl_raise(eSSLError, "SSL_set_fd");
+    if (is_real_socket(p->io)) {
+        rb_io_t *fptr;
+        GetOpenFile(p->io, fptr);
+        rb_io_check_readable(fptr);
+        rb_io_check_writable(fptr);
+        rb_io_set_nonblock(fptr);
+        if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(p->io))))
+            ossl_raise(eSSLError, "SSL_set_fd");
+    }
+    else {
+        BIO *bio = ossl_ssl_bio_setup(p);
+        if (!BIO_up_ref(bio)) {
+            BIO_free(bio);
+            ossl_raise(eSSLError, "BIO_up_ref");
+        }
+        SSL_set_bio(ssl, bio, bio);
+    }
 
     return Qtrue;
 }
 
 static int
-errno_mapped(void)
+errno_mapped(struct ossl_ssl_data *p)
 {
+    /* ossl_ssl_bio_method -> errno must not be used */
+    if (!is_real_socket(p->io))
+        return 0;
+
 #ifdef _WIN32
     return rb_w32_map_errno(WSAGetLastError());
 #else
@@ -1860,6 +1895,11 @@ no_exception_p(VALUE opts)
 static void
 io_wait_writable(VALUE io)
 {
+    if (!is_real_socket(io)) {
+        if (!RTEST(rb_funcallv(io, rb_intern("wait_writable"), 0, NULL)))
+            rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become writable!");
+        return;
+    }
 #ifdef HAVE_RB_IO_MAYBE_WAIT
     if (!rb_io_wait(io, INT2NUM(RUBY_IO_WRITABLE), RUBY_IO_TIMEOUT_DEFAULT)) {
         rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become writable!");
@@ -1874,6 +1914,11 @@ io_wait_writable(VALUE io)
 static void
 io_wait_readable(VALUE io)
 {
+    if (!is_real_socket(io)) {
+        if (!RTEST(rb_funcallv(io, rb_intern("wait_readable"), 0, NULL)))
+            rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become readable!");
+        return;
+    }
 #ifdef HAVE_RB_IO_MAYBE_WAIT
     if (!rb_io_wait(io, INT2NUM(RUBY_IO_READABLE), RUBY_IO_TIMEOUT_DEFAULT)) {
         rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become readable!");
@@ -1896,7 +1941,7 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
 
     for (;;) {
         int ret = func(ssl);
-        int saved_errno = errno_mapped();
+        int saved_errno = errno_mapped(p);
 
         if (p->cb_state) {
             /* must cleanup OpenSSL error stack before re-raising */
@@ -2094,7 +2139,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     for (;;) {
         rb_str_locktmp(str);
         int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
-        int saved_errno = errno_mapped();
+        int saved_errno = errno_mapped(p);
         rb_str_unlocktmp(str);
 
         if (p->cb_state) {
@@ -2210,7 +2255,7 @@ ossl_ssl_write_internal_safe(VALUE _args)
 
     for (;;) {
         int nwritten = SSL_write(ssl, RSTRING_PTR(str), num);
-        int saved_errno = errno_mapped();
+        int saved_errno = errno_mapped(p);
 
         if (p->cb_state) {
             ossl_clear_error();
@@ -2324,7 +2369,20 @@ ossl_ssl_stop(VALUE self)
     p = ossl_ssl_data(ssl);
     if (!ssl_started(ssl))
         return Qnil;
+
     ret = SSL_shutdown(ssl);
+
+    /*
+     * XXX: SSLSocket#stop is supposed to ignore errors due to the underlying
+     * socket being unreadable/unwritable. We want to suppress exceptions raised
+     * by the underlying IO-like object, but not from any SSL callbacks. Can SSL
+     * callbacks be invoked during SSL_shutdown()? We assume no, for now.
+     */
+    if (!is_real_socket(p->io) && p->cb_state) {
+        p->cb_state = 0;
+        rb_set_errinfo(Qnil);
+    }
+
     if (ret == 1) /* Have already received close_notify */
         return Qnil;
     if (ret == 0) /* Sent close_notify, but we don't wait for reply */
