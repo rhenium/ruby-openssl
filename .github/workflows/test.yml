@@ -73,11 +73,6 @@ jobs:
           - openssl-3.2.1
           - openssl-3.3.0
           # http://www.libressl.org/releases.html
-          - libressl-3.1.5 # EOL
-          - libressl-3.2.7 # EOL
-          - libressl-3.3.6 # EOL
-          - libressl-3.4.3 # EOL
-          - libressl-3.5.3 # EOL
           - libressl-3.6.3 # EOL
           - libressl-3.7.3 # EOL
           - libressl-3.8.4
