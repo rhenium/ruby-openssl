@@ -125,10 +125,8 @@ module OpenSSL
     class Primitive < ASN1Data
       include TaggedASN1Data
 
-      unless RUBY_VERSION < "3.0.0"
         undef_method :indefinite_length=
         undef_method :infinite_length=
-      end
     end
 
     class Constructive < ASN1Data
