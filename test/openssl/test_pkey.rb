@@ -244,4 +244,28 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     rsa = Fixtures.pkey("rsa1024")
     assert_include rsa.to_text, "publicExponent"
   end
+
+  def test_read_der_then_pem
+    # A very artificial test to ensure DER decode -> DER encode round-trip
+    # An input that could be interpreted both as DER and PEM will be interpreted as DER
+    inner_rsa = Fixtures.pkey("rsa2048")
+    inner_pem = inner_rsa.to_pem
+
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::ObjectId("rsaEncryption"),
+        OpenSSL::ASN1::Null(nil)
+      ]),
+      OpenSSL::ASN1::BitString(
+        OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(OpenSSL::BN.new("\n" + inner_pem, 2)),
+          OpenSSL::ASN1::Integer(65537)
+        ]).to_der
+      )
+    ])
+    assert_include(asn1.to_der, inner_pem)
+
+    rsa = OpenSSL::PKey.read(asn1.to_der)
+    assert_equal(asn1.to_der, rsa.to_der)
+  end
 end
