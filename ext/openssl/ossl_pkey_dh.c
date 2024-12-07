@@ -327,7 +327,6 @@ static VALUE
 ossl_dh_check_params(VALUE self)
 {
     int ret;
-#ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
 
@@ -337,13 +336,6 @@ ossl_dh_check_params(VALUE self)
         ossl_raise(eDHError, "EVP_PKEY_CTX_new");
     ret = EVP_PKEY_param_check(pctx);
     EVP_PKEY_CTX_free(pctx);
-#else
-    DH *dh;
-    int codes;
-
-    GetDH(self, dh);
-    ret = DH_check(dh, &codes) == 1 && codes == 0;
-#endif
 
     if (ret == 1)
         return Qtrue;
