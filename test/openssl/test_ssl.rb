@@ -1444,7 +1444,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     num_handshakes = 0
     renegotiation_cb = Proc.new { |ssl| num_handshakes += 1 }
     ctx_proc = Proc.new { |ctx| ctx.renegotiation_cb = renegotiation_cb }
-    start_server_version(:SSLv23, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc) { |port|
       server_connect(port) { |ssl|
         assert_equal(1, num_handshakes)
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
@@ -1460,7 +1460,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
       ctx.alpn_protocols = advertised
     }
-    start_server_version(:SSLv23, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.alpn_protocols = advertised
       server_connect(port, ctx) { |ssl|
@@ -1502,9 +1502,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     advertised = ["http/1.1", "spdy/2"]
     ctx_proc = proc { |ctx| ctx.npn_protocols = advertised }
-    start_server_version(:TLSv1_2, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc) { |port|
       selector = lambda { |which|
         ctx = OpenSSL::SSL::SSLContext.new
+        ctx.max_version = :TLS1_2
         ctx.npn_select_cb = -> (protocols) { protocols.send(which) }
         server_connect(port, ctx) { |ssl|
           assert_equal(advertised.send(which), ssl.npn_protocol)
@@ -1524,9 +1525,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       yield "spdy/2"
     end
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = advertised }
-    start_server_version(:TLSv1_2, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc) { |port|
       selector = lambda { |selected, which|
         ctx = OpenSSL::SSL::SSLContext.new
+        ctx.max_version = :TLS1_2
         ctx.npn_select_cb = -> (protocols) { protocols.to_a.send(which) }
         server_connect(port, ctx) { |ssl|
           assert_equal(selected, ssl.npn_protocol)
@@ -1541,8 +1543,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
-    start_server_version(:TLSv1_2, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2
       ctx.npn_select_cb = -> (protocols) { raise RuntimeError.new }
       assert_raise(RuntimeError) { server_connect(port, ctx) }
     }
@@ -1562,8 +1565,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
-    start_server_version(:TLSv1_2, ctx_proc) { |port|
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2
       ctx.npn_select_cb = -> (protocols) { "a" * 256 }
       assert_handshake_error { server_connect(port, ctx) }
     }
@@ -1987,20 +1991,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   private
-
-  def start_server_version(version, ctx_proc = nil,
-                           server_proc = method(:readwrite_loop), &blk)
-    ctx_wrap = Proc.new { |ctx|
-      ctx.ssl_version = version
-      ctx_proc.call(ctx) if ctx_proc
-    }
-    start_server(
-      ctx_proc: ctx_wrap,
-      server_proc: server_proc,
-      ignore_listener_error: true,
-      &blk
-    )
-  end
 
   def server_connect(port, ctx = nil)
     sock = TCPSocket.new("127.0.0.1", port)
