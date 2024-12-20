@@ -200,7 +200,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     end
   end
 
-  def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true,
+  def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE,
                    ctx_proc: nil, server_proc: method(:readwrite_loop),
                    accept_proc: proc{},
                    ignore_listener_error: false, &block)
@@ -220,7 +220,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       port = tcps.connect_address.ip_port
 
       ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-      ssls.start_immediately = start_immediately
 
       threads = []
       begin
