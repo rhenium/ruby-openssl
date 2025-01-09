@@ -18,6 +18,7 @@ included as a default gem in [supported Ruby branches][Ruby Maintenance Branches
 
 |Version|Maintenance status             |Ruby compatibility|OpenSSL compatibility                       |
 |-------|-------------------------------|------------------|--------------------------------------------|
+|4.0.x  |unreleased                     |Ruby 2.7+         |OpenSSL 1.1.1-3.4 (current) or LibreSSL 3.9+|
 |3.3.x  |normal maintenance (Ruby 3.4)  |Ruby 2.7+         |OpenSSL 1.0.2-3.4 (current) or LibreSSL 3.1+|
 |3.2.x  |normal maintenance (Ruby 3.3)  |Ruby 2.7+         |OpenSSL 1.0.2-3.4 (current) or LibreSSL 3.1+|
 |3.1.x  |normal maintenance (Ruby 3.2)  |Ruby 2.6+         |OpenSSL 1.0.2-3.4 (current) or LibreSSL 3.1+|
