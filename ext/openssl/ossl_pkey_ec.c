@@ -536,6 +536,7 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
  */
 static VALUE ossl_ec_key_check_key(VALUE self)
 {
+#ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
     const EC_KEY *ec;
@@ -558,7 +559,15 @@ static VALUE ossl_ec_key_check_key(VALUE self)
             ossl_raise(eECError, "EVP_PKEY_public_check");
         }
     }
+
     EVP_PKEY_CTX_free(pctx);
+#else
+    EC_KEY *ec;
+
+    GetEC(self, ec);
+    if (EC_KEY_check_key(ec) != 1)
+       ossl_raise(eECError, "EC_KEY_check_key");
+#endif
 
     return Qtrue;
 }
