@@ -536,6 +536,17 @@ module OpenSSL
         @svr.close
       end
     end
+
+    class QUICListener
+      def accept_connection
+        while true
+          conn = accept_connection_nonblock(exception: false)
+          return conn if conn != :wait_readable
+          wait_readable
+          handle_events
+        end
+      end
+    end
   end
 end
 

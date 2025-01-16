@@ -26,11 +26,13 @@
 
 #define GetSSLCTX(obj, ctx) do { \
     TypedData_Get_Struct((obj), SSL_CTX, &ossl_sslctx_type, (ctx)); \
+    if (!(ctx)) \
+        ossl_raise(rb_eRuntimeError, "SSL_CTX is not initialized"); \
 } while (0)
 
 VALUE mSSL;
-static VALUE eSSLError;
-static VALUE cSSLContext;
+VALUE eSSLError;
+VALUE cSSLContext;
 VALUE cSSLSocket;
 
 static VALUE eSSLErrorWaitReadable;
@@ -65,7 +67,7 @@ ossl_sslctx_free(void *ptr)
     SSL_CTX_free(ptr);
 }
 
-static const rb_data_type_t ossl_sslctx_type = {
+const rb_data_type_t ossl_sslctx_type = {
     "OpenSSL/SSL/CTX",
     {
         ossl_sslctx_mark, ossl_sslctx_free,
@@ -1651,9 +1653,17 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     Check_Type(io, T_FILE);
     rb_ivar_set(self, id_i_io, io);
 
-    ssl = SSL_new(ctx);
-    if (!ssl)
-        ossl_raise(eSSLError, NULL);
+    if (SSL_CTX_get_ssl_method(ctx) == OSSL_QUIC_client_method() ||
+        SSL_CTX_get_ssl_method(ctx) == OSSL_QUIC_server_method()) {
+        ssl = SSL_new_listener(ctx, 0);
+        if (!ssl)
+            ossl_raise(eSSLError, "SSL_new_listener");
+    }
+    else {
+        ssl = SSL_new(ctx);
+        if (!ssl)
+            ossl_raise(eSSLError, "SSL_new");
+    }
     RTYPEDDATA_DATA(self) = ssl;
 
     SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
@@ -1675,7 +1685,7 @@ io_descriptor_fallback(VALUE io)
 #define rb_io_descriptor io_descriptor_fallback
 #endif
 
-static VALUE
+VALUE
 ossl_ssl_setup(VALUE self)
 {
     VALUE io;
@@ -2738,8 +2748,6 @@ Init_ossl_ssl(void)
     eSSLErrorWaitWritable = rb_define_class_under(mSSL, "SSLErrorWaitWritable", eSSLError);
     rb_include_module(eSSLErrorWaitWritable, rb_mWaitWritable);
 
-    Init_ossl_ssl_session();
-
     /* Document-class: OpenSSL::SSL::SSLContext
      *
      * An SSLContext is used to set various options regarding certificates,
@@ -3300,5 +3308,8 @@ Init_ossl_ssl(void)
     DefIVarID(io);
     DefIVarID(context);
     DefIVarID(hostname);
+
+    Init_ossl_ssl_session();
+    Init_ossl_ssl_quic();
 #endif /* !defined(OPENSSL_NO_SOCK) */
 }

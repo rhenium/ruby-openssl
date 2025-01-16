@@ -10,6 +10,12 @@
 #if !defined(_OSSL_SSL_H_)
 #define _OSSL_SSL_H_
 
+#define GetSSLCTX(obj, ctx) do { \
+    TypedData_Get_Struct((obj), SSL_CTX, &ossl_sslctx_type, (ctx)); \
+    if (!(ctx)) \
+        ossl_raise(rb_eRuntimeError, "SSL_CTX is not initialized"); \
+} while (0)
+
 #define GetSSL(obj, ssl) do { \
     TypedData_Get_Struct((obj), SSL, &ossl_ssl_type, (ssl)); \
     if (!(ssl)) { \
@@ -24,13 +30,17 @@
     } \
 } while (0)
 
+extern const rb_data_type_t ossl_sslctx_type;
 extern const rb_data_type_t ossl_ssl_type;
 extern const rb_data_type_t ossl_ssl_session_type;
 extern VALUE mSSL;
+extern VALUE eSSLError;
+extern VALUE cSSLContext;
 extern VALUE cSSLSocket;
 extern VALUE cSSLSession;
 
 void Init_ossl_ssl(void);
 void Init_ossl_ssl_session(void);
+void Init_ossl_ssl_quic(void);
 
 #endif /* _OSSL_SSL_H_ */
