@@ -46,7 +46,7 @@ static VALUE nonblock_kwargs, sym_wait_readable, sym_wait_writable;
 
 struct ossl_bio_ctx {
     VALUE io;
-    int state;
+    int *state;
     int eof;
 };
 
@@ -103,16 +103,14 @@ ossl_bio_get(VALUE obj)
     return bio;
 }
 
-int
-ossl_bio_state(VALUE obj)
+void
+ossl_bio_set_tag_ptr(VALUE obj, int *state)
 {
     BIO *bio;
     TypedData_Get_Struct(obj, BIO, &ossl_bio_type, bio);
 
     struct ossl_bio_ctx *ctx = BIO_get_data(bio);
-    int state = ctx->state;
-    ctx->state = 0;
-    return state;
+    ctx->state = state;
 }
 
 static int
@@ -182,12 +180,9 @@ bio_bwrite(BIO *bio, const char *data, int dlen)
     struct bwrite_args args = { bio, ctx, data, dlen, 0 };
     int state;
 
-    if (ctx->state)
-        return -1;
-
     VALUE ok = rb_protect(bio_bwrite0, (VALUE)&args, &state);
     if (state) {
-        ctx->state = state;
+        *ctx->state = state;
         return -1;
     }
     if (RTEST(ok))
@@ -247,12 +242,9 @@ bio_bread(BIO *bio, char *data, int dlen)
     struct bread_args args = { bio, ctx, data, dlen, 0 };
     int state;
 
-    if (ctx->state)
-        return -1;
-
     VALUE ok = rb_protect(bio_bread0, (VALUE)&args, &state);
     if (state) {
-        ctx->state = state;
+        *ctx->state = state;
         return -1;
     }
     if (RTEST(ok))
@@ -273,15 +265,13 @@ bio_ctrl(BIO *bio, int cmd, long larg, void *parg)
     struct ossl_bio_ctx *ctx = BIO_get_data(bio);
     int state;
 
-    if (ctx->state)
-        return 0;
-
     switch (cmd) {
       case BIO_CTRL_EOF:
         return ctx->eof;
       case BIO_CTRL_FLUSH:
         rb_protect(bio_flush0, (VALUE)ctx, &state);
-        ctx->state = state;
+        if (state)
+            *ctx->state = state;
         return !state;
       default:
         return 0;

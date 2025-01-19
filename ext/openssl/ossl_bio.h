@@ -15,7 +15,7 @@ VALUE ossl_membio2str(BIO*);
 
 VALUE ossl_bio_new(VALUE io);
 BIO *ossl_bio_get(VALUE obj);
-int ossl_bio_state(VALUE obj);
+void ossl_bio_set_tag_ptr(VALUE obj, int *state);
 
 void Init_ossl_bio(void);
 
