@@ -249,9 +249,16 @@ ossl_digest_finish(VALUE self)
 {
     EVP_MD_CTX *ctx;
     VALUE str;
+    int size;
 
     GetDigest(self, ctx);
-    str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
+    size = EVP_MD_CTX_size(ctx);
+    if (size <= 0) {
+        if (EVP_MD_xof(EVP_MD_CTX_get0_md(ctx)))
+            ossl_raise(eDigestError, "output length not set for XOF");
+        ossl_raise(eDigestError, "EVP_MD_CTX_size");
+    }
+    str = rb_str_new(NULL, size);
     if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
 	ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 
