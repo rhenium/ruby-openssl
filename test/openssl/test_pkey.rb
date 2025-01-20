@@ -285,6 +285,39 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal(true, pub3.verify(nil, sig, "data"))
   end
 
+  def test_encapsulate_dhkem
+    return unless openssl?(3, 0, 0)
+
+    # RFC 9180 Appendix A.1 DHKEM(X25519, HKDF-SHA256)
+    ikmE = ["7268600d403fce431561aef583ee1613527cff655c1343f29812e66706df3234"].pack("H*")
+    pkEm = ["37fda3567bdbd628e88668c3c8d7e97d1d1253b6d4ea6d44c150f741f1bf4431"].pack("H*")
+    pkRm = ["3948cfe0ad1ddb695d780e59077195da6c56506b027329794ab02bca80815c4d"].pack("H*")
+    skRm = ["4612c550263fc8ad58375df3f557aac531d26850903e55a9f23f21d8534e8ac8"].pack("H*")
+    enc = ["37fda3567bdbd628e88668c3c8d7e97d1d1253b6d4ea6d44c150f741f1bf4431"].pack("H*")
+    shared_secret = ["fe0e18c9f024ce43799ae393c7e8fe8fce9d218875e8227b0187c04e7d2ea1fc"].pack("H*")
+
+    pkE = OpenSSL::PKey.new_raw_public_key("X25519", pkEm)
+    pkR = OpenSSL::PKey.new_raw_public_key("X25519", pkRm)
+    skR = OpenSSL::PKey.new_raw_private_key("X25519", skRm)
+
+    # Basic usage. "operation" is required for OpenSSL < 3.4
+    assert_equal([enc, shared_secret],
+                 pkR.encapsulate("operation" => "DHKEM", "ikme" => ikmE))
+    assert_equal(shared_secret, skR.decapsulate(enc, "operation" => "DHKEM"))
+
+    # For X25519, enc is pkE's public key unmodified
+    assert_equal(pkE.raw_public_key, enc)
+
+    # ikmE is not specified -> key pair pkE/skE is randomly generated
+    enc2, shared_secret2 = pkR.encapsulate([["operation", "DHKEM"]])
+    assert_not_equal(enc, enc2)
+    assert_not_equal(shared_secret, shared_secret2)
+    assert_equal(shared_secret2, skR.decapsulate(enc2, [["operation", "DHKEM"]]))
+
+    # PKey#decapsulate requires a private key
+    assert_raise(OpenSSL::PKey::PKeyError) { pkR.decapsulate(enc) }
+  end
+
   def test_raw_initialize_errors
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }

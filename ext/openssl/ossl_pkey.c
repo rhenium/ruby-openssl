@@ -1651,6 +1651,166 @@ ossl_pkey_decrypt(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+#ifdef HAVE_EVP_PKEY_ENCAPSULATE_INIT
+static EVP_PKEY_CTX *
+pkey_kem_init(EVP_PKEY *pkey, VALUE params, int encap)
+{
+    EVP_PKEY_CTX *ctx;
+    int ret, state;
+
+    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pkey, NULL);
+    if (!ctx)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new_from_pkey");
+
+    ret = encap
+        ? EVP_PKEY_encapsulate_init(ctx, NULL)
+        : EVP_PKEY_decapsulate_init(ctx, NULL);
+    if (ret <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        const char *func = encap
+            ? "EVP_PKEY_encapsulate_init"
+            : "EVP_PKEY_decapsulate_init";
+        ossl_raise(ePKeyError, func);
+    }
+
+    const OSSL_PARAM *settable = EVP_PKEY_CTX_settable_params(ctx);
+    if (!settable) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_settable_params");
+    }
+    OSSL_PARAM *built = ossl_build_params(settable, params, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    ret = EVP_PKEY_CTX_set_params(ctx, built);
+    OSSL_PARAM_free(built);
+    if (ret <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_set_params");
+    }
+
+    return ctx;
+}
+
+/*
+ * call-seq:
+ *    pkey.encapsulate([params]) -> [wrappedkey, genkey]
+ *
+ * Performs a key encapsulation operation using a public key _pkey_.
+ * Returns the pair of the ciphertext _wrappedkey_ and the shared secret
+ * _genkey_.
+ *
+ * The ciphertext is the encapsulated key, which can be passed to the holder of
+ * the corresponding private key to be decapsulated to the shared secret using
+ * #decapsulate.
+ *
+ * _params_ is an Enumerable that lists the parameters and their values to be
+ * passed to the algorithm. See the corresponsing EVP_KEM-*(3) man page for
+ * details.
+ *
+ * Added in version 4.1. Available with OpenSSL 3.0 or later.
+ * See also the man page EVP_PKEY_encapsulate(3).
+ *
+ * == Example
+ *   privkey = OpenSSL::PKey.generate_key("RSA", rsa_keygen_bits: 2048)
+ *   data = "secret data"
+ *   encrypted = pkey.encrypt(data, rsa_padding_mode: "oaep")
+ *   decrypted = pkey.decrypt(data, rsa_padding_mode: "oaep")
+ *   p decrypted #=> "secret data"
+ */
+static VALUE
+ossl_pkey_encapsulate(int argc, VALUE *argv, VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE params;
+    int state;
+
+    rb_scan_args(argc, argv, "01", &params);
+    GetPKey(self, pkey);
+
+    EVP_PKEY_CTX *ctx = pkey_kem_init(pkey, params, 1);
+
+    size_t wrappedkeylen, genkeylen;
+    if (EVP_PKEY_encapsulate(ctx, NULL, &wrappedkeylen, NULL, &genkeylen) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+    }
+    VALUE wrappedkey = ossl_str_new(NULL, (long)wrappedkeylen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    VALUE genkey = ossl_str_new(NULL, (long)genkeylen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_encapsulate(ctx, (unsigned char *)RSTRING_PTR(wrappedkey),
+                             &wrappedkeylen,
+                             (unsigned char *)RSTRING_PTR(genkey),
+                             &genkeylen) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+    }
+    EVP_PKEY_CTX_free(ctx);
+
+    rb_str_set_len(wrappedkey, wrappedkeylen);
+    rb_str_set_len(genkey, genkeylen);
+    return rb_assoc_new(wrappedkey, genkey);
+}
+
+/*
+ * call-seq:
+ *    pkey.encapsulate(wrappedkey [, params]) -> genkey
+ *
+ * Performs a key decapsulation operation using a KEM algorithm with the
+ * private key _pkey_.
+ *
+ * See #encapsulate for details.
+ */
+static VALUE
+ossl_pkey_decapsulate(int argc, VALUE *argv, VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE wrapped, params;
+    int state;
+
+    rb_scan_args(argc, argv, "11", &wrapped, &params);
+    GetPKey(self, pkey);
+    StringValue(wrapped);
+
+    EVP_PKEY_CTX *ctx = pkey_kem_init(pkey, params, 0);
+
+    size_t unwrappedlen;
+    if (EVP_PKEY_decapsulate(ctx, NULL, &unwrappedlen,
+                             (const unsigned char *)RSTRING_PTR(wrapped),
+                             (size_t)RSTRING_LEN(wrapped)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+    }
+    VALUE unwrapped = ossl_str_new(NULL, (long)unwrappedlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_decapsulate(ctx, (unsigned char *)RSTRING_PTR(unwrapped),
+                             &unwrappedlen,
+                             (const unsigned char *)RSTRING_PTR(wrapped),
+                             (size_t)RSTRING_LEN(wrapped)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+    }
+    EVP_PKEY_CTX_free(ctx);
+
+    rb_str_set_len(unwrapped, unwrappedlen);
+    return unwrapped;
+}
+#else
+# define ossl_pkey_encapsulate rb_f_notimplement
+# define ossl_pkey_decapsulate rb_f_notimplement
+#endif
+
 /*
  * INIT
  */
@@ -1769,6 +1929,8 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "derive", ossl_pkey_derive, -1);
     rb_define_method(cPKey, "encrypt", ossl_pkey_encrypt, -1);
     rb_define_method(cPKey, "decrypt", ossl_pkey_decrypt, -1);
+    rb_define_method(cPKey, "encapsulate", ossl_pkey_encapsulate, -1);
+    rb_define_method(cPKey, "decapsulate", ossl_pkey_decapsulate, -1);
 
     id_private_q = rb_intern("private?");
 
