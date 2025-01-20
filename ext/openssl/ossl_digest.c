@@ -283,9 +283,20 @@ ossl_digest_finish(VALUE self)
 {
     EVP_MD_CTX *ctx;
     VALUE str;
+    int size;
 
     GetDigest(self, ctx);
-    str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
+    size = EVP_MD_CTX_size(ctx);
+    if (size <= 0) {
+#ifdef EVP_MD_FLAG_XOF /* Not in LibreSSL 4.3 (latest) */
+        if (EVP_MD_flags(EVP_MD_CTX_get0_md(ctx)) & EVP_MD_FLAG_XOF)
+            ossl_raise(eDigestError,
+                       "output length not set for XOF; " \
+                       "use OpenSSL::Digest#squeeze instead");
+#endif
+        ossl_raise(eDigestError, "EVP_MD_CTX_size");
+    }
+    str = rb_str_new(NULL, size);
     if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
         ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 

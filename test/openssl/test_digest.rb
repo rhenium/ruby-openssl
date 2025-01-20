@@ -157,6 +157,15 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(output, digest.squeeze(8) + digest.squeeze(9))
   end
 
+  def test_xof_digest
+    # SHAKE had a default output length in OpenSSL < 3.4
+    return unless openssl? && openssl?(3, 4, 0)
+
+    digest = OpenSSL::Digest.new("SHAKE128")
+    assert_raise(OpenSSL::Digest::DigestError) { digest.digest }
+    assert_match(/#<OpenSSL::Digest: SHAKE128/, digest.inspect)
+  end
+
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
 
