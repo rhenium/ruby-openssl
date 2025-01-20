@@ -111,6 +111,32 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(OpenSSL::Digest.hexdigest('SHA3-512', ""), s512)
   end
 
+  def test_shake128
+    omit "SHAKE128 is not implemented" unless digest_available?("shake128")
+
+    # SHAKE128 is an extendable-output function (XOF), which requires the length
+    # to be specified by the user
+    #
+    # NIST CAVP test vectors, "SHA-3 XOF Test Vectors for Byte-Oriented Output"
+    # SHAKE128VariableOut.rsp, COUNT = 9
+    outputlen = 136 # in bits
+    msg = ["f167511ec8864979302237abea4cf7ef"].pack("H*")
+    output = ["20f8938daa54b260860a104f8556278bac"].pack("H*")
+
+    digest = OpenSSL::Digest.new("SHAKE128")
+    digest.update(msg)
+    assert_equal(output, digest.dup.squeeze(17))
+    assert_equal(output, digest.squeeze(8) + digest.squeeze(9))
+
+    # TODO: EVP_DigestFinal_ex() can also be used with SHAKE128, but it requires
+    # the length to be specified by EVP_MD_CTX_set_params(). This is not
+    # supported yet.
+    digest = OpenSSL::Digest.new("SHAKE128")
+    assert_raise_with_message(OpenSSL::Digest::DigestError, /XOF/) {
+      digest.digest
+    }
+  end
+
   def test_digest_by_oid_and_name_sha2
     check_digest(OpenSSL::ASN1::ObjectId.new("SHA224"))
     check_digest(OpenSSL::ASN1::ObjectId.new("SHA256"))

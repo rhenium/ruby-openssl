@@ -266,6 +266,39 @@ ossl_digest_finish(VALUE self)
 }
 
 /*
+ * call-seq:
+ *    digest.squeeze(length) -> string
+ *
+ * Gets the next output from an extendable-output function (XOF). This method
+ * can be called multiple times to get more output data.
+ *
+ * Note that this method updates the state of the digest object unlike
+ * #digest or #hexdigest. After calling this method, #update and #<< may not be
+ * called anymore.
+ *
+ * This method is only available for extendable-output functions (XOFs).
+ *
+ * This method was added in version 4.0.0.
+ */
+static VALUE
+ossl_digest_squeeze(VALUE self, VALUE length)
+{
+    EVP_MD_CTX *ctx;
+    VALUE str;
+    size_t size;
+
+    GetDigest(self, ctx);
+    size = NUM2SIZET(length);
+    if (size > LONG_MAX)
+        rb_raise(rb_eArgError, "length too large");
+    str = rb_str_new(NULL, (long)size);
+    if (!EVP_DigestSqueeze(ctx, (unsigned char *)RSTRING_PTR(str), size))
+        ossl_raise(eDigestError, "EVP_DigestSqueeze");
+
+    return str;
+}
+
+/*
  *  call-seq:
  *      digest.name -> string
  *
@@ -448,4 +481,5 @@ Init_ossl_digest(void)
     rb_define_method(cDigest, "block_length", ossl_digest_block_length, 0);
 
     rb_define_method(cDigest, "name", ossl_digest_name, 0);
+    rb_define_method(cDigest, "squeeze", ossl_digest_squeeze, 1);
 }
