@@ -898,9 +898,15 @@ parse_proto_version(VALUE str)
  *    ctx.min_version = :TLS1_2
  *    ctx.min_version = nil
  *
- * Sets the lower bound on the supported SSL/TLS protocol version. The
+ * Sets the lower bound of the supported SSL/TLS protocol version. The
  * version may be specified by an integer constant named
  * OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
+ *
+ * See also #security_level=, which may further restrict the allowed protocol
+ * versions.
+ *
+ * OpenSSL 1.1.1 or later may define default version bounds in the OpenSSL
+ * configuration file. See the man page config(5ossl) for details.
  *
  * === Example
  *   ctx = OpenSSL::SSL::SSLContext.new
