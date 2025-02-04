@@ -1415,6 +1415,25 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_minmax_version_getters
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+    assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.min_version)
+    ctx.min_version = 0
+    assert_equal(0, ctx.min_version)
+
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.max_version = :TLS1_2
+    assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.max_version)
+    ctx.max_version = nil
+    assert_equal(0, ctx.max_version)
+
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ssl_version = :TLSv1_2
+    assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.min_version)
+    assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.max_version)
+  end
+
   def test_minmax_version_system_default
     omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 

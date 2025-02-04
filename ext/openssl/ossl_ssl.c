@@ -894,6 +894,29 @@ parse_proto_version(VALUE str)
 
 /*
  * call-seq:
+ *    ctx.min_version -> integer
+ *
+ * Gets the lower bound of the supported SSL/TLS protocol version. This method
+ * returns a non-zero Integer representing the protocol version, which has a
+ * corresponding constant in the OpenSSL::SSL module, or 0 if no lower bound is
+ * set.
+ *
+ * === Example
+ *   ctx = OpenSSL::SSL::SSLContext.new
+ *   ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+ *   ctx.min_version # => 0x0303 (== OpenSSL::SSL::TLS1_2_VERSION)
+ */
+static VALUE
+ossl_sslctx_get_min_version(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    return INT2NUM(SSL_CTX_get_min_proto_version(ctx));
+}
+
+/*
+ * call-seq:
  *    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
  *    ctx.min_version = :TLS1_2
  *    ctx.min_version = nil
@@ -929,6 +952,22 @@ ossl_sslctx_set_min_version(VALUE self, VALUE v)
     if (!SSL_CTX_set_min_proto_version(ctx, version))
         ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
     return v;
+}
+
+/*
+ * call-seq:
+ *    ctx.max_version -> integer
+ *
+ * Gets the upper bound of the supported SSL/TLS protocol version. See
+ * #min_version for more information.
+ */
+static VALUE
+ossl_sslctx_get_max_version(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    return INT2NUM(SSL_CTX_get_max_proto_version(ctx));
 }
 
 /*
@@ -2888,7 +2927,9 @@ Init_ossl_ssl(void)
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
+    rb_define_method(cSSLContext, "min_version", ossl_sslctx_get_min_version, 0);
     rb_define_method(cSSLContext, "min_version=", ossl_sslctx_set_min_version, 1);
+    rb_define_method(cSSLContext, "max_version", ossl_sslctx_get_max_version, 0);
     rb_define_method(cSSLContext, "max_version=", ossl_sslctx_set_max_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
