@@ -225,8 +225,15 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
                 break if readable.include? stop_pipe_r
                 ssl = ssls.accept
                 accept_proc.call(ssl)
+              rescue Errno::ECONNRESET, Errno::ECONNABORTED
+                retry if ignore_listener_error
+                # Ignore errors while writing TLS 1.3 NewSessionTicket on
+                # Windows/Winsock. This is not a critical error and is
+                # suppressed in OpenSSL on other platforms, but not on Windows.
+                retry if /mswin|mingw/ =~ RUBY_PLATFORM
+                raise
               rescue OpenSSL::SSL::SSLError, IOError, Errno::EBADF, Errno::EINVAL,
-                     Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
+                     Errno::ENOTSOCK
                 retry if ignore_listener_error
                 raise
               end
