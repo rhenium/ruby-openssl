@@ -38,7 +38,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal nil, ctx.setup
   end
 
-  def test_ctx_options_config
+  def test_ctx_openssl_conf
     omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
     Tempfile.create("openssl.cnf") { |f|
@@ -50,12 +50,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         system_default = ssl_default_sect
         [ssl_default_sect]
         Options = -SessionTicket
+        MinProtocol = TLSv1.2
+        MaxProtocol = TLSv1.2
       EOF
       f.close
 
       assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl"], <<~"end;")
         ctx = OpenSSL::SSL::SSLContext.new
         assert_equal OpenSSL::SSL::OP_NO_TICKET, ctx.options & OpenSSL::SSL::OP_NO_TICKET
+        assert_equal OpenSSL::SSL::TLS1_2_VERSION, ctx.min_version
+        assert_equal OpenSSL::SSL::TLS1_2_VERSION, ctx.max_version
         ctx.set_params
         assert_equal OpenSSL::SSL::OP_NO_TICKET, ctx.options & OpenSSL::SSL::OP_NO_TICKET
       end;
@@ -1432,99 +1436,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx.ssl_version = :TLSv1_2
     assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.min_version)
     assert_equal(OpenSSL::SSL::TLS1_2_VERSION, ctx.max_version)
-  end
-
-  def test_minmax_version_system_default
-    omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
-
-    Tempfile.create("openssl.cnf") { |f|
-      f.puts(<<~EOF)
-        openssl_conf = default_conf
-        [default_conf]
-        ssl_conf = ssl_sect
-        [ssl_sect]
-        system_default = ssl_default_sect
-        [ssl_default_sect]
-        MaxProtocol = TLSv1.2
-      EOF
-      f.close
-
-      start_server(ignore_listener_error: true) do |port|
-        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
-          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
-          ctx = OpenSSL::SSL::SSLContext.new
-          ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-          ssl.sync_close = true
-          ssl.connect
-          assert_equal("TLSv1.2", ssl.ssl_version)
-          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
-          ssl.close
-        end;
-
-        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
-          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
-          ctx = OpenSSL::SSL::SSLContext.new
-          ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
-          ctx.max_version = nil
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-          ssl.sync_close = true
-          ssl.connect
-          assert_equal("TLSv1.3", ssl.ssl_version)
-          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
-          ssl.close
-        end;
-      end
-    }
-  end
-
-  def test_respect_system_default_min
-    omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
-
-    Tempfile.create("openssl.cnf") { |f|
-      f.puts(<<~EOF)
-        openssl_conf = default_conf
-        [default_conf]
-        ssl_conf = ssl_sect
-        [ssl_sect]
-        system_default = ssl_default_sect
-        [ssl_default_sect]
-        MinProtocol = TLSv1.3
-      EOF
-      f.close
-
-      ctx_proc = proc { |ctx|
-        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
-          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
-          ctx = OpenSSL::SSL::SSLContext.new
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-          ssl.sync_close = true
-          assert_raise(OpenSSL::SSL::SSLError) do
-            ssl.connect
-          end
-          ssl.close
-        end;
-      end
-
-      ctx_proc = proc { |ctx|
-        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
-          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
-          ctx = OpenSSL::SSL::SSLContext.new
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-          ssl.sync_close = true
-          ssl.connect
-          assert_equal("TLSv1.3", ssl.ssl_version)
-          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
-          ssl.close
-        end;
-      end
-    }
   end
 
   def test_options_disable_versions
