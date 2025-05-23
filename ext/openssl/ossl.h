@@ -168,6 +168,14 @@ void ossl_clear_error(void);
 VALUE ossl_to_der(VALUE);
 VALUE ossl_to_der_if_possible(VALUE);
 
+#ifdef OSSL_PARAM_INTEGER
+/*
+ * Build OSSL_PARAM array from Hash/Enumerable. The OSSL_PARAM array is
+ * allocated by OpenSSL and is independent of the Ruby objects passed in.
+ */
+OSSL_PARAM *ossl_build_params(const OSSL_PARAM *settable, VALUE hash, int *state);
+#endif
+
 /*
  * Debug
  */
