@@ -151,6 +151,47 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
     assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
   end
 
+  def test_derive
+    unless openssl?(3, 0, 0) || OpenSSL::KDF.respond_to?(:derive)
+      omit "EVP_KDF_derive() is not supported"
+    end
+
+    # https://www.rfc-editor.org/rfc/rfc6070.html#section-2
+    # PBKDF2 HMAC-SHA1 Test Vectors, 5th example
+    params = [
+      ["pass", "passwordPASSWORDpassword"],
+      ["salt", "saltSALTsaltSALTsaltSALTsaltSALTsalt"],
+      ["iter", 4096],
+      ["digest", "SHA1"],
+    ]
+    dk = B("3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038")
+    assert_equal(dk, OpenSSL::KDF.derive("PBKDF2", 25, params))
+
+    params_hash = params.map { |k, v| [k.to_sym, v] }.to_h
+    assert_equal(dk, OpenSSL::KDF.derive("PBKDF2", 25, params_hash))
+
+    # param key not in settable_params
+    assert_raise_with_message(ArgumentError, /nosucha.*iter/) {
+      OpenSSL::KDF.derive("PBKDF2", 20, [["nosucha", "param"]])
+    }
+
+    # "pass" for PBKDF2 is an OSSL_PARAM_OCTET_STRING
+    assert_raise_with_message(ArgumentError, /pass.*string value/) {
+      OpenSSL::KDF.derive("PBKDF2", 20, [["pass", 123]])
+    }
+
+    # "iter" for PBKDF2 is an OSSL_PARAM_UNSIGNED_INTEGER
+    assert_raise_with_message(ArgumentError, /iter.*non-negative/) {
+      OpenSSL::KDF.derive("PBKDF2", 20, [["iter", -1]])
+    }
+
+    # "digest" for PBKDF2 is an OSSL_PARAM_UTF8_STRING, which requires a
+    # NUL-terminated string
+    assert_raise_with_message(ArgumentError, /digest.*NUL-terminated/) {
+      OpenSSL::KDF.derive("PBKDF2", 20, [["digest", "SHA1\0"]])
+    }
+  end
+
   private
 
   def B(ary)
