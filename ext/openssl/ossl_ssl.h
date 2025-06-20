@@ -30,6 +30,12 @@ extern VALUE mSSL;
 extern VALUE cSSLSocket;
 extern VALUE cSSLSession;
 
+struct ossl_ssl_data {
+    VALUE self;
+    int cb_state;
+};
+struct ossl_ssl_data *ossl_ssl_data(const SSL *ssl);
+
 void Init_ossl_ssl(void);
 void Init_ossl_ssl_session(void);
 
