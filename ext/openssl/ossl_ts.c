@@ -253,15 +253,12 @@ ossl_ts_req_get_msg_imprint(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     ASN1_OCTET_STRING *hashed_msg;
-    VALUE ret;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
-
-    ret = rb_str_new((const char *)hashed_msg->data, hashed_msg->length);
-
-    return ret;
+    return rb_str_new((const char *)ASN1_STRING_get0_data(hashed_msg),
+                      ASN1_STRING_length(hashed_msg));
 }
 
 /*
@@ -470,7 +467,7 @@ ossl_ts_req_to_der(VALUE self)
         ossl_raise(eTimestampError, "Message imprint missing algorithm");
 
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
-    if (!hashed_msg->length)
+    if (!ASN1_STRING_length(hashed_msg))
         ossl_raise(eTimestampError, "Message imprint missing hashed message");
 
     return asn1_to_der((void *)req, (int (*)(void *, unsigned char **))i2d_TS_REQ);
@@ -976,14 +973,12 @@ ossl_ts_token_info_get_msg_imprint(VALUE self)
     TS_TST_INFO *info;
     TS_MSG_IMPRINT *mi;
     ASN1_OCTET_STRING *hashed_msg;
-    VALUE ret;
 
     GetTSTokenInfo(self, info);
     mi = TS_TST_INFO_get_msg_imprint(info);
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
-    ret = rb_str_new((const char *)hashed_msg->data, hashed_msg->length);
-
-    return ret;
+    return rb_str_new((const char *)ASN1_STRING_get0_data(hashed_msg),
+                      ASN1_STRING_length(hashed_msg));
 }
 
 /*

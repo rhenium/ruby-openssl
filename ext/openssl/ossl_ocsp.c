@@ -1545,13 +1545,13 @@ ossl_ocspcid_get_issuer_name_hash(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OCTET_STRING *name_hash;
-    VALUE ret;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(&name_hash, NULL, NULL, NULL, id);
 
-    ret = rb_str_new(NULL, name_hash->length * 2);
-    ossl_bin2hex(name_hash->data, RSTRING_PTR(ret), name_hash->length);
+    int length = ASN1_STRING_length(name_hash);
+    VALUE ret = rb_str_new(NULL, length * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(name_hash), RSTRING_PTR(ret), length);
 
     return ret;
 }
@@ -1568,13 +1568,13 @@ ossl_ocspcid_get_issuer_key_hash(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OCTET_STRING *key_hash;
-    VALUE ret;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, NULL, &key_hash, NULL, id);
 
-    ret = rb_str_new(NULL, key_hash->length * 2);
-    ossl_bin2hex(key_hash->data, RSTRING_PTR(ret), key_hash->length);
+    int length = ASN1_STRING_length(key_hash);
+    VALUE ret = rb_str_new(NULL, length * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(key_hash), RSTRING_PTR(ret), length);
 
     return ret;
 }

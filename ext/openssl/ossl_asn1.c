@@ -114,7 +114,9 @@ ossl_time_split(VALUE time, time_t *sec, int *days)
 VALUE
 asn1str_to_str(const ASN1_STRING *str)
 {
-    return rb_str_new((const char *)str->data, str->length);
+    int length = ASN1_STRING_length(str);
+    const unsigned char *data = ASN1_STRING_get0_data(str);
+    return rb_str_new((const char *)data, length);
 }
 
 /*
@@ -129,7 +131,7 @@ asn1integer_to_num(const ASN1_INTEGER *ai)
     if (!ai) {
         ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
-    if (ai->type == V_ASN1_ENUMERATED)
+    if (ASN1_STRING_type(ai) == V_ASN1_ENUMERATED)
         /* const_cast: workaround for old OpenSSL */
         bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
     else
@@ -226,7 +228,7 @@ obj_to_asn1int(VALUE obj)
 }
 
 static ASN1_BIT_STRING*
-obj_to_asn1bstr(VALUE obj, long unused_bits)
+obj_to_asn1bstr(VALUE obj, int unused_bits)
 {
     ASN1_BIT_STRING *bstr;
 
@@ -234,12 +236,13 @@ obj_to_asn1bstr(VALUE obj, long unused_bits)
         ossl_raise(eASN1Error, "unused_bits for a bitstring value must be in "\
                    "the range 0 to 7");
     StringValue(obj);
-    if(!(bstr = ASN1_BIT_STRING_new()))
-        ossl_raise(eASN1Error, NULL);
-    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj));
-    bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
-    bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT | unused_bits;
-
+    if (!(bstr = ASN1_BIT_STRING_new()))
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_new");
+    if (!ASN1_BIT_STRING_set1(bstr, (unsigned char *)RSTRING_PTR(obj),
+                              RSTRING_LENINT(obj), unused_bits)) {
+        ASN1_BIT_STRING_free(bstr);
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_set1");
+    }
     return bstr;
 }
 
