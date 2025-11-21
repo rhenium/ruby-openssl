@@ -362,24 +362,16 @@ decode_int(unsigned char* der, long length)
 }
 
 static VALUE
-decode_bstr(unsigned char* der, long length, long *unused_bits)
+decode_bstr_contents(unsigned char *ptr, long len, long *unused_bits)
 {
-    ASN1_BIT_STRING *bstr;
-    const unsigned char *p;
-    long len;
-    VALUE ret;
+    if (len == 0)
+        ossl_raise(eASN1Error, "string too short");
+    uint8_t initial = ptr[0];
+    if (initial > 7)
+        ossl_raise(eASN1Error, "invalid bit string bits left");
 
-    p = der;
-    if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
-        ossl_raise(eASN1Error, NULL);
-    len = bstr->length;
-    *unused_bits = 0;
-    if(bstr->flags & ASN1_STRING_FLAG_BITS_LEFT)
-        *unused_bits = bstr->flags & 0x07;
-    ret = rb_str_new((const char *)bstr->data, len);
-    ASN1_BIT_STRING_free(bstr);
-
-    return ret;
+    *unused_bits = initial;
+    return rb_str_new((const char *)(ptr + 1), len - 1);
 }
 
 static VALUE
@@ -777,7 +769,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
             value = decode_int(p, hlen+length);
             break;
           case V_ASN1_BIT_STRING:
-            value = decode_bstr(p, hlen+length, &flag);
+            value = decode_bstr_contents(p + hlen, length, &flag);
             break;
           case V_ASN1_NULL:
             value = decode_null(p, hlen+length);
