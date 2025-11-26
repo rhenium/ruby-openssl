@@ -116,35 +116,55 @@ ossl_sslctx_s_alloc(VALUE klass)
     return obj;
 }
 
+struct client_cert_cb_args {
+    VALUE ssl_obj;
+    VALUE cb;
+    X509 **x509;
+    EVP_PKEY **pkey;
+};
+
 static VALUE
-ossl_call_client_cert_cb(VALUE obj)
+ossl_call_client_cert_cb(VALUE args_)
 {
-    VALUE ctx_obj, cb, ary, cert, key;
-
-    ctx_obj = rb_attr_get(obj, id_i_context);
-    cb = rb_attr_get(ctx_obj, id_i_client_cert_cb);
-    if (NIL_P(cb))
-        return Qnil;
-
-    ary = rb_funcallv(cb, id_call, 1, &obj);
+    struct client_cert_cb_args *args = (struct client_cert_cb_args *)args_;
+    VALUE ary = rb_funcall(args->cb, id_call, 1, args->ssl_obj);
     Check_Type(ary, T_ARRAY);
-    GetX509CertPtr(cert = rb_ary_entry(ary, 0));
-    GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
+    if (RARRAY_LEN(ary) != 2)
+        rb_raise(rb_eTypeError, "client_cert_cb must return [cert, key]");
 
-    return rb_ary_new3(2, cert, key);
+    X509 *cert = GetX509CertPtr(rb_ary_entry(ary, 0));
+    EVP_PKEY *pkey = GetPrivPKeyPtr(rb_ary_entry(ary, 1));
+    if (!X509_up_ref(cert))
+        ossl_raise(eSSLError, "X509_up_ref");
+    if (!EVP_PKEY_up_ref(pkey)) {
+        X509_free(cert);
+        ossl_raise(eSSLError, "EVP_PKEY_up_ref");
+    }
+
+    *args->x509 = cert;
+    *args->pkey = pkey;
+    return Qnil;
 }
 
 static int
 ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 {
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
-    VALUE ret = rb_protect(ossl_call_client_cert_cb, p->self, NULL);
-    if (NIL_P(ret))
+    if (p->cb_state)
         return 0;
 
-    *x509 = DupX509CertPtr(RARRAY_AREF(ret, 0));
-    *pkey = DupPKeyPtr(RARRAY_AREF(ret, 1));
+    VALUE ctx_obj = rb_attr_get(p->self, id_i_context);
+    VALUE cb = rb_attr_get(ctx_obj, id_i_client_cert_cb);
+    if (NIL_P(cb))
+        return 0;
 
+    int state;
+    struct client_cert_cb_args args = { p->self, cb, x509, pkey };
+    rb_protect(ossl_call_client_cert_cb, (VALUE)&args, &state);
+    if (state) {
+        p->cb_state = state;
+        return 0;
+    }
     return 1;
 }
 
