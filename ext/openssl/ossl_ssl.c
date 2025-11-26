@@ -276,12 +276,12 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 static VALUE
 ossl_call_session_get_cb(VALUE ary)
 {
-    VALUE ssl_obj, cb;
+    VALUE ssl_obj, sslctx_obj, cb;
 
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
-
-    cb = rb_funcall(ssl_obj, rb_intern("session_get_cb"), 0);
+    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb = rb_attr_get(sslctx_obj, id_i_session_get_cb);
     if (NIL_P(cb)) return Qnil;
 
     return rb_funcallv(cb, id_call, 1, &ary);
@@ -317,12 +317,12 @@ ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *cop
 static VALUE
 ossl_call_session_new_cb(VALUE ary)
 {
-    VALUE ssl_obj, cb;
+    VALUE ssl_obj, sslctx_obj, cb;
 
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
-
-    cb = rb_funcall(ssl_obj, rb_intern("session_new_cb"), 0);
+    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb = rb_attr_get(sslctx_obj, id_i_session_new_cb);
     if (NIL_P(cb)) return Qnil;
 
     return rb_funcallv(cb, id_call, 1, &ary);
