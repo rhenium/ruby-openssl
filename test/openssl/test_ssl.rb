@@ -1616,7 +1616,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_renegotiation_cb
     num_handshakes = 0
-    renegotiation_cb = Proc.new { |ssl| num_handshakes += 1 }
+    renegotiation_cb = lambda { |ssl|
+      assert_kind_of(OpenSSL::SSL::SSLSocket, ssl)
+      num_handshakes += 1
+    }
     ctx_proc = Proc.new { |ctx| ctx.renegotiation_cb = renegotiation_cb }
     start_server(ctx_proc: ctx_proc) { |port|
       server_connect(port) { |ssl|
@@ -1624,6 +1627,27 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     }
+
+    sock1, sock2 = socketpair
+    th = Thread.new {
+      ssl2 = OpenSSL::SSL::SSLSocket.new(sock2)
+      begin
+        ssl2.connect_nonblock(exception: false)
+      rescue OpenSSL::SSL::SSLError
+      end
+    }
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.renegotiation_cb = lambda { |ssl| raise "in renegotiation_cb" }
+    ctx1.add_certificate(@svr_cert, @svr_key)
+    ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    assert_raise_with_message(RuntimeError, "in renegotiation_cb") {
+      ssl1.accept
+    }
+    th.join
+  ensure
+    th&.kill&.join
+    sock1&.close
+    sock2&.close
   end
 
   def test_alpn_protocol_selection_ary
