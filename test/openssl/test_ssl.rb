@@ -905,14 +905,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
-  def socketpair
-    if defined? UNIXSocket
-      UNIXSocket.pair
-    else
-      Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-    end
-  end
-
   def test_keylog_cb
     omit "Keylog callback is not supported" if libressl?
 
@@ -1006,60 +998,22 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_servername_cb_raises_an_exception_on_unknown_objects
-    hostname = 'example.org'
-
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.cert = @svr_cert
-    ctx2.key = @svr_key
-    ctx2.servername_cb = lambda { |args| Object.new }
-
-    sock1, sock2 = socketpair
-
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    s1.hostname = hostname
-    t = Thread.new {
-      assert_raise(OpenSSL::SSL::SSLError) do
-        s1.connect
-      end
-    }
-
-    assert_raise(ArgumentError) do
-      s2.accept
+    server_proc = proc do |sock|
+      sctx = make_server_context
+      sctx.servername_cb = lambda { |args| Object.new }
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      assert_raise(ArgumentError) { ssl.accept }
     end
-
-    assert t.join
-  ensure
-    sock1.close if sock1
-    sock2.close if sock2
-  end
-
-  def test_accept_errors_include_peeraddr
-    context = OpenSSL::SSL::SSLContext.new
-    context.cert = @svr_cert
-    context.key = @svr_key
-
-    server = TCPServer.new("127.0.0.1", 0)
-    port = server.connect_address.ip_port
-
-    ssl_server = OpenSSL::SSL::SSLServer.new(server, context)
-
-    t = Thread.new do
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /peeraddr=127\.0\.0\.1/) do
-        ssl_server.accept
-      end
+    start_server_proc(server_proc) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.hostname = "example.org"
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /unrecognized.name/i) {
+        ssl.connect
+      }
+    ensure
+      sock&.close
     end
-
-    sock = TCPSocket.new("127.0.0.1", port)
-    sock << "\x00" * 1024
-
-    assert t.join
-  ensure
-    sock&.close
-    server.close
   end
 
   def test_verify_hostname_on_connect
@@ -1187,6 +1141,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         server_connect(port, ctx)
       }
     }
+  end
+
+  def test_accept_errors_include_peeraddr
+    start_server(ignore_listener_error: true) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /peeraddr=127\.0\.0\.1/) do
+        server_connect(port, ctx) { }
+      end
+    end
   end
 
   def test_unset_OP_ALL
@@ -1575,30 +1539,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_alpn_protocol_selection_cancel
-    sock1, sock2 = socketpair
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    ctx1.cert = @svr_cert
-    ctx1.key = @svr_key
-    ctx1.alpn_select_cb = -> (protocols) { nil }
-    ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.alpn_protocols = ["http/1.1"]
-    ssl2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-
-    t = Thread.new {
-      ssl2.connect_nonblock(exception: false)
-    }
-    assert_raise_with_message(TypeError, /nil/) { ssl1.accept }
-    t.join
-  ensure
-    sock1&.close
-    sock2&.close
-    ssl1&.close
-    ssl2&.close
-    t&.kill
-    t&.join
+    server_proc = proc do |sock|
+      sctx = make_server_context
+      sctx.alpn_select_cb = -> (protocols) { nil }
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      assert_raise_with_message(TypeError, /nil/) { ssl.accept }
+    end
+    start_server_proc(server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.alpn_protocols = ["http/1.1"]
+      # no_application_protocol alert
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /alert number 120/) {
+        server_connect(port, ctx) { }
+      }
+    end
   end
 
   def test_npn_protocol_selection_ary
@@ -1795,8 +1749,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # Here is not OK
     # TLS1.2 is supported, fallback to TLS1.1 (downgrade attack) and signaling the fallback
     # Server support better, so refuse the connection
-    sock1, sock2 = socketpair
-    begin
+    server_proc = proc do |sock|
       # This test is for the downgrade protection mechanism of TLS1.2.
       # This is why ctx1 bounds max_version == TLS1.2.
       # Otherwise, this test fails when using openssl 1.1.1 (or later) that supports TLS1.3.
@@ -1805,27 +1758,21 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx1.security_level = 0
       ctx1.min_version = 0
       ctx1.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-
+      s1 = OpenSSL::SSL::SSLSocket.new(sock, ctx1)
+      # AWS-LC has slightly different error messages in all-caps.
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate.fallback/i) {
+        s1.accept
+      }
+    end
+    start_server_proc(server_proc) do |port|
       ctx2 = OpenSSL::SSL::SSLContext.new
       ctx2.enable_fallback_scsv
       ctx2.security_level = 0
       ctx2.min_version = 0
       ctx2.max_version = OpenSSL::SSL::TLS1_1_VERSION
-      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-      # AWS-LC has slightly different error messages in all-caps.
-      t = Thread.new {
-        assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback|INAPPROPRIATE_FALLBACK/) {
-          s2.connect
-        }
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate.fallback/i) {
+        server_connect(port, ctx2) { }
       }
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback|INAPPROPRIATE_FALLBACK/) {
-        s1.accept
-      }
-      t.join
-    ensure
-      sock1.close
-      sock2.close
     end
   end
 
@@ -2238,15 +2185,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_dup
     ctx = OpenSSL::SSL::SSLContext.new
-    sock1, sock2 = socketpair
-    ssl = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
+    Socket.open(:INET, :STREAM) { |sock|
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
 
-    assert_raise(NoMethodError) { ctx.dup }
-    assert_raise(NoMethodError) { ssl.dup }
-  ensure
-    ssl.close if ssl
-    sock1.close
-    sock2.close
+      assert_raise(NoMethodError) { ctx.dup }
+      assert_raise(NoMethodError) { ssl.dup }
+    }
   end
 
   def test_freeze_calls_setup
@@ -2262,17 +2206,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_fileno
-    ctx = OpenSSL::SSL::SSLContext.new
-    sock1, sock2 = socketpair
+    Socket.open(:INET, :STREAM) { |sock|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      server = OpenSSL::SSL::SSLServer.new(sock, ctx)
 
-    socket = OpenSSL::SSL::SSLSocket.new(sock1)
-    server = OpenSSL::SSL::SSLServer.new(sock2, ctx)
-
-    assert_equal socket.fileno, socket.to_io.fileno
-    assert_equal server.fileno, server.to_io.fileno
-  ensure
-    sock1.close
-    sock2.close
+      assert_equal(sock.fileno, ssl.fileno)
+      assert_equal(sock.fileno, server.fileno)
+    }
   end
 
   def test_export_keying_material
