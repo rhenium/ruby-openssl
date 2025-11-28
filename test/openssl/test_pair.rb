@@ -115,6 +115,8 @@ module OpenSSL::TestPairM
     ssl_pair {|s1, s2|
       s1 << "a"
       assert_equal(97, s2.getbyte)
+      s1.close
+      assert_nil(s2.getbyte)
     }
   end
 
@@ -410,6 +412,30 @@ module OpenSSL::TestPairM
       # should raise a IO::WaitReadable since a full TLS record is not available
       # for reading
       assert_raise(IO::WaitReadable) { s2.read_nonblock(1) }
+    }
+  end
+
+  def test_copy_stream
+    ssl_pair { |s1, s2|
+      IO.pipe do |r, w|
+        str = "hello world\n"
+        w.write(str)
+        IO.copy_stream(r, s1, str.bytesize)
+        IO.copy_stream(s2, w, str.bytesize)
+        assert_equal(str, r.read(str.bytesize))
+      end
+    }
+  end
+
+  def test_close_write
+    ssl_pair { |s1, s2|
+      message = "abc"*1024
+      s1.write(message)
+      s1.close_write
+      assert_equal(message, s2.read)
+      s2.write(message)
+      s2.close_write
+      assert_equal(message, s1.read)
     }
   end
 end

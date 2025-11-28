@@ -146,30 +146,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_socket_close_write
-    server_proc = proc do |ctx, ssl|
-      message = ssl.read
-      ssl.write(message)
-      ssl.close_write
-    ensure
-      ssl.close
-    end
-
-    start_server(server_proc: server_proc) do |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
-      ssl.sync_close = true
-      ssl.connect
-
-      message = "abc"*1024
-      ssl.write message
-      ssl.close_write
-      assert_equal message, ssl.read
-    ensure
-      ssl&.close
-    end
-  end
-
   def test_add_certificate
     ctx_proc = -> ctx {
       # Unset values set by start_server
@@ -302,32 +278,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_getbyte
-    start_server { |port|
-      server_connect(port) { |ssl|
-        str = +("x" * 100 + "\n")
-        ssl.syswrite(str)
-        newstr = str.bytesize.times.map { |i|
-          ssl.getbyte
-        }.pack("C*")
-        assert_equal(str, newstr)
-      }
-    }
-  end
-
-  def test_readbyte
-    start_server { |port|
-      server_connect(port) { |ssl|
-        str = +("x" * 100 + "\n")
-        ssl.syswrite(str)
-        newstr = str.bytesize.times.map { |i|
-          ssl.readbyte
-        }.pack("C*")
-        assert_equal(str, newstr)
-      }
-    }
-  end
-
   def test_sync_close
     start_server do |port|
       begin
@@ -351,20 +301,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_predicate sock, :closed?
       ensure
         sock&.close
-      end
-    end
-  end
-
-  def test_copy_stream
-    start_server do |port|
-      server_connect(port) do |ssl|
-        IO.pipe do |r, w|
-          str = "hello world\n"
-          w.write(str)
-          IO.copy_stream(r, ssl, str.bytesize)
-          IO.copy_stream(ssl, w, str.bytesize)
-          assert_equal str, r.read(str.bytesize)
-        end
       end
     end
   end
