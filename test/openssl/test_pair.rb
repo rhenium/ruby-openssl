@@ -14,32 +14,42 @@ module OpenSSL::SSLPairM
     @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
   end
 
-  def ssl_pair
+  def tcp_pair
     host = "127.0.0.1"
     tcps = create_tcp_server(host, 0)
     port = tcps.connect_address.ip_port
 
     th = Thread.new {
-      sctx = OpenSSL::SSL::SSLContext.new
-      sctx.cert = @svr_cert
-      sctx.key = @svr_key
-      sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
-      ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
-      ns = ssls.accept
-      ssls.close
+      ns, = tcps.accept
+      tcps.close
       ns
     }
 
-    tcpc = create_tcp_client(host, port)
-    c = OpenSSL::SSL::SSLSocket.new(tcpc)
-    c.connect
+    c = create_tcp_client(host, port)
     s = th.value
 
     yield c, s
   ensure
-    tcpc&.close
     tcps&.close
+    c&.close
     s&.close
+  end
+
+  def ssl_pair
+    tcp_pair do |tcpc, tcps|
+      th = Thread.new {
+        sctx = OpenSSL::SSL::SSLContext.new
+        sctx.add_certificate(@svr_cert, @svr_key)
+        s = OpenSSL::SSL::SSLSocket.new(tcps, sctx)
+        s.accept
+      }
+
+      c = OpenSSL::SSL::SSLSocket.new(tcpc)
+      c.connect
+      s = th.value
+
+      yield c, s
+    end
   end
 end
 
@@ -402,107 +412,90 @@ module OpenSSL::TestPairM
       assert_raise(IO::WaitReadable) { s2.read_nonblock(1) }
     }
   end
+end
 
-  def tcp_pair
-    host = "127.0.0.1"
-    serv = TCPServer.new(host, 0)
-    port = serv.connect_address.ip_port
-    sock1 = TCPSocket.new(host, port)
-    sock2 = serv.accept
-    serv.close
-    [sock1, sock2]
-  ensure
-    serv.close if serv && !serv.closed?
-  end
-
+module OpenSSL::TestNonblockingHandshakeM
   def test_connect_accept_nonblock_no_exception
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.cert = @svr_cert
-    ctx2.key = @svr_key
+    tcp_pair do |sock1, sock2|
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.cert = @svr_cert
+      ctx2.key = @svr_key
 
-    sock1, sock2 = tcp_pair
-
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-    accepted = s2.accept_nonblock(exception: false)
-    assert_equal :wait_readable, accepted
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    th = Thread.new do
-      rets = []
-      begin
-        rv = s1.connect_nonblock(exception: false)
-        rets << rv
-        case rv
-        when :wait_writable
-          IO.select(nil, [s1], nil, 5)
-        when :wait_readable
-          IO.select([s1], nil, nil, 5)
-        end
-      end until rv == s1
-      rets
-    end
-
-    until th.join(0.01)
+      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
       accepted = s2.accept_nonblock(exception: false)
-      assert_include([s2, :wait_readable, :wait_writable ], accepted)
-    end
+      assert_equal :wait_readable, accepted
 
-    rets = th.value
-    assert_instance_of Array, rets
-    rets.each do |rv|
-      assert_include([s1, :wait_readable, :wait_writable ], rv)
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+      th = Thread.new do
+        rets = []
+        begin
+          rv = s1.connect_nonblock(exception: false)
+          rets << rv
+          case rv
+          when :wait_writable
+            IO.select(nil, [s1], nil, 5)
+          when :wait_readable
+            IO.select([s1], nil, nil, 5)
+          end
+        end until rv == s1
+        rets
+      end
+
+      until th.join(0.01)
+        accepted = s2.accept_nonblock(exception: false)
+        assert_include([s2, :wait_readable, :wait_writable ], accepted)
+      end
+
+      rets = th.value
+      assert_instance_of Array, rets
+      rets.each do |rv|
+        assert_include([s1, :wait_readable, :wait_writable ], rv)
+      end
+    ensure
+      th&.kill&.join
     end
-  ensure
-    th.join if th
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
-    accepted.close if accepted.respond_to?(:close)
   end
 
   def test_connect_accept_nonblock
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = @svr_cert
-    ctx.key = @svr_key
+    tcp_pair do |sock1, sock2|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.cert = @svr_cert
+      ctx.key = @svr_key
 
-    sock1, sock2 = tcp_pair
+      th = Thread.new do
+        s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
+        5.times {
+          begin
+            break s2.accept_nonblock
+          rescue IO::WaitReadable
+            IO.select([s2], nil, nil, 1)
+          rescue IO::WaitWritable
+            IO.select(nil, [s2], nil, 1)
+          end
+          sleep 0.2
+        }
+      end
 
-    th = Thread.new {
-      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
+      s1 = OpenSSL::SSL::SSLSocket.new(sock1)
       5.times {
         begin
-          break s2.accept_nonblock
+          break s1.connect_nonblock
         rescue IO::WaitReadable
-          IO.select([s2], nil, nil, 1)
+          IO.select([s1], nil, nil, 1)
         rescue IO::WaitWritable
-          IO.select(nil, [s2], nil, 1)
+          IO.select(nil, [s1], nil, 1)
         end
         sleep 0.2
       }
-    }
 
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1)
-    5.times {
-      begin
-        break s1.connect_nonblock
-      rescue IO::WaitReadable
-        IO.select([s1], nil, nil, 1)
-      rescue IO::WaitWritable
-        IO.select(nil, [s1], nil, 1)
-      end
-      sleep 0.2
-    }
+      s2 = th.value
 
-    s2 = th.value
-
-    s1.print "a\ndef"
-    assert_equal("a\n", s2.gets)
-  ensure
-    sock1&.close
-    sock2&.close
-    th&.join
+      s1.print "a\ndef"
+      assert_equal("a\n", s2.gets)
+    ensure
+      th&.kill&.join
+    end
   end
 end
 
@@ -533,11 +526,13 @@ end
 class OpenSSL::TestPair < OpenSSL::TestCase
   include OpenSSL::SSLPair
   include OpenSSL::TestPairM
+  include OpenSSL::TestNonblockingHandshakeM
 end
 
 class OpenSSL::TestPairLowlevelSocket < OpenSSL::TestCase
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestPairM
+  include OpenSSL::TestNonblockingHandshakeM
 end
 
 end
