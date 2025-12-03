@@ -193,6 +193,76 @@ module OpenSSL::PKey
       ctx.derive_init
       ctx.derive(peer_pkey)
     end
+
+    # :call-seq:
+    #    pkey.encapsulate([params]) -> [enc, shared_secret]
+    #
+    # Performs a key encapsulation using a KEM algorithm with the public key
+    # _pkey_. Returns a two-element array: the wrapped key and the shared
+    # secret.
+    #
+    # The wrapped key can be sent to the holder of the private key to be
+    # decapsulated with #decapsulate.
+    #
+    # _params_ is an optional array of key-value pairs that specify algorithm
+    # and implementation-specific parameters. See the corresponding man page
+    # for EVP_KEM object, such as EVP_KEM-RSA(3).
+    #
+    # This is compatible with OpenSSL 3.0 or later. See also the man page
+    # EVP_PKEY_encapsulate(3).
+    def encapsulate(params = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.encapsulate_init
+      ctx.set_params(params) if params
+      ctx.encapsulate
+    end if OpenSSL::PKey::PKeyContext.method_defined?(:encapsulate_init)
+
+    # :call-seq:
+    #    pkey.auth_encapsulate(auth_priv [, params]) -> [enc, shared_secret]
+    #
+    # Performs a key encapsulation using a KEM algorithm. Similar to
+    # #encapsulate, but uses the variant that authenticates possession of the
+    # private key _auth_priv_.
+    #
+    # This is compatible with OpenSSL 3.2 or later. See also the man page
+    # EVP_PKEY_encapsulate(3).
+    def auth_encapsulate(auth_priv, params = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.auth_encapsulate_init(auth_priv)
+      ctx.set_params(params) if params
+      ctx.encapsulate
+    end if OpenSSL::PKey::PKeyContext.method_defined?(:auth_encapsulate_init)
+
+    # :call-seq:
+    #    pkey.decapsulate(enc [, params]) -> shared_secret
+    #
+    # Performs a key decapsulation using a KEM algorithm with the private key
+    # _pkey_. Returns the shared secret.
+    #
+    # See #encapsulate for details. See also the man page
+    # EVP_PKEY_decapsulate(3).
+    def decapsulate(enc, params = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.decapsulate_init
+      ctx.set_params(params) if params
+      ctx.decapsulate(enc)
+    end if OpenSSL::PKey::PKeyContext.method_defined?(:decapsulate_init)
+
+    # :call-seq:
+    #    pkey.auth_decapsulate(enc, auth_pub [, params]) -> shared_secret
+    #
+    # Performs a key decapsulation using a KEM algorithm. Similar to
+    # #decapsulate, but uses the variant that authenticates possession of the
+    # private key corresponding to the public key _auth_pub_.
+    #
+    # See #auth_encapsulate for details. See also the man page
+    # EVP_PKEY_decapsulate(3).
+    def auth_decapsulate(enc, auth_pub, params = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.auth_decapsulate_init(auth_pub)
+      ctx.set_params(params) if params
+      ctx.decapsulate(enc)
+    end if OpenSSL::PKey::PKeyContext.method_defined?(:auth_decapsulate_init)
   end
 
   # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.

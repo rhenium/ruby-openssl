@@ -575,6 +575,9 @@ pkeyctx_decrypt(VALUE self, VALUE data)
 }
 
 /*
+ * EVP_PKEY_OP_DERIVE
+ */
+/*
  * call-seq:
  *    ctx.derive_init -> self
  *
@@ -619,6 +622,148 @@ pkeyctx_derive(VALUE self, VALUE obj)
     rb_str_set_len(out, outlen);
     return out;
 }
+
+#ifdef EVP_PKEY_OP_ENCAPSULATE
+/*
+ * EVP_PKEY_OP_ENCAPSULATE and EVP_PKEY_OP_DECAPSULATE
+ */
+/*
+ * call-seq:
+ *    ctx.encapsulate_init -> self
+ *
+ * Prepares the context for #encapsulate.
+ */
+static VALUE
+pkeyctx_encapsulate_init(VALUE self)
+{
+    if (EVP_PKEY_encapsulate_init(GetPKeyCtxPtr(self), NULL) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate_init");
+    return self;
+}
+
+#ifdef HAVE_EVP_PKEY_AUTH_ENCAPSULATE_INIT
+/*
+ * call-seq:
+ *    ctx.auth_encapsulate_init(priv) -> self
+ *
+ * Prepares the context for #encapsulate. Similar to #encapsulate_init, but
+ * uses the authenticated variant instead.
+ */
+static VALUE
+pkeyctx_auth_encapsulate_init(VALUE self, VALUE auth)
+{
+    EVP_PKEY *priv = GetPKeyPtr(auth);
+    if (EVP_PKEY_auth_encapsulate_init(GetPKeyCtxPtr(self), priv, NULL) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_auth_encapsulate_init");
+    return self;
+}
+#else
+#define pkeyctx_auth_encapsulate_init rb_f_notimplement
+#endif
+
+/*
+ * call-seq:
+ *    ctx.encapsulate -> [wrappedkey, genkey]
+ *
+ * See the man page EVP_PKEY_encapsulate(3).
+ */
+static VALUE
+pkeyctx_encapsulate(VALUE self)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    size_t wrappedkeylen, genkeylen;
+    if (EVP_PKEY_encapsulate(ctx, NULL, &wrappedkeylen,
+                             NULL, &genkeylen) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+    if (wrappedkeylen > LONG_MAX || genkeylen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE wrappedkey = rb_str_new(NULL, (long)wrappedkeylen);
+    VALUE genkey = rb_str_new(NULL, (long)genkeylen);
+    if (EVP_PKEY_encapsulate(ctx, (unsigned char *)RSTRING_PTR(wrappedkey),
+                             &wrappedkeylen,
+                             (unsigned char *)RSTRING_PTR(genkey),
+                             &genkeylen) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+
+    rb_str_set_len(wrappedkey, wrappedkeylen);
+    rb_str_set_len(genkey, genkeylen);
+    return rb_assoc_new(wrappedkey, genkey);
+}
+
+/*
+ * call-seq:
+ *    ctx.decapsulate_init -> self
+ *
+ * Prepares the context for #decapsulate.
+ */
+static VALUE
+pkeyctx_decapsulate_init(VALUE self)
+{
+    if (EVP_PKEY_decapsulate_init(GetPKeyCtxPtr(self), NULL) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate_init");
+    return self;
+}
+
+#ifdef HAVE_EVP_PKEY_AUTH_ENCAPSULATE_INIT
+/*
+ * call-seq:
+ *    ctx.auth_decapsulate_init(pub) -> self
+ *
+ * Prepares the context for #decapsulate. Similar to #decapsulate_init, but
+ * uses the authenticated variant instead.
+ */
+static VALUE
+pkeyctx_auth_decapsulate_init(VALUE self, VALUE auth)
+{
+    EVP_PKEY *pub = GetPKeyPtr(auth);
+    if (EVP_PKEY_auth_decapsulate_init(GetPKeyCtxPtr(self), pub, NULL) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_auth_decapsulate_init");
+    return self;
+}
+#else
+#define pkeyctx_auth_decapsulate_init rb_f_notimplement
+#endif
+
+/*
+ * call-seq:
+ *    ctx.decapsulate(wrapped) -> unwrapped
+ *
+ * See the man page EVP_PKEY_decapsulate(3).
+ */
+static VALUE
+pkeyctx_decapsulate(VALUE self, VALUE wrapped)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(wrapped);
+    size_t unwrappedlen;
+    if (EVP_PKEY_decapsulate(ctx, NULL, &unwrappedlen,
+                             (unsigned char *)RSTRING_PTR(wrapped),
+                             RSTRING_LEN(wrapped)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+    if (unwrappedlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE unwrapped = rb_str_new(NULL, (long)unwrappedlen);
+    if (EVP_PKEY_decapsulate(ctx, (unsigned char *)RSTRING_PTR(unwrapped),
+                             &unwrappedlen,
+                             (unsigned char *)RSTRING_PTR(wrapped),
+                             RSTRING_LEN(wrapped)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+
+    rb_str_set_len(unwrapped, unwrappedlen);
+    return unwrapped;
+}
+#else
+#define pkeyctx_encapsulate_init rb_f_notimplement
+#define pkeyctx_auth_encapsulate_init rb_f_notimplement
+#define pkeyctx_encapsulate rb_f_notimplement
+#define pkeyctx_decapsulate_init rb_f_notimplement
+#define pkeyctx_auth_decapsulate_init rb_f_notimplement
+#define pkeyctx_decapsulate rb_f_notimplement
+#endif
 
 void
 Init_ossl_pkey_ctx(void)
@@ -685,6 +830,16 @@ Init_ossl_pkey_ctx(void)
     // EVP_PKEY_OP_DERIVE
     rb_define_method(cPKeyContext, "derive_init", pkeyctx_derive_init, 0);
     rb_define_method(cPKeyContext, "derive", pkeyctx_derive, 1);
+
+    // EVP_PKEY_OP_ENCAPSULATE
+    rb_define_method(cPKeyContext, "encapsulate_init", pkeyctx_encapsulate_init, 0);
+    rb_define_method(cPKeyContext, "auth_encapsulate_init", pkeyctx_auth_encapsulate_init, 1);
+    rb_define_method(cPKeyContext, "encapsulate", pkeyctx_encapsulate, 0);
+
+    // EVP_PKEY_OP_DECAPSULATE
+    rb_define_method(cPKeyContext, "decapsulate_init", pkeyctx_decapsulate_init, 0);
+    rb_define_method(cPKeyContext, "auth_decapsulate_init", pkeyctx_auth_decapsulate_init, 1);
+    rb_define_method(cPKeyContext, "decapsulate", pkeyctx_decapsulate, 1);
 
     id_pkey = rb_intern_const("pkey");
     id_pkey_peer = rb_intern_const("pkey_peer");
