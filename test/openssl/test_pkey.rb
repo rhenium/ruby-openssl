@@ -295,6 +295,53 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       bob.raw_public_key.unpack1("H*")
   end
 
+  def test_encapsulate_rsasve
+    pkey = Fixtures.pkey("rsa-1")
+
+    ret = pkey.encapsulate
+    assert_equal(2, ret.size)
+    enc, shared_secret = ret
+    assert_equal(pkey.n.num_bytes, shared_secret.bytesize)
+
+    encrypted = pkey.encrypt(shared_secret, { "rsa_padding_mode" => "none" })
+    assert_equal(pkey.n.num_bytes, enc.bytesize)
+    assert_equal(encrypted, enc)
+
+    dec = pkey.decapsulate(enc)
+    assert_equal(shared_secret, dec)
+  end if openssl?(3, 4, 0) # Supported since 3.0.0, but it requires more steps
+
+  def test_auth_encapsulate_dhkem
+    # RFC 9180 Appendix A.1.3 DHKEM(X25519, HKDF-SHA256) Auth Setup Information
+    ikmE = ["6e6d8f200ea2fb20c30b003a8b4f433d2f4ed4c2658d5bc8ce2fef718059c9f7"].pack("H*")
+    pkEm = ["23fb952571a14a25e3d678140cd0e5eb47a0961bb18afcf85896e5453c312e76"].pack("H*")
+    pkRm = ["1632d5c2f71c2b38d0a8fcc359355200caa8b1ffdf28618080466c909cb69b2e"].pack("H*")
+    skRm = ["fdea67cf831f1ca98d8e27b1f6abeb5b7745e9d35348b80fa407ff6958f9137e"].pack("H*")
+    pkSm = ["8b0c70873dc5aecb7f9ee4e62406a397b350e57012be45cf53b7105ae731790b"].pack("H*")
+    skSm = ["dc4a146313cce60a278a5323d321f051c5707e9c45ba21a3479fecdf76fc69dd"].pack("H*")
+    enc = ["23fb952571a14a25e3d678140cd0e5eb47a0961bb18afcf85896e5453c312e76"].pack("H*")
+    shared_secret = ["2d6db4cf719dc7293fcbf3fa64690708e44e2bebc81f84608677958c0d4448a7"].pack("H*")
+
+    pkE = OpenSSL::PKey.new_raw_public_key("X25519", pkEm)
+    pkR = OpenSSL::PKey.new_raw_public_key("X25519", pkRm)
+    skR = OpenSSL::PKey.new_raw_private_key("X25519", skRm)
+    pkS = OpenSSL::PKey.new_raw_public_key("X25519", pkSm)
+    skS = OpenSSL::PKey.new_raw_private_key("X25519", skSm)
+
+    assert_equal([enc, shared_secret],
+                 pkR.auth_encapsulate(skS, "ikme" => ikmE))
+    assert_equal(shared_secret, skR.auth_decapsulate(enc, pkS))
+
+    # For X25519, enc is pkE's public key unmodified
+    assert_equal(pkE.raw_public_key, enc)
+
+    # ikmE is not specified -> key pair pkE/skE is randomly generated
+    enc2, shared_secret2 = pkR.encapsulate
+    assert_not_equal(enc, enc2)
+    assert_not_equal(shared_secret, shared_secret2)
+    assert_equal(shared_secret2, skR.decapsulate(enc2))
+  end if openssl?(3, 4, 0) # Supported since 3.2.0, but it requires more steps
+
   def test_ml_dsa
     # AWS-LC also supports ML-DSA, but it's implemented in a different way
     return unless openssl?(3, 5, 0)

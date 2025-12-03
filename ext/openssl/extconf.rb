@@ -158,6 +158,7 @@ have_func("EVP_PKEY_dup(NULL)", evp_h)
 
 # added in 3.2.0
 have_func("SSL_get0_group_name(NULL)", ssl_h)
+have_func("EVP_PKEY_auth_encapsulate_init(NULL, NULL, NULL)", evp_h)
 
 # added in 3.4.0
 have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
