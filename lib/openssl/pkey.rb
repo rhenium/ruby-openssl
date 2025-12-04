@@ -59,6 +59,88 @@ module OpenSSL::PKey
     end
   end
 
+  class PKey
+    # :call-seq:
+    #    pkey.sign_raw(digest, data [, options]) -> string
+    #
+    # Signs +data+ using a private key +pkey+. Unlike #sign, +data+ will not be
+    # hashed by +digest+ automatically.
+    #
+    # See #verify_raw for the verification operation.
+    #
+    # Added in version 3.0. See also the man page EVP_PKEY_sign(3).
+    #
+    # +digest+::
+    #   A String that represents the message digest algorithm name, or +nil+
+    #   if the PKey type requires no digest algorithm.
+    #   Although this method will not hash +data+ with it, this parameter may still
+    #   be required depending on the signature algorithm.
+    # +data+::
+    #   A String. The data to be signed.
+    # +options+::
+    #   A Hash that contains algorithm specific control operations to \OpenSSL.
+    #   See OpenSSL's man page EVP_PKEY_CTX_ctrl_str(3) for details.
+    #
+    # Example:
+    #   data = "Sign me!"
+    #   hash = OpenSSL::Digest.digest("SHA256", data)
+    #   pkey = OpenSSL::PKey.generate_key("RSA", rsa_keygen_bits: 2048)
+    #   signopts = { rsa_padding_mode: "pss" }
+    #   signature = pkey.sign_raw("SHA256", hash, signopts)
+    #
+    #   # Creates a copy of the RSA key pkey, but without the private components
+    #   pub_key = pkey.public_key
+    #   puts pub_key.verify_raw("SHA256", signature, hash, signopts) # => true
+    def sign_raw(digest, data, ctrls = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.sign_init
+      ctx.ctrl_str("digest", digest) if digest
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.sign(data)
+    end
+
+    # :call-seq:
+    #    pkey.verify_raw(digest, signature, data [, options]) -> true or false
+    #
+    # Verifies the +signature+ for the +data+ using a public key +pkey+. Unlike
+    # #verify, this method will not hash +data+ with +digest+ automatically.
+    #
+    # Returns +true+ if the signature is successfully verified, +false+ otherwise.
+    # The caller must check the return value.
+    #
+    # See #sign_raw for the signing operation and an example code.
+    #
+    # Added in version 3.0. See also the man page EVP_PKEY_verify(3).
+    #
+    # +signature+::
+    #   A String containing the signature to be verified.
+    def verify_raw(digest, signature, data, ctrls = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.verify_init
+      ctx.ctrl_str("digest", digest) if digest
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.verify(signature, data)
+    end
+
+    # :call-seq:
+    #    pkey.verify_recover(digest, signature [, options]) -> string
+    #
+    # Recovers the signed data from +signature+ using a public key +pkey+. Not
+    # all signature algorithms support this operation.
+    #
+    # Added in version 3.0. See also the man page EVP_PKEY_verify_recover(3).
+    #
+    # +signature+::
+    #   A String containing the signature to be verified.
+    def verify_recover(digest, signature, ctrls = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.verify_recover_init
+      ctx.ctrl_str("digest", digest) if digest
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.verify_recover(signature)
+    end
+  end
+
   # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
   DHError = PKeyError
 

@@ -342,6 +342,146 @@ pkeyctx_keygen(VALUE self)
     return pkeyctx_generate(self, 0);
 }
 
+/*
+ * EVP_PKEY_OP_SIGN
+ */
+/*
+ * call-seq:
+ *    ctx.sign_init -> self
+ *
+ * Prepares the context for #sign.
+ */
+static VALUE
+pkeyctx_sign_init(VALUE self)
+{
+    // TODO: Take EVP_SIGNATURE (OpenSSL >= 3.4)
+    if (EVP_PKEY_sign_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_sign_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.sign(data) -> string
+ *
+ * See the man page EVP_PKEY_sign(3).
+ * Used by OpenSSL::PKey::PKey#sign_raw.
+ */
+static VALUE
+pkeyctx_sign(VALUE self, VALUE data)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(data);
+    size_t outlen;
+    if (EVP_PKEY_sign(ctx, NULL, &outlen, (unsigned char *)RSTRING_PTR(data),
+                      RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_sign");
+    if (outlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE out = rb_str_new(NULL, (long)outlen);
+    if (EVP_PKEY_sign(ctx, (unsigned char *)RSTRING_PTR(out), &outlen,
+                      (unsigned char *)RSTRING_PTR(data),
+                      RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_sign");
+    rb_str_set_len(out, outlen);
+    return out;
+}
+
+/*
+ * EVP_PKEY_OP_VERIFY
+ */
+/*
+ * call-seq:
+ *    ctx.verify_init -> self
+ *
+ * Prepares the context for #verify.
+ */
+static VALUE
+pkeyctx_verify_init(VALUE self)
+{
+    if (EVP_PKEY_verify_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_verify_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.verify(signature, data) -> true or false
+ *
+ * See the man page EVP_PKEY_verify(3).
+ * Used by OpenSSL::PKey::PKey#verify_raw.
+ */
+static VALUE
+pkeyctx_verify(VALUE self, VALUE sig, VALUE data)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(sig);
+    StringValue(data);
+    int ret = EVP_PKEY_verify(ctx, (unsigned char *)RSTRING_PTR(sig),
+                              RSTRING_LEN(sig),
+                              (unsigned char *)RSTRING_PTR(data),
+                              RSTRING_LEN(data));
+    switch (ret) {
+      case 0:
+        ossl_clear_error();
+        return Qfalse;
+      case 1:
+        return Qtrue;
+      default:
+        ossl_raise(ePKeyError, "EVP_PKEY_verify");
+    }
+}
+
+/*
+ * EVP_PKEY_OP_VERIFYRECOVER
+ */
+/*
+ * call-seq:
+ *    ctx.verify_recover_init -> self
+ *
+ * Prepares the context for #verify_recover.
+ */
+static VALUE
+pkeyctx_verify_recover_init(VALUE self)
+{
+    if (EVP_PKEY_verify_recover_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_verify_recover_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.verify_recover(signature) -> string
+ *
+ * See the man page EVP_PKEY_verify_recover(3).
+ * Used by OpenSSL::PKey::PKey#verify_recover.
+ */
+static VALUE
+pkeyctx_verify_recover(VALUE self, VALUE sig)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(sig);
+    size_t outlen;
+    if (EVP_PKEY_verify_recover(ctx, NULL, &outlen,
+                                (unsigned char *)RSTRING_PTR(sig),
+                                RSTRING_LEN(sig)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_verify_recover");
+    if (outlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE out = rb_str_new(NULL, (long)outlen);
+    if (EVP_PKEY_verify_recover(ctx, (unsigned char *)RSTRING_PTR(out), &outlen,
+                                (unsigned char *)RSTRING_PTR(sig),
+                                RSTRING_LEN(sig)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_verify_recover");
+    rb_str_set_len(out, outlen);
+    return out;
+}
+
 void
 Init_ossl_pkey_ctx(void)
 {
@@ -383,6 +523,18 @@ Init_ossl_pkey_ctx(void)
     // EVP_PKEY_OP_KEYGEN
     rb_define_method(cPKeyContext, "keygen_init", pkeyctx_keygen_init, 0);
     rb_define_method(cPKeyContext, "keygen", pkeyctx_keygen, 0);
+
+    // EVP_PKEY_OP_SIGN
+    rb_define_method(cPKeyContext, "sign_init", pkeyctx_sign_init, 0);
+    rb_define_method(cPKeyContext, "sign", pkeyctx_sign, 1);
+
+    // EVP_PKEY_OP_VERIFY
+    rb_define_method(cPKeyContext, "verify_init", pkeyctx_verify_init, 0);
+    rb_define_method(cPKeyContext, "verify", pkeyctx_verify, 2);
+
+    // EVP_PKEY_OP_VERIFYRECOVER
+    rb_define_method(cPKeyContext, "verify_recover_init", pkeyctx_verify_recover_init, 0);
+    rb_define_method(cPKeyContext, "verify_recover", pkeyctx_verify_recover, 1);
 
     id_pkey = rb_intern_const("pkey");
 }
