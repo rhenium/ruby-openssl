@@ -482,6 +482,98 @@ pkeyctx_verify_recover(VALUE self, VALUE sig)
     return out;
 }
 
+/*
+ * EVP_PKEY_OP_ENCRYPT
+ */
+/*
+ * call-seq:
+ *    ctx.encrypt_init(pkey) -> self
+ *
+ * Prepares the context for #encrypt.
+ */
+static VALUE
+pkeyctx_encrypt_init(VALUE self)
+{
+    if (EVP_PKEY_encrypt_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.encrypt(data) -> string
+ *
+ * See the man page EVP_PKEY_encrypt(3).
+ * Used by OpenSSL::PKey::PKey#encrypt.
+ */
+static VALUE
+pkeyctx_encrypt(VALUE self, VALUE data)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(data);
+    size_t outlen;
+    if (EVP_PKEY_encrypt(ctx, NULL, &outlen, (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt");
+    if (outlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE out = rb_str_new(NULL, (long)outlen);
+    if (EVP_PKEY_encrypt(ctx, (unsigned char *)RSTRING_PTR(out), &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_encrypt");
+    rb_str_set_len(out, outlen);
+    return out;
+}
+
+/*
+ * EVP_PKEY_OP_DECRYPT
+ */
+/*
+ * call-seq:
+ *    ctx.decrypt_init(pkey) -> self
+ *
+ * Prepares the context for #decrypt.
+ */
+static VALUE
+pkeyctx_decrypt_init(VALUE self)
+{
+    if (EVP_PKEY_decrypt_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.decrypt(data) -> string
+ *
+ * See the man page EVP_PKEY_decrypt(3).
+ * Used by OpenSSL::PKey::PKey#decrypt.
+ */
+static VALUE
+pkeyctx_decrypt(VALUE self, VALUE data)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    StringValue(data);
+    size_t outlen;
+    if (EVP_PKEY_decrypt(ctx, NULL, &outlen, (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt");
+    if (outlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE out = rb_str_new(NULL, (long)outlen);
+    if (EVP_PKEY_decrypt(ctx, (unsigned char *)RSTRING_PTR(out), &outlen,
+                         (unsigned char *)RSTRING_PTR(data),
+                         RSTRING_LEN(data)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_decrypt");
+    rb_str_set_len(out, outlen);
+    return out;
+}
+
 void
 Init_ossl_pkey_ctx(void)
 {
@@ -535,6 +627,14 @@ Init_ossl_pkey_ctx(void)
     // EVP_PKEY_OP_VERIFYRECOVER
     rb_define_method(cPKeyContext, "verify_recover_init", pkeyctx_verify_recover_init, 0);
     rb_define_method(cPKeyContext, "verify_recover", pkeyctx_verify_recover, 1);
+
+    // EVP_PKEY_OP_ENCRYPT
+    rb_define_method(cPKeyContext, "encrypt_init", pkeyctx_encrypt_init, 0);
+    rb_define_method(cPKeyContext, "encrypt", pkeyctx_encrypt, 1);
+
+    // EVP_PKEY_OP_DECRYPT
+    rb_define_method(cPKeyContext, "decrypt_init", pkeyctx_decrypt_init, 0);
+    rb_define_method(cPKeyContext, "decrypt", pkeyctx_decrypt, 1);
 
     id_pkey = rb_intern_const("pkey");
 }

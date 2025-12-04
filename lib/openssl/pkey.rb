@@ -139,6 +139,49 @@ module OpenSSL::PKey
       ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
       ctx.verify_recover(signature)
     end
+
+    # :call-seq:
+    #    pkey.encrypt(data [, options]) -> string
+    #
+    # Performs a public key encryption operation using +pkey+.
+    #
+    # See #decrypt for the reverse operation.
+    #
+    # Added in version 3.0. See also the man page EVP_PKEY_encrypt(3).
+    #
+    # +data+::
+    #   A String to be encrypted.
+    # +options+::
+    #   A Hash that contains algorithm specific control operations to \OpenSSL.
+    #   See OpenSSL's man page EVP_PKEY_CTX_ctrl_str(3) for details.
+    #
+    # Example:
+    #   pkey = OpenSSL::PKey.generate_key("RSA", rsa_keygen_bits: 2048)
+    #   data = "secret data"
+    #   encrypted = pkey.encrypt(data, rsa_padding_mode: "oaep")
+    #   decrypted = pkey.decrypt(data, rsa_padding_mode: "oaep")
+    #   p decrypted #=> "secret data"
+    def encrypt(data, ctrls = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.encrypt_init
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.encrypt(data)
+    end
+
+    # :call-seq:
+    #    pkey.decrypt(data [, options]) -> string
+    #
+    # Performs a public key decryption operation using +pkey+.
+    #
+    # See #encrypt for a description of the parameters and an example.
+    #
+    # Added in version 3.0. See also the man page EVP_PKEY_decrypt(3).
+    def decrypt(data, ctrls = nil)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.decrypt_init
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.decrypt(data)
+    end
   end
 
   # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
