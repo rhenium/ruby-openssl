@@ -182,6 +182,17 @@ module OpenSSL::PKey
       ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
       ctx.decrypt(data)
     end
+
+    # :call-seq:
+    #    pkey.derive(peer_pkey) -> string
+    #
+    # Derives a shared secret from _pkey_ and _peer_pkey_. _pkey_ must contain
+    # the private components, _peer_pkey_ must contain the public components.
+    def derive(peer_pkey)
+      ctx = OpenSSL::PKey::PKeyContext.new(self)
+      ctx.derive_init
+      ctx.derive(peer_pkey)
+    end
   end
 
   # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.

@@ -10,7 +10,7 @@
 #include "ossl.h"
 
 static VALUE cPKeyContext;
-static ID id_pkey;
+static ID id_pkey, id_pkey_peer;
 
 static void
 pkeyctx_free(void *ptr)
@@ -574,6 +574,52 @@ pkeyctx_decrypt(VALUE self, VALUE data)
     return out;
 }
 
+/*
+ * call-seq:
+ *    ctx.derive_init -> self
+ *
+ * Prepares the context for #derive.
+ */
+static VALUE
+pkeyctx_derive_init(VALUE self)
+{
+    if (EVP_PKEY_derive_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_derive_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.derive(peer_pkey) -> string
+ *
+ * _peer_pkey_ is an OpenSSL::PKey::PKey object.
+ *
+ * See the man page EVP_PKEY_derive(3).
+ * Used by OpenSSL::PKey::PKey#derive.
+ */
+static VALUE
+pkeyctx_derive(VALUE self, VALUE obj)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+    EVP_PKEY *peer_pkey = GetPKeyPtr(obj);
+
+    if (EVP_PKEY_derive_set_peer(ctx, peer_pkey) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_derive_set_peer");
+    rb_ivar_set(self, id_pkey_peer, obj);
+
+    size_t outlen;
+    if (EVP_PKEY_derive(ctx, NULL, &outlen) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_derive");
+    if (outlen > LONG_MAX)
+        rb_raise(ePKeyError, "output would be too large");
+
+    VALUE out = rb_str_new(NULL, (long)outlen);
+    if (EVP_PKEY_derive(ctx, (unsigned char *)RSTRING_PTR(out), &outlen) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_derive");
+    rb_str_set_len(out, outlen);
+    return out;
+}
+
 void
 Init_ossl_pkey_ctx(void)
 {
@@ -636,5 +682,10 @@ Init_ossl_pkey_ctx(void)
     rb_define_method(cPKeyContext, "decrypt_init", pkeyctx_decrypt_init, 0);
     rb_define_method(cPKeyContext, "decrypt", pkeyctx_decrypt, 1);
 
+    // EVP_PKEY_OP_DERIVE
+    rb_define_method(cPKeyContext, "derive_init", pkeyctx_derive_init, 0);
+    rb_define_method(cPKeyContext, "derive", pkeyctx_derive, 1);
+
     id_pkey = rb_intern_const("pkey");
+    id_pkey_peer = rb_intern_const("pkey_peer");
 }
