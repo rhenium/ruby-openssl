@@ -165,6 +165,35 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     }
   end if ENV["OSSL_TEST_ALL"] == "1" && Process.respond_to?(:setsid)
 
+  def test_ctx_sign_verify
+    pkey = Fixtures.pkey("rsa-1")
+    data = "data"
+    digest = OpenSSL::Digest.digest("SHA256", data)
+
+    signctx = OpenSSL::PKey::PKeyContext.new(pkey)
+    signctx.sign_init
+    assert_same(signctx, signctx.ctrl_str("digest", "SHA256"))
+    sig = signctx.sign(digest)
+    # PKCS#1 v1.5 is deterministic
+    assert_equal(pkey.sign("SHA256", "data").inspect, sig.inspect)
+
+    verifyctx = OpenSSL::PKey::PKeyContext.new(pkey)
+    verifyctx.verify_init
+    verifyctx.ctrl_str("digest", "SHA256")
+    assert_equal(true, verifyctx.verify(sig, digest))
+    assert_equal(false, verifyctx.verify(sig, digest.reverse))
+
+    # OSSL_PARAM-based functions are not implemented in LibreSSL and AWS-LC yet
+    if openssl?(3, 0, 0)
+      verifyctx = OpenSSL::PKey::PKeyContext.new(pkey)
+      verifyctx.verify_init
+      verifyctx.set_params([["digest", "SHA512"]])
+      assert_equal(false, verifyctx.verify(sig, digest))
+      verifyctx.set_params([["digest", "SHA256"]])
+      assert_equal(true, verifyctx.verify(sig, digest))
+    end
+  end
+
   def test_hmac_sign_verify
     pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
 
