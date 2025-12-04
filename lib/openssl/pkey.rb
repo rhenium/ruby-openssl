@@ -7,6 +7,58 @@
 require_relative 'marshal'
 
 module OpenSSL::PKey
+  class << self
+    # :call-seq:
+    #    OpenSSL::PKey.generate_parameters(algo_name [, options]) -> pkey
+    #
+    # Generates new parameters for the algorithm. _algo_name_ is a String that
+    # represents the algorithm. The optional argument _options_ is a Hash that
+    # specifies the options specific to the algorithm. The order of the options
+    # can be important.
+    #
+    # A block can be passed optionally. The meaning of the arguments passed to
+    # the block varies depending on the implementation of the algorithm. The block
+    # may be called once or multiple times, or may not even be called.
+    #
+    # For the supported options, see the documentation for the 'openssl genpkey'
+    # utility command.
+    #
+    # == Example
+    #   pkey = OpenSSL::PKey.generate_parameters("DSA", "dsa_paramgen_bits" => 2048)
+    #   p pkey.p.num_bits #=> 2048
+    def generate_parameters(algo_name, ctrls = nil, &blk)
+      ctx = OpenSSL::PKey::PKeyContext.new(algo_name)
+      ctx.paramgen_init
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.paramgen(&blk)
+    end
+
+    # :call-seq:
+    #    OpenSSL::PKey.generate_key(algo_name [, options]) -> pkey
+    #    OpenSSL::PKey.generate_key(pkey [, options]) -> pkey
+    #
+    # Generates a new key (pair).
+    #
+    # If a String is given as the first argument, it generates a new random key
+    # for the algorithm specified by the name just as ::generate_parameters does.
+    # If an OpenSSL::PKey::PKey is given instead, it generates a new random key
+    # for the same algorithm as the key, using the parameters the key contains.
+    #
+    # See ::generate_parameters for the details of _options_ and the given block.
+    #
+    # == Example
+    #   pkey_params = OpenSSL::PKey.generate_parameters("DSA", "dsa_paramgen_bits" => 2048)
+    #   pkey_params.priv_key #=> nil
+    #   pkey = OpenSSL::PKey.generate_key(pkey_params)
+    #   pkey.priv_key #=> #<OpenSSL::BN 6277...
+    def generate_key(algo_name_or_pkey, ctrls = nil, &blk)
+      ctx = OpenSSL::PKey::PKeyContext.new(algo_name_or_pkey)
+      ctx.keygen_init
+      ctrls.each { |k, v| ctx.ctrl_str(k, v) } if ctrls
+      ctx.keygen(&blk)
+    end
+  end
+
   # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
   DHError = PKeyError
 

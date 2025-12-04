@@ -158,6 +158,190 @@ pkeyctx_set_params(VALUE self, VALUE ary)
 #define pkeyctx_set_params rb_f_notimplement
 #endif
 
+/*
+ * EVP_PKEY_OP_PARAMGEN and EVP_PKEY_OP_KEYGEN
+ */
+struct pkey_blocking_generate_arg {
+    EVP_PKEY_CTX *ctx;
+    EVP_PKEY *pkey;
+    int state;
+    unsigned int yield: 1;
+    unsigned int genparam: 1;
+    unsigned int interrupted: 1;
+};
+
+static VALUE
+pkey_gen_cb_yield(VALUE ctx_v)
+{
+    EVP_PKEY_CTX *ctx = (void *)ctx_v;
+    int i, info_num;
+    VALUE *argv;
+
+    info_num = EVP_PKEY_CTX_get_keygen_info(ctx, -1);
+    argv = ALLOCA_N(VALUE, info_num);
+    for (i = 0; i < info_num; i++)
+        argv[i] = INT2NUM(EVP_PKEY_CTX_get_keygen_info(ctx, i));
+
+    return rb_yield_values2(info_num, argv);
+}
+
+static VALUE
+call_check_ints0(VALUE arg)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
+static void *
+call_check_ints(void *arg)
+{
+    int state;
+    rb_protect(call_check_ints0, Qnil, &state);
+    return (void *)(VALUE)state;
+}
+
+static int
+pkey_gen_cb(EVP_PKEY_CTX *ctx)
+{
+    struct pkey_blocking_generate_arg *arg = EVP_PKEY_CTX_get_app_data(ctx);
+    int state;
+
+    if (arg->yield) {
+        rb_protect(pkey_gen_cb_yield, (VALUE)ctx, &state);
+        if (state) {
+            arg->state = state;
+            return 0;
+        }
+    }
+    if (arg->interrupted) {
+        arg->interrupted = 0;
+        state = (int)(VALUE)rb_thread_call_with_gvl(call_check_ints, NULL);
+        if (state) {
+            arg->state = state;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static void
+pkey_blocking_gen_stop(void *ptr)
+{
+    struct pkey_blocking_generate_arg *arg = ptr;
+    arg->interrupted = 1;
+}
+
+static void *
+pkey_blocking_gen(void *ptr)
+{
+    struct pkey_blocking_generate_arg *arg = ptr;
+
+    // OpenSSL >= 3.0: EVP_PKEY_generate() can be used for both
+    if (arg->genparam && EVP_PKEY_paramgen(arg->ctx, &arg->pkey) <= 0)
+        return NULL;
+    if (!arg->genparam && EVP_PKEY_keygen(arg->ctx, &arg->pkey) <= 0)
+        return NULL;
+    return arg->pkey;
+}
+
+static VALUE
+pkeyctx_generate(VALUE self, int genparam)
+{
+    EVP_PKEY_CTX *ctx = GetPKeyCtxPtr(self);
+
+    struct pkey_blocking_generate_arg gen_arg = {
+        .ctx = ctx,
+        .yield = rb_block_given_p(),
+        .pkey = NULL,
+        .genparam = genparam,
+        .state = 0,
+        .interrupted = 0,
+    };
+    EVP_PKEY_CTX_set_app_data(ctx, &gen_arg);
+    EVP_PKEY_CTX_set_cb(ctx, pkey_gen_cb);
+    if (gen_arg.yield)
+        pkey_blocking_gen(&gen_arg);
+    else
+        rb_thread_call_without_gvl(pkey_blocking_gen, &gen_arg,
+                                   pkey_blocking_gen_stop, &gen_arg);
+    EVP_PKEY_CTX_set_app_data(ctx, NULL);
+    if (!gen_arg.pkey) {
+        if (gen_arg.state) {
+            ossl_clear_error();
+            rb_jump_tag(gen_arg.state);
+        }
+        ossl_raise(ePKeyError,
+                   genparam ? "EVP_PKEY_paramgen" : "EVP_PKEY_keygen");
+    }
+    return ossl_pkey_wrap(gen_arg.pkey);
+}
+
+/*
+ * call-seq:
+ *    ctx.paramgen_init -> self
+ *
+ * Prepares the context for #paramgen.
+ */
+static VALUE
+pkeyctx_paramgen_init(VALUE self)
+{
+    if (EVP_PKEY_paramgen_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_paramgen_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.paramgen -> pkey
+ *    ctx.paramgen { |*values| } -> pkey
+ *
+ * Generates a new OpenSSL::PKey::PKey object with a new set of parameters.
+ *
+ * If a block is given, yields integers retrieved by
+ * <tt>EVP_PKEY_CTX_get_keygen_info()</tt> whenever the
+ * <tt>EVP_PKEY_CTX_set_cb()</tt> callback is invoked. The meaning of the
+ * integers entirely depends on the algorithm and the provider implementation.
+ *
+ * See the man page EVP_PKEY_generate(3).
+ * Used by OpenSSL::PKey.generate_parameters.
+ */
+static VALUE
+pkeyctx_paramgen(VALUE self)
+{
+    return pkeyctx_generate(self, 1);
+}
+
+/*
+ * call-seq:
+ *    ctx.keygen_init -> self
+ *
+ * Prepares the context for #keygen.
+ */
+static VALUE
+pkeyctx_keygen_init(VALUE self)
+{
+    if (EVP_PKEY_keygen_init(GetPKeyCtxPtr(self)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_keygen_init");
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.keygen -> pkey
+ *    ctx.keygen { |*values| } -> pkey
+ *
+ * Generates a new OpenSSL::PKey::PKey object with a new key pair.
+ * See also #paramgen for parameter generation.
+ *
+ * See the man page EVP_PKEY_generate(3).
+ * Used by OpenSSL::PKey.generate_key.
+ */
+static VALUE
+pkeyctx_keygen(VALUE self)
+{
+    return pkeyctx_generate(self, 0);
+}
+
 void
 Init_ossl_pkey_ctx(void)
 {
@@ -191,6 +375,14 @@ Init_ossl_pkey_ctx(void)
     rb_undef_method(cPKeyContext, "initialize_copy");
     rb_define_method(cPKeyContext, "ctrl_str", pkeyctx_ctrl_str, 2);
     rb_define_method(cPKeyContext, "set_params", pkeyctx_set_params, 1);
+
+    // EVP_PKEY_OP_PARAMGEN
+    rb_define_method(cPKeyContext, "paramgen_init", pkeyctx_paramgen_init, 0);
+    rb_define_method(cPKeyContext, "paramgen", pkeyctx_paramgen, 0);
+
+    // EVP_PKEY_OP_KEYGEN
+    rb_define_method(cPKeyContext, "keygen_init", pkeyctx_keygen_init, 0);
+    rb_define_method(cPKeyContext, "keygen", pkeyctx_keygen, 0);
 
     id_pkey = rb_intern_const("pkey");
 }
