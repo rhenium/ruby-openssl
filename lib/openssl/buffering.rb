@@ -323,7 +323,18 @@ module OpenSSL::Buffering
   # Has no effect on unbuffered reads (such as #sysread).
 
   def ungetc(c)
-    @rbuffer[0,0] = c.chr
+    @rbuffer[0, 0] = Integer === c ? c.chr : c
+    @rbuffer.force_encoding(Encoding::BINARY)
+    nil
+  end
+
+  ##
+  # Pushes byte _c_ back onto the stream such that a subsequent buffered byte
+  # read will return it.
+  def ungetbyte(c)
+    @rbuffer[0, 0] = Integer === c ? (c & 0xff).chr : c
+    @rbuffer.force_encoding(Encoding::BINARY)
+    nil
   end
 
   ##
