@@ -22,8 +22,7 @@
 module OpenSSL::Buffering
   include Enumerable
 
-  # A buffer which will retain binary encoding.
-  class Buffer < String
+  class Buffer < String # :nodoc:
     unless String.method_defined?(:append_as_bytes)
       alias_method :_append, :<<
       def append_as_bytes(string)
