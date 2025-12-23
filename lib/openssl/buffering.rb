@@ -552,6 +552,21 @@ module OpenSSL::Buffering
   end
 
   ##
+  # Writes character _ch_ to the stream.
+  #
+  # See IO#putc for full details.
+
+  def putc(ch)
+    if String === ch
+      # Can be empty or more than 1 byte
+      do_write(ch[0, 1])
+    else
+      do_write((ch & 0xff).chr)
+    end
+    ch
+  end
+
+  ##
   # Writes _args_ to the stream.
   #
   # See IO#print for full details.
