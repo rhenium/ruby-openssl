@@ -466,15 +466,12 @@ module OpenSSL::TestPairM
 
   def test_read_nonblock
     ssl_pair {|s1, s2|
-      err = nil
-      assert_raise(OpenSSL::SSL::SSLErrorWaitReadable) {
-        begin
-          s2.read_nonblock(10)
-        ensure
-          err = $!
-        end
+      err = assert_raise(IO::WaitReadable) {
+        s2.read_nonblock(10)
       }
-      assert_kind_of(IO::WaitReadable, err)
+      if s2.is_a?(OpenSSL::SSL::SSLSocket)
+        assert_instance_of(OpenSSL::SSL::SSLErrorWaitReadable, err)
+      end
       s1.write "abc\ndef\n"
       IO.select([s2])
       assert_equal("ab", s2.read_nonblock(2))
@@ -680,4 +677,18 @@ class OpenSSL::TestSSLPair < OpenSSL::TestCase
   include OpenSSL::SSLPair
   include OpenSSL::TestPairM
   include OpenSSL::TestEOF
+end
+
+class OpenSSL::TestSocketPair < OpenSSL::TestCase
+  include OpenSSL::TestPairM
+  include OpenSSL::TestEOF
+
+  def ssl_pair
+    af = /mswin|mingw/ =~ RUBY_PLATFORM ? :INET : :UNIX
+    sock1, sock2 = Socket.pair(af, :STREAM, 0)
+    yield sock1, sock2
+  ensure
+    sock1&.close
+    sock2&.close
+  end
 end
