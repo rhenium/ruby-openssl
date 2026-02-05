@@ -181,6 +181,9 @@ static DH *
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
+    if (p->cb_state)
+        return NULL;
+
     int state;
     struct tmp_dh_callback_args args = {p->self, is_export, keylength};
     VALUE ret = rb_protect(ossl_call_tmp_dh_callback, (VALUE)&args, &state);
@@ -224,6 +227,12 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     p = ossl_ssl_data(ssl);
+    if (p->cb_state) {
+        if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_UNSPECIFIED);
+        return 0;
+    }
+
     sslctx_obj = rb_attr_get(p->self, id_i_context);
     cb = rb_attr_get(sslctx_obj, id_i_verify_callback);
     verify_hostname = rb_attr_get(sslctx_obj, id_i_verify_hostname);
@@ -367,6 +376,8 @@ ossl_sslctx_keylog_cb(const SSL *ssl, const char *line)
     struct ossl_call_keylog_cb_args args = { p->self, line };
     int state;
 
+    if (p->cb_state)
+        return;
     OSSL_Debug("SSL keylog callback entered");
 
     rb_protect(ossl_call_keylog_cb, (VALUE)&args, &state);
@@ -477,6 +488,8 @@ ssl_servername_cb(SSL *ssl, int *ad, void *arg)
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
     int state;
 
+    if (p->cb_state)
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
     rb_protect(ossl_call_servername_cb, (VALUE)ssl, &state);
     if (state) {
         p->cb_state = state;
@@ -563,6 +576,9 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
     VALUE selected;
     int state;
     struct npn_select_cb_common_args args;
+
+    if (p->cb_state)
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
 
     args.cb = cb;
     args.in = in;
