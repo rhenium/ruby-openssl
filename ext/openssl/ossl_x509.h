@@ -82,9 +82,10 @@ X509_REVOKED *DupX509RevokedPtr(VALUE);
 void Init_ossl_x509revoked(void);
 
 /*
- * X509Store and X509StoreContext
+ * X509Store, X509StoreContext, and X509VerifyParam
  */
 X509_STORE *GetX509StorePtr(VALUE);
+VALUE ossl_x509vpm_wrap(X509_VERIFY_PARAM *vpm, VALUE owner);
 void Init_ossl_x509store(void);
 
 /*

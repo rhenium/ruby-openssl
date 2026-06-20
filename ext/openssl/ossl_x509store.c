@@ -23,23 +23,50 @@
     } \
 } while (0)
 
+#define GetX509VerifyParam(obj, vpm) do { \
+    TypedData_Get_Struct((obj), X509_VERIFY_PARAM, &ossl_x509vpm_type, (vpm)); \
+    if (!(vpm)) { \
+        ossl_raise(rb_eRuntimeError, "VERIFY_PARAM wasn't initialized!"); \
+    } \
+} while (0)
+
+static VALUE eX509StoreError;
+static VALUE cX509Store;
+static VALUE cX509StoreContext;
+static VALUE cX509VerifyParam;
+static ID id_vpm, id_owner;
+
 /*
  * Verify callback stuff
  */
 static int stctx_ex_verify_cb_idx, store_ex_verify_cb_idx;
-static VALUE ossl_x509stctx_new(X509_STORE_CTX *);
+static VALUE ossl_x509stctx_alloc(VALUE klass);
+
+static VALUE
+x509stctx_wrap_i(VALUE ctx_)
+{
+    X509_STORE_CTX *ctx = (void *)ctx_;
+    VALUE obj = ossl_x509stctx_alloc(cX509StoreContext);
+    VALUE vpm_obj = ossl_x509vpm_wrap(NULL, obj);
+    rb_ivar_set(obj, id_vpm, vpm_obj);
+    RTYPEDDATA_DATA(obj) = ctx;
+    RTYPEDDATA_DATA(vpm_obj) = X509_STORE_CTX_get0_param(ctx);
+    return obj;
+}
+
+static void
+x509stctx_clear(VALUE obj)
+{
+    VALUE vpm_obj = rb_ivar_get(obj, id_vpm);
+    RTYPEDDATA_DATA(obj) = NULL;
+    RTYPEDDATA_DATA(vpm_obj) = NULL;
+}
 
 struct ossl_verify_cb_args {
     VALUE proc;
     VALUE preverify_ok;
     VALUE store_ctx;
 };
-
-static VALUE
-ossl_x509stctx_new_i(VALUE arg)
-{
-    return ossl_x509stctx_new((X509_STORE_CTX *)arg);
-}
 
 static VALUE
 call_verify_cb_proc(VALUE arg)
@@ -60,7 +87,7 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
         return ok;
 
     ret = Qfalse;
-    rctx = rb_protect(ossl_x509stctx_new_i, (VALUE)ctx, &state);
+    rctx = rb_protect(x509stctx_wrap_i, (VALUE)ctx, &state);
     if (state) {
         rb_set_errinfo(Qnil);
         rb_warn("StoreContext initialization failure");
@@ -74,7 +101,7 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
             rb_set_errinfo(Qnil);
             rb_warn("exception in verify_callback is ignored");
         }
-        RTYPEDDATA_DATA(rctx) = NULL;
+        x509stctx_clear(rctx);
     }
     if (ret == Qtrue) {
         X509_STORE_CTX_set_error(ctx, X509_V_OK);
@@ -92,10 +119,6 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
 /*
  * Classes
  */
-static VALUE cX509Store;
-static VALUE cX509StoreContext;
-static VALUE eX509StoreError;
-
 static void
 ossl_x509store_mark(void *ptr)
 {
@@ -210,12 +233,29 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     X509_STORE_set_verify_cb(store, x509store_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
+    rb_ivar_set(self, id_vpm,
+                ossl_x509vpm_wrap(X509_STORE_get0_param(store), self));
+
     /* last verification status */
     rb_iv_set(self, "@error", Qnil);
     rb_iv_set(self, "@error_string", Qnil);
     rb_iv_set(self, "@chain", Qnil);
 
     return self;
+}
+
+/*
+ * call-seq:
+ *    store.verify_param -> OpenSSL::X509::VerifyParam
+ *
+ * Gets the OpenSSL::X509::VerifyParam object associated with the Store.
+ *
+ * See also the man page X509_STORE_get0_param(3).
+ */
+static VALUE
+ossl_x509store_verify_param(VALUE self)
+{
+    return rb_attr_get(self, id_vpm);
 }
 
 /*
@@ -606,12 +646,6 @@ ossl_x509stctx_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_x509stctx_type, NULL);
 }
 
-static VALUE
-ossl_x509stctx_new(X509_STORE_CTX *ctx)
-{
-    return TypedData_Wrap_Struct(cX509StoreContext, &ossl_x509stctx_type, ctx);
-}
-
 static VALUE ossl_x509stctx_set_flags(VALUE, VALUE);
 static VALUE ossl_x509stctx_set_purpose(VALUE, VALUE);
 static VALUE ossl_x509stctx_set_trust(VALUE, VALUE);
@@ -657,6 +691,8 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     }
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
+    rb_ivar_set(self, id_vpm,
+                ossl_x509vpm_wrap(X509_STORE_CTX_get0_param(ctx), self));
 
     return self;
 }
@@ -837,6 +873,20 @@ ossl_x509stctx_get_curr_crl(VALUE self)
 
 /*
  * call-seq:
+ *    stctx.verify_param -> OpenSSL::X509::VerifyParam
+ *
+ * Gets the OpenSSL::X509::VerifyParam object associated with the StoreContext.
+ *
+ * See also the man page X509_STORE_CTX_get0_param(3).
+ */
+static VALUE
+ossl_x509stctx_verify_param(VALUE self)
+{
+    return rb_attr_get(self, id_vpm);
+}
+
+/*
+ * call-seq:
  *    stctx.flags -> Integer
  *
  * Gets the verification flags for the context.
@@ -962,6 +1012,185 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
 }
 
 /*
+ * OpenSSL::X509::VerifyParam
+ */
+static const rb_data_type_t ossl_x509vpm_type = {
+    .wrap_struct_name = "OpenSSL/X509/VERIFY_PARAM",
+    .function = {
+        .dmark = NULL,
+        .dfree = NULL,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+
+VALUE
+ossl_x509vpm_wrap(X509_VERIFY_PARAM *vpm, VALUE owner)
+{
+    VALUE obj =
+        TypedData_Wrap_Struct(cX509VerifyParam, &ossl_x509vpm_type, vpm);
+    rb_ivar_set(obj, id_owner, owner); // owner must outlive obj
+    return obj;
+}
+
+static void
+x509vpm_check_frozen(VALUE self)
+{
+    rb_check_frozen(self);
+    rb_check_frozen(rb_attr_get(self, id_owner));
+}
+
+/*
+ * call-seq:
+ *    vpm.flags -> Integer
+ *
+ * Gets the verification flags.
+ *
+ * See also the man page X509_VERIFY_PARAM_get_flags(3).
+ */
+static VALUE
+x509vpm_get_flags(VALUE self)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    GetX509VerifyParam(self, vpm);
+    return ULONG2NUM(X509_VERIFY_PARAM_get_flags(vpm));
+}
+
+/*
+ * call-seq:
+ *    vpm.flags = flags
+ *
+ * Sets the flags used by certificate chain verification.
+ *
+ * *NOTE*: Despite the name, this method appends the specified flags to the
+ * existing flag set rather than replacing it. To clear existing flags, use
+ * #clear_flags before calling this method.
+ *
+ * _flags_ consists of zero or more of the constants defined in OpenSSL::X509
+ * with name V_FLAG_* or'ed together.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_flags(3).
+ */
+static VALUE
+x509vpm_set_flags(VALUE self, VALUE flags)
+{
+    X509_VERIFY_PARAM *vpm;
+    unsigned long f, curr;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    f = NUM2ULONG(flags);
+    curr = X509_VERIFY_PARAM_get_flags(vpm);
+    if ((curr | f) != f) {
+        rb_warn("`obj.flags = new_flags` does not clear existing flags; " \
+                "use `obj.clear_flags` first if you want to replace them, " \
+                "or `obj.flags |= new_flags` to indicate that " \
+                "appending flags is intentional");
+    }
+    if (!X509_VERIFY_PARAM_set_flags(vpm, f))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set_flags");
+    return flags;
+}
+
+/*
+ * call-seq:
+ *    vpm.clear_flags(flags = nil)
+ *
+ * Clears verification flags _flags_. If _flags_ is omitted,
+ * clears all existing flags.
+ *
+ * See also the man page X509_VERIFY_PARAM_clear_flags(3).
+ */
+static VALUE
+x509vpm_clear_flags(int argc, VALUE *argv, VALUE self)
+{
+    X509_VERIFY_PARAM *vpm;
+    VALUE flags;
+    unsigned long f;
+
+    rb_scan_args(argc, argv, "01", &flags);
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    f = NIL_P(flags) ? ~0UL : NUM2ULONG(flags);
+    if (!X509_VERIFY_PARAM_clear_flags(vpm, f))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_clear_flags");
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    vpm.purpose = purpose
+ *
+ * Sets the verification purpose. If specified, the verifications will check
+ * every certificate's extensions are consistent with the purpose. The purpose
+ * is specified by constants:
+ *
+ * * X509::PURPOSE_SSL_CLIENT
+ * * X509::PURPOSE_SSL_SERVER
+ * * X509::PURPOSE_NS_SSL_SERVER
+ * * X509::PURPOSE_SMIME_SIGN
+ * * X509::PURPOSE_SMIME_ENCRYPT
+ * * X509::PURPOSE_CRL_SIGN
+ * * X509::PURPOSE_ANY
+ * * X509::PURPOSE_OCSP_HELPER
+ * * X509::PURPOSE_TIMESTAMP_SIGN
+ *
+ * See also the man page X509_VERIFY_PARAM_set_purpose(3).
+ */
+static VALUE
+x509vpm_set_purpose(VALUE self, VALUE purpose)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    if (!X509_VERIFY_PARAM_set_purpose(vpm, NUM2INT(purpose)))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set_purpose");
+
+    return purpose;
+}
+
+/*
+ * call-seq:
+ *    vpm.trust = trust
+ *
+ * Sets the trust settings used by the certificate verification.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_trust(3).
+ */
+static VALUE
+x509vpm_set_trust(VALUE self, VALUE trust)
+{
+    X509_VERIFY_PARAM *vpm;
+    int t = NUM2INT(trust);
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    if (!X509_VERIFY_PARAM_set_trust(vpm, t))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set_trust");
+
+    return trust;
+}
+
+/*
+ * call-seq:
+ *    vpm.time = time
+ *
+ * Sets the time to be used in the certificate verification.
+ * By default, if not specified, the current system time is used.
+ */
+static VALUE
+x509vpm_set_time(VALUE self, VALUE time)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    X509_VERIFY_PARAM_set_time(vpm, NUM2LONG(rb_Integer(time)));
+    return time;
+}
+
+/*
  * INIT
  */
 void
@@ -1053,6 +1282,7 @@ Init_ossl_x509store(void)
     rb_define_method(cX509Store, "initialize",   ossl_x509store_initialize, -1);
     rb_undef_method(cX509Store, "initialize_copy");
     rb_define_method(cX509Store, "verify_callback=", ossl_x509store_set_vfy_cb, 1);
+    rb_define_method(cX509Store, "verify_param", ossl_x509store_verify_param, 0);
     rb_define_method(cX509Store, "flags",        ossl_x509store_get_flags, 0);
     rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
     rb_define_method(cX509Store, "clear_flags",  ossl_x509store_clear_flags, -1);
@@ -1084,10 +1314,35 @@ Init_ossl_x509store(void)
     rb_define_method(cX509StoreContext, "error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(cX509StoreContext, "current_cert", ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(cX509StoreContext, "current_crl", ossl_x509stctx_get_curr_crl, 0);
+    rb_define_method(cX509StoreContext, "verify_param", ossl_x509stctx_verify_param, 0);
     rb_define_method(cX509StoreContext, "flags", ossl_x509stctx_get_flags, 0);
     rb_define_method(cX509StoreContext, "flags=", ossl_x509stctx_set_flags, 1);
     rb_define_method(cX509StoreContext, "clear_flags", ossl_x509stctx_clear_flags, -1);
     rb_define_method(cX509StoreContext, "purpose=", ossl_x509stctx_set_purpose, 1);
     rb_define_method(cX509StoreContext, "trust=", ossl_x509stctx_set_trust, 1);
     rb_define_method(cX509StoreContext, "time=", ossl_x509stctx_set_time, 1);
+
+    /*
+     * Document-class: OpenSSL::X509::VerifyParam
+     *
+     * Corresponds to OpenSSL X509_VERIFY_PARAM structure. This class is used
+     * to set verification parameters for certificate verification.
+     *
+     * Note that this is a dependent object and is only valid as long as the
+     * parent object (OpenSSL::X509::Store, OpenSSL::X509::StoreContext,
+     * OpenSSL::SSL::SSLContext, OpenSSL::SSL::SSLSocket, etc.) is alive.
+     *
+     * Modifications to this object will affect the parent object.
+     */
+    cX509VerifyParam = rb_define_class_under(mX509, "VerifyParam", rb_cObject);
+    rb_undef_alloc_func(cX509VerifyParam);
+    rb_define_method(cX509VerifyParam, "flags", x509vpm_get_flags, 0);
+    rb_define_method(cX509VerifyParam, "flags=", x509vpm_set_flags, 1);
+    rb_define_method(cX509VerifyParam, "clear_flags", x509vpm_clear_flags, -1);
+    rb_define_method(cX509VerifyParam, "purpose=", x509vpm_set_purpose, 1);
+    rb_define_method(cX509VerifyParam, "trust=", x509vpm_set_trust, 1);
+    rb_define_method(cX509VerifyParam, "time=", x509vpm_set_time, 1);
+
+    id_vpm = rb_intern_const("vpm");
+    id_owner = rb_intern_const("owner");
 }
