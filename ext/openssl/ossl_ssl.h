@@ -32,6 +32,7 @@ extern VALUE cSSLSession;
 
 struct ossl_ssl_data {
     VALUE self;
+    VALUE io;
     int cb_state;
 };
 struct ossl_ssl_data *ossl_ssl_data(const SSL *ssl);

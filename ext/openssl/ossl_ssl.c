@@ -47,7 +47,7 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
           id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
           id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
           id_i_verify_hostname, id_i_keylog_cb, id_i_tmp_dh_callback;
-static ID id_i_io, id_i_context, id_i_hostname, id_i_sync_close;
+static ID id_i_context, id_i_hostname, id_i_sync_close;
 
 static int ossl_ssl_ex_data_idx;
 static int ossl_sslctx_ex_ptr_idx;
@@ -1629,6 +1629,7 @@ ossl_ssl_mark(void *ptr)
     SSL *ssl = ptr;
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
     rb_gc_mark_movable(p->self);
+    rb_gc_mark_movable(p->io);
 }
 
 static void
@@ -1646,6 +1647,7 @@ ossl_ssl_compact(void *ptr)
     SSL *ssl = ptr;
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
     p->self = rb_gc_location(p->self);
+    p->io = rb_gc_location(p->io);
 }
 
 const rb_data_type_t ossl_ssl_type = {
@@ -1740,10 +1742,10 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     if (rb_respond_to(io, rb_intern("nonblock=")))
         rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
     Check_Type(io, T_FILE);
-    rb_ivar_set(self, id_i_io, io);
 
     struct ossl_ssl_data *p = RB_ZALLOC(struct ossl_ssl_data);
     p->self = self;
+    p->io = io;
 
     ssl = SSL_new(ctx);
     if (!ssl) {
@@ -1762,6 +1764,21 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    ssl.io -> io
+ *    ssl.to_io -> io
+ *
+ * Returns the underlying IO object.
+ */
+static VALUE
+ossl_ssl_get_io(VALUE self)
+{
+    SSL *ssl;
+    GetSSL(self, ssl);
+    return ossl_ssl_data(ssl)->io;
+}
+
 #ifndef HAVE_RB_IO_DESCRIPTOR
 static int
 io_descriptor_fallback(VALUE io)
@@ -1776,19 +1793,19 @@ io_descriptor_fallback(VALUE io)
 static VALUE
 ossl_ssl_setup(VALUE self)
 {
-    VALUE io;
     SSL *ssl;
+    struct ossl_ssl_data *p;
     rb_io_t *fptr;
 
     GetSSL(self, ssl);
+    p = ossl_ssl_data(ssl);
     if (ssl_started(ssl))
         return Qtrue;
 
-    io = rb_attr_get(self, id_i_io);
-    GetOpenFile(io, fptr);
+    GetOpenFile(p->io, fptr);
     rb_io_check_readable(fptr);
     rb_io_check_writable(fptr);
-    if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(io))))
+    if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(p->io))))
         ossl_raise(eSSLError, "SSL_set_fd");
 
     return Qtrue;
@@ -1874,9 +1891,7 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
     int nonblock = opts != Qfalse;
 
     GetSSL(self, ssl);
-
     struct ossl_ssl_data *p = ossl_ssl_data(ssl);
-    VALUE io = rb_attr_get(self, id_i_io);
 
     for (;;) {
         int ret = func(ssl);
@@ -1898,12 +1913,12 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
           case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            io_wait_writable(io);
+            io_wait_writable(p->io);
             continue;
           case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            io_wait_readable(io);
+            io_wait_readable(p->io);
             continue;
           case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
@@ -1936,7 +1951,7 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
                          code == SSL_ERROR_SYSCALL ? " SYSCALL" : "",
                          code,
                          saved_errno,
-                         peeraddr_ip_str(io),
+                         peeraddr_ip_str(p->io),
                          SSL_state_string_long(ssl),
                          error_append);
           }
@@ -2075,8 +2090,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
         return str;
     }
 
-    VALUE io = rb_attr_get(self, id_i_io);
-
     for (;;) {
         rb_str_locktmp(str);
         int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
@@ -2102,14 +2115,14 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
                 if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
             }
-            io_wait_writable(io);
+            io_wait_writable(p->io);
             break;
           case SSL_ERROR_WANT_READ:
             if (nonblock) {
                 if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
             }
-            io_wait_readable(io);
+            io_wait_readable(p->io);
             break;
           case SSL_ERROR_SYSCALL:
             if (!ERR_peek_error()) {
@@ -2181,7 +2194,6 @@ ossl_ssl_write_internal_safe(VALUE _args)
     VALUE opts = args[2];
 
     SSL *ssl;
-    rb_io_t *fptr;
     struct ossl_ssl_data *p;
     int num, nonblock = opts != Qfalse;
 
@@ -2189,9 +2201,6 @@ ossl_ssl_write_internal_safe(VALUE _args)
     p = ossl_ssl_data(ssl);
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
-
-    VALUE io = rb_attr_get(self, id_i_io);
-    GetOpenFile(io, fptr);
 
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
     num = RSTRING_LENINT(str);
@@ -2215,12 +2224,12 @@ ossl_ssl_write_internal_safe(VALUE _args)
           case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            io_wait_writable(io);
+            io_wait_writable(p->io);
             continue;
           case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            io_wait_readable(io);
+            io_wait_readable(p->io);
             continue;
           case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
@@ -2307,9 +2316,11 @@ static VALUE
 ossl_ssl_stop(VALUE self)
 {
     SSL *ssl;
+    struct ossl_ssl_data *p;
     int ret;
 
     GetSSL(self, ssl);
+    p = ossl_ssl_data(ssl);
     if (!ssl_started(ssl))
         return Qnil;
     ret = SSL_shutdown(ssl);
@@ -3214,6 +3225,8 @@ Init_ossl_ssl(void)
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_undef_method(cSSLSocket, "initialize_copy");
+    rb_define_method(cSSLSocket, "io", ossl_ssl_get_io, 0);
+    rb_define_alias(cSSLSocket, "to_io", "io");
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
     rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, -1);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
@@ -3407,7 +3420,6 @@ Init_ossl_ssl(void)
     DefIVarID(keylog_cb);
     DefIVarID(tmp_dh_callback);
 
-    DefIVarID(io);
     DefIVarID(context);
     DefIVarID(hostname);
     DefIVarID(sync_close);

@@ -60,7 +60,7 @@ module OpenSSL::Buffering
     super
     @eof = false
     @rbuffer = Buffer.new
-    @sync = @io.sync
+    @sync = to_io.sync
   end
 
   #
