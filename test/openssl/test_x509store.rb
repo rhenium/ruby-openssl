@@ -103,6 +103,19 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(0, ctx.error_depth)
     assert_equal([ee1_cert], ctx.chain)
     assert_equal(ee1_cert, ctx.current_cert)
+
+    if libressl?
+      omit "LibreSSL behaves differently with X509_VERIFY_PARAM_set_depth()?" \
+        " Needs investigation"
+    end
+    # Depth set to 0
+    store = OpenSSL::X509::Store.new
+    store.add_cert(ca1_cert)
+    assert_not_equal(0, store.verify_param.depth) # -1, as of OpenSSL 4.0
+    store.verify_param.depth = 0
+    assert_equal(0, store.verify_param.depth)
+    assert_equal(true, store.verify(ca2_cert))
+    assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
   end
 
   def test_verify_callback

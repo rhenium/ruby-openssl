@@ -937,6 +937,41 @@ x509vpm_set_time(VALUE self, VALUE time)
 }
 
 /*
+ * call-seq:
+ *    vpm.depth -> Integer
+ *
+ * See #depth=.
+ */
+static VALUE
+x509vpm_get_depth(VALUE self)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    GetX509VerifyParam(self, vpm);
+    return INT2NUM(X509_VERIFY_PARAM_get_depth(vpm));
+}
+
+/*
+ * call-seq:
+ *    vpm.depth = depth
+ *
+ * Sets the maximum verification depth, in other words, the maximum number of
+ * intermediate CA certificates in the chain.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_depth(3).
+ */
+static VALUE
+x509vpm_set_depth(VALUE self, VALUE depth)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    X509_VERIFY_PARAM_set_depth(vpm, NUM2INT(depth));
+    return depth;
+}
+
+/*
  * INIT
  */
 void
@@ -1078,6 +1113,8 @@ Init_ossl_x509store(void)
     rb_define_method(cX509VerifyParam, "purpose=", x509vpm_set_purpose, 1);
     rb_define_method(cX509VerifyParam, "trust=", x509vpm_set_trust, 1);
     rb_define_method(cX509VerifyParam, "time=", x509vpm_set_time, 1);
+    rb_define_method(cX509VerifyParam, "depth", x509vpm_get_depth, 0);
+    rb_define_method(cX509VerifyParam, "depth=", x509vpm_set_depth, 1);
 
     id_vpm = rb_intern_const("vpm");
     id_owner = rb_intern_const("owner");
