@@ -41,7 +41,7 @@ static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
 static VALUE sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
-          id_i_verify_depth, id_i_verify_callback, id_i_client_ca,
+          id_i_verify_callback, id_i_client_ca,
           id_i_renegotiation_cb, id_i_cert, id_i_key, id_i_extra_chain_cert,
           id_i_client_cert_cb, id_i_timeout,
           id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
@@ -701,6 +701,41 @@ ossl_sslctx_set_options(VALUE self, VALUE options)
 
 /*
  * call-seq:
+ *    ctx.verify_depth -> Integer
+ *
+ * See #verify_depth=.
+ */
+static VALUE
+ossl_sslctx_get_verify_depth(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    return INT2NUM(SSL_CTX_get_verify_depth(ctx));
+}
+
+/*
+ * call-seq:
+ *    ctx.verify_depth = depth
+ *
+ * Sets the maximum number of CA certificates to walk when verifying a
+ * certificate chain.
+ *
+ * See also the man page SSL_CTX_set_verify_depth(3).
+ */
+static VALUE
+ossl_sslctx_set_verify_depth(VALUE self, VALUE depth)
+{
+    SSL_CTX *ctx;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+    SSL_CTX_set_verify_depth(ctx, NUM2INT(depth));
+    return depth;
+}
+
+/*
+ * call-seq:
  *    ctx.setup => Qtrue # first time
  *    ctx.setup => nil # thereafter
  *
@@ -808,9 +843,6 @@ ossl_sslctx_setup(VALUE self)
 
     val = rb_attr_get(self, id_i_timeout);
     if(!NIL_P(val)) SSL_CTX_set_timeout(ctx, NUM2LONG(val));
-
-    val = rb_attr_get(self, id_i_verify_depth);
-    if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
 #ifdef OSSL_USE_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
@@ -2651,11 +2683,6 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern_const("verify_mode"), 1, 1, Qfalse);
 
     /*
-     * Number of CA certificates to walk when verifying a certificate chain.
-     */
-    rb_attr(cSSLContext, rb_intern_const("verify_depth"), 1, 1, Qfalse);
-
-    /*
      * A callback for additional certificate verification.  The callback is
      * invoked for each certificate in the chain.
      *
@@ -2858,6 +2885,10 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern_const("keylog_cb"), 1, 1, Qfalse);
 
+    rb_define_method(cSSLContext, "options", ossl_sslctx_get_options, 0);
+    rb_define_method(cSSLContext, "options=", ossl_sslctx_set_options, 1);
+    rb_define_method(cSSLContext, "verify_depth", ossl_sslctx_get_verify_depth, 0);
+    rb_define_method(cSSLContext, "verify_depth=", ossl_sslctx_set_verify_depth, 1);
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
     rb_define_method(cSSLContext, "min_version=", ossl_sslctx_set_min_version, 1);
@@ -2941,8 +2972,6 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "session_cache_size=",     ossl_sslctx_set_session_cache_size, 1);
     rb_define_method(cSSLContext, "session_cache_stats",     ossl_sslctx_get_session_cache_stats, 0);
     rb_define_method(cSSLContext, "flush_sessions",     ossl_sslctx_flush_sessions, -1);
-    rb_define_method(cSSLContext, "options",     ossl_sslctx_get_options, 0);
-    rb_define_method(cSSLContext, "options=",     ossl_sslctx_set_options, 1);
 
     /*
      * Document-class: OpenSSL::SSL::SSLSocket
@@ -3147,7 +3176,6 @@ Init_ossl_ssl(void)
     DefIVarID(ca_file);
     DefIVarID(ca_path);
     DefIVarID(verify_mode);
-    DefIVarID(verify_depth);
     DefIVarID(verify_callback);
     DefIVarID(client_ca);
     DefIVarID(renegotiation_cb);
