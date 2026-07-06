@@ -718,6 +718,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_sslctx_verify_param
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.verify_depth = 1
+    assert_instance_of(OpenSSL::X509::VerifyParam, ctx.verify_param)
+    assert_equal(1, ctx.verify_param.depth)
+    Socket.open(:INET, :STREAM) {|s|
+      ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
+      assert_instance_of(OpenSSL::X509::VerifyParam, ssl.verify_param)
+      assert_equal(1, ssl.verify_param.depth)
+      ssl.verify_param.depth = 2
+      assert_equal(1, ctx.verify_param.depth)
+    }
+  end
+
   def test_ca_file
     start_server(ignore_listener_error: true) { |port|
       # X509_STORE is shared; setting ca_file to SSLContext affects store

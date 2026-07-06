@@ -37,7 +37,7 @@ static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
 static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
-          id_original_context;
+          id_original_context, id_vpm;
 static VALUE sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -107,6 +107,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     RTYPEDDATA_DATA(obj) = ctx;
     if (!SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj))
         ossl_raise(eSSLError, "SSL_CTX_set_ex_data");
+    rb_ivar_set(obj, id_vpm, ossl_x509vpm_wrap(SSL_CTX_get0_param(ctx), obj));
 
     return obj;
 }
@@ -697,6 +698,20 @@ ossl_sslctx_set_options(VALUE self, VALUE options)
     SSL_CTX_set_options(ctx, opts);
 
     return self;
+}
+
+/*
+ * call-seq:
+ *    ctx.verify_param -> OpenSSL::X509::VerifyParam
+ *
+ * Returns the OpenSSL::X509::VerifyParam object associated with the SSLContext.
+ *
+ * See also the man page SSL_CTX_get0_param(3).
+ */
+static VALUE
+ossl_sslctx_get_verify_param(VALUE self)
+{
+    return rb_attr_get(self, id_vpm);
 }
 
 /*
@@ -1759,6 +1774,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     if (!ssl)
         ossl_raise(eSSLError, NULL);
     RTYPEDDATA_DATA(self) = ssl;
+    rb_ivar_set(self, id_vpm, ossl_x509vpm_wrap(SSL_get0_param(ssl), self));
 
     if (!SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self))
         ossl_raise(eSSLError, "SSL_set_ex_data");
@@ -2311,6 +2327,20 @@ ossl_ssl_set_hostname(VALUE self, VALUE arg)
     rb_ivar_set(self, id_i_hostname, arg);
 
     return arg;
+}
+
+/*
+ * call-seq:
+ *    ssl.verify_param -> OpenSSL::X509::VerifyParam
+ *
+ * Returns the OpenSSL::X509::VerifyParam object associated with the SSLSocket.
+ *
+ * See also the man page SSL_get0_param(3).
+ */
+static VALUE
+ossl_ssl_get_verify_param(VALUE self)
+{
+    return rb_attr_get(self, id_vpm);
 }
 
 /*
@@ -2887,6 +2917,7 @@ Init_ossl_ssl(void)
 
     rb_define_method(cSSLContext, "options", ossl_sslctx_get_options, 0);
     rb_define_method(cSSLContext, "options=", ossl_sslctx_set_options, 1);
+    rb_define_method(cSSLContext, "verify_param", ossl_sslctx_get_verify_param, 0);
     rb_define_method(cSSLContext, "verify_depth", ossl_sslctx_get_verify_depth, 0);
     rb_define_method(cSSLContext, "verify_depth=", ossl_sslctx_set_verify_depth, 1);
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
@@ -2996,6 +3027,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
     /* implementation of OpenSSL::SSL::SSLSocket#session is in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
+    rb_define_method(cSSLSocket, "verify_param", ossl_ssl_get_verify_param, 0);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
     /* #hostname is defined in lib/openssl/ssl.rb */
@@ -3168,6 +3200,7 @@ Init_ossl_ssl(void)
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
     id_original_context = rb_intern_const("original_context");
+    id_vpm = rb_intern_const("vpm");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)
