@@ -333,7 +333,49 @@ module OpenSSL
       end
     end
 
+    class Store
+      # Equivalent to <tt>self.verify_param.flags</tt>.
+      # See OpenSSL::X509::VerifyParam#flags.
+      def flags() verify_param.flags end
+
+      # Equivalent to <tt>self.verify_param.flags = value</tt>.
+      # See OpenSSL::X509::VerifyParam#flags=.
+      def flags=(value) verify_param.flags = value end
+
+      # Equivalent to <tt>self.verify_param.clear_flags(value)</tt>.
+      # See OpenSSL::X509::VerifyParam#clear_flags.
+      def clear_flags(value = nil) verify_param.clear_flags(value) end
+
+      # Equivalent to <tt>self.verify_param.purpose = value</tt>.
+      # See OpenSSL::X509::VerifyParam#purpose=.
+      def purpose=(value) verify_param.purpose = value end
+
+      # Equivalent to <tt>self.verify_param.trust = value</tt>.
+      # See OpenSSL::X509::VerifyParam#trust=.
+      def trust=(value) verify_param.trust = value end
+
+      # Equivalent to <tt>self.verify_param.time = value</tt>.
+      # See OpenSSL::X509::VerifyParam#time=.
+      def time=(value) verify_param.time = value end
+    end
+
     class StoreContext
+      # Equivalent to <tt>self.verify_param.flags</tt>.
+      # See OpenSSL::X509::VerifyParam#flags.
+      def flags() verify_param.flags end
+
+      # Equivalent to <tt>self.verify_param.flags = value</tt>.
+      # See OpenSSL::X509::VerifyParam#flags=.
+      def flags=(value) verify_param.flags = value end
+
+      # Equivalent to <tt>self.verify_param.clear_flags(value)</tt>.
+      # See OpenSSL::X509::VerifyParam#clear_flags.
+      def clear_flags(value = nil) verify_param.clear_flags(value) end
+
+      # Equivalent to <tt>self.verify_param.time = value</tt>.
+      # See OpenSSL::X509::VerifyParam#time=.
+      def time=(value) verify_param.time = value end
+
       def cleanup
         warn "(#{caller.first}) OpenSSL::X509::StoreContext#cleanup is deprecated with no replacement" if $VERBOSE
       end

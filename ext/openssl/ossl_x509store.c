@@ -260,183 +260,6 @@ ossl_x509store_verify_param(VALUE self)
 
 /*
  * call-seq:
- *    store.flags -> Integer
- *
- * Gets the verification flags for the Store.
- *
- * See also the man page X509_VERIFY_PARAM_get_flags(3).
- */
-static VALUE
-ossl_x509store_get_flags(VALUE self)
-{
-    X509_STORE *store;
-    X509_VERIFY_PARAM *vpm;
-
-    GetX509Store(self, store);
-    vpm = X509_STORE_get0_param(store);
-    return ULONG2NUM(X509_VERIFY_PARAM_get_flags(vpm));
-}
-
-static void
-x509vpm_set_flags_i(X509_VERIFY_PARAM *vpm, VALUE flags)
-{
-    unsigned long curr = X509_VERIFY_PARAM_get_flags(vpm);
-    unsigned long f = NUM2ULONG(flags);
-
-    if ((curr | f) != f) {
-        rb_warn("`obj.flags = new_flags` does not clear existing flags; " \
-                "use `obj.clear_flags` first if you want to replace them, " \
-                "or `obj.flags |= new_flags` to indicate that " \
-                "appending flags is intentional");
-    }
-    if (!X509_VERIFY_PARAM_set_flags(vpm, f))
-        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set_flags");
-}
-
-/*
- * call-seq:
- *   store.flags = flags
- *
- * Sets the default flags used by certificate chain verification performed with
- * the Store.
- *
- * *NOTE*: Despite the name, this method appends the specified flags to the
- * existing flag set rather than replacing it. To clear existing flags, use
- * #clear_flags before calling this method.
- *
- * _flags_ consists of zero or more of the constants defined in OpenSSL::X509
- * with name V_FLAG_* or'ed together.
- *
- * OpenSSL::X509::StoreContext#flags= can be used to change the flags for a
- * single verification operation.
- *
- * See also the man page X509_VERIFY_PARAM_set_flags(3).
- */
-static VALUE
-ossl_x509store_set_flags(VALUE self, VALUE flags)
-{
-    X509_STORE *store;
-
-    GetX509Store(self, store);
-    x509vpm_set_flags_i(X509_STORE_get0_param(store), flags);
-    return flags;
-}
-
-static void
-x509vpm_clear_flags_i(X509_VERIFY_PARAM *vpm, VALUE flags)
-{
-    unsigned long f = NIL_P(flags) ? ~0UL : NUM2ULONG(flags);
-
-    if (!X509_VERIFY_PARAM_clear_flags(vpm, f))
-        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_clear_flags");
-}
-
-/*
- * call-seq:
- *    store.clear_flags(flags = nil)
- *
- * Clears verification flags _flags_ for the Store. If _flags_ is omitted,
- * clears all existing flags.
- *
- * See also the man page X509_VERIFY_PARAM_clear_flags(3).
- */
-static VALUE
-ossl_x509store_clear_flags(int argc, VALUE *argv, VALUE self)
-{
-    X509_STORE *store;
-    VALUE flags;
-
-    rb_scan_args(argc, argv, "01", &flags);
-    GetX509Store(self, store);
-    x509vpm_clear_flags_i(X509_STORE_get0_param(store), flags);
-    return Qnil;
-}
-
-/*
- * call-seq:
- *   store.purpose = purpose
- *
- * Sets the store's default verification purpose. If specified,
- * the verifications on the store will check every certificate's extensions are
- * consistent with the purpose. The purpose is specified by constants:
- *
- * * X509::PURPOSE_SSL_CLIENT
- * * X509::PURPOSE_SSL_SERVER
- * * X509::PURPOSE_NS_SSL_SERVER
- * * X509::PURPOSE_SMIME_SIGN
- * * X509::PURPOSE_SMIME_ENCRYPT
- * * X509::PURPOSE_CRL_SIGN
- * * X509::PURPOSE_ANY
- * * X509::PURPOSE_OCSP_HELPER
- * * X509::PURPOSE_TIMESTAMP_SIGN
- *
- * OpenSSL::X509::StoreContext#purpose= can be used to change the value for a
- * single verification operation.
- *
- * See also the man page X509_VERIFY_PARAM_set_purpose(3).
- */
-static VALUE
-ossl_x509store_set_purpose(VALUE self, VALUE purpose)
-{
-    X509_STORE *store;
-    int p = NUM2INT(purpose);
-
-    GetX509Store(self, store);
-    X509_STORE_set_purpose(store, p);
-
-    return purpose;
-}
-
-/*
- * call-seq:
- *   store.trust = trust
- *
- * Sets the default trust settings used by the certificate verification with
- * the store.
- *
- * OpenSSL::X509::StoreContext#trust= can be used to change the value for a
- * single verification operation.
- *
- * See also the man page X509_VERIFY_PARAM_set_trust(3).
- */
-static VALUE
-ossl_x509store_set_trust(VALUE self, VALUE trust)
-{
-    X509_STORE *store;
-    int t = NUM2INT(trust);
-
-    GetX509Store(self, store);
-    X509_STORE_set_trust(store, t);
-
-    return trust;
-}
-
-/*
- * call-seq:
- *   store.time = time
- *
- * Sets the time to be used in the certificate verifications with the store.
- * By default, if not specified, the current system time is used.
- *
- * OpenSSL::X509::StoreContext#time= can be used to change the value for a
- * single verification operation.
- *
- * See also the man page X509_VERIFY_PARAM_set_time(3).
- */
-static VALUE
-ossl_x509store_set_time(VALUE self, VALUE time)
-{
-    X509_STORE *store;
-    X509_VERIFY_PARAM *param;
-
-    GetX509Store(self, store);
-    param = X509_STORE_get0_param(store);
-    X509_VERIFY_PARAM_set_time(param, NUM2LONG(rb_Integer(time)));
-    return time;
-}
-
-/*
- * call-seq:
  *   store.add_file(file) -> self
  *
  * Adds the certificates in _file_ to the certificate store. _file_ is the path
@@ -645,10 +468,6 @@ ossl_x509stctx_alloc(VALUE klass)
 {
     return TypedData_Wrap_Struct(klass, &ossl_x509stctx_type, NULL);
 }
-
-static VALUE ossl_x509stctx_set_flags(VALUE, VALUE);
-static VALUE ossl_x509stctx_set_purpose(VALUE, VALUE);
-static VALUE ossl_x509stctx_set_trust(VALUE, VALUE);
 
 /*
  * call-seq:
@@ -887,69 +706,6 @@ ossl_x509stctx_verify_param(VALUE self)
 
 /*
  * call-seq:
- *    stctx.flags -> Integer
- *
- * Gets the verification flags for the context.
- *
- * See also the man page X509_VERIFY_PARAM_get_flags(3).
- */
-static VALUE
-ossl_x509stctx_get_flags(VALUE self)
-{
-    X509_STORE_CTX *ctx;
-    X509_VERIFY_PARAM *vpm;
-
-    GetX509StCtx(self, ctx);
-    vpm = X509_STORE_CTX_get0_param(ctx);
-    return ULONG2NUM(X509_VERIFY_PARAM_get_flags(vpm));
-}
-
-/*
- * call-seq:
- *   stctx.flags = flags
- *
- * Sets the verification flags to the context. This overrides the default value
- * set by Store#flags=.
- *
- * *NOTE*: Despite the name, this method appends the specified flags to the
- * existing flag set rather than replacing it. To clear existing flags, use
- * #clear_flags before calling this method.
- *
- * See also the man page X509_VERIFY_PARAM_set_flags(3).
- */
-static VALUE
-ossl_x509stctx_set_flags(VALUE self, VALUE flags)
-{
-    X509_STORE_CTX *ctx;
-
-    GetX509StCtx(self, ctx);
-    x509vpm_set_flags_i(X509_STORE_CTX_get0_param(ctx), flags);
-    return flags;
-}
-
-/*
- * call-seq:
- *    stctx.clear_flags(flags = nil)
- *
- * Clears verification flags _flags_ for the Store. If _flags_ is omitted,
- * clears all existing flags.
- *
- * See also the man page X509_VERIFY_PARAM_clear_flags(3).
- */
-static VALUE
-ossl_x509stctx_clear_flags(int argc, VALUE *argv, VALUE self)
-{
-    X509_STORE_CTX *ctx;
-    VALUE flags;
-
-    rb_scan_args(argc, argv, "01", &flags);
-    GetX509StCtx(self, ctx);
-    x509vpm_clear_flags_i(X509_STORE_CTX_get0_param(ctx), flags);
-    return Qnil;
-}
-
-/*
- * call-seq:
  *   stctx.purpose = purpose
  *
  * Sets the purpose of the context.
@@ -998,27 +754,6 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
     X509_STORE_CTX_set_trust(store, t);
 
     return trust;
-}
-
-/*
- * call-seq:
- *   stctx.time = time
- *
- * Sets the time used in the verification. If not set, the current time is used.
- *
- * See also the man page X509_VERIFY_PARAM_set_time(3).
- */
-static VALUE
-ossl_x509stctx_set_time(VALUE self, VALUE time)
-{
-    X509_STORE_CTX *store;
-    long t;
-
-    t = NUM2LONG(rb_Integer(time));
-    GetX509StCtx(self, store);
-    X509_STORE_CTX_set_time(store, 0, t);
-
-    return time;
 }
 
 /*
@@ -1294,12 +1029,6 @@ Init_ossl_x509store(void)
     rb_undef_method(cX509Store, "initialize_copy");
     rb_define_method(cX509Store, "verify_callback=", ossl_x509store_set_vfy_cb, 1);
     rb_define_method(cX509Store, "verify_param", ossl_x509store_verify_param, 0);
-    rb_define_method(cX509Store, "flags",        ossl_x509store_get_flags, 0);
-    rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
-    rb_define_method(cX509Store, "clear_flags",  ossl_x509store_clear_flags, -1);
-    rb_define_method(cX509Store, "purpose=",     ossl_x509store_set_purpose, 1);
-    rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
-    rb_define_method(cX509Store, "time=",        ossl_x509store_set_time, 1);
     rb_define_method(cX509Store, "add_path",     ossl_x509store_add_path, 1);
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
     rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);
@@ -1326,12 +1055,8 @@ Init_ossl_x509store(void)
     rb_define_method(cX509StoreContext, "current_cert", ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(cX509StoreContext, "current_crl", ossl_x509stctx_get_curr_crl, 0);
     rb_define_method(cX509StoreContext, "verify_param", ossl_x509stctx_verify_param, 0);
-    rb_define_method(cX509StoreContext, "flags", ossl_x509stctx_get_flags, 0);
-    rb_define_method(cX509StoreContext, "flags=", ossl_x509stctx_set_flags, 1);
-    rb_define_method(cX509StoreContext, "clear_flags", ossl_x509stctx_clear_flags, -1);
     rb_define_method(cX509StoreContext, "purpose=", ossl_x509stctx_set_purpose, 1);
     rb_define_method(cX509StoreContext, "trust=", ossl_x509stctx_set_trust, 1);
-    rb_define_method(cX509StoreContext, "time=", ossl_x509stctx_set_time, 1);
 
     /*
      * Document-class: OpenSSL::X509::VerifyParam
