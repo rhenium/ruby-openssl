@@ -377,19 +377,39 @@ module OpenSSL
         end
       end
 
+      private def with_timeout(timeout)
+        # IO#timeout= was added in Ruby 3.2
+        timeout ||= self.timeout if IO.method_defined?(:timeout)
+        if timeout.nil?
+          while true
+            yield
+          end
+        else
+          remaining = timeout
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          while remaining >= 0
+            yield remaining
+            now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            remaining = timeout - (now - start)
+          end
+        end
+        raise IO_TimeoutError, "user specified timeout for SSL handshake"
+      end
+
       # :call-seq:
-      #    ssl.connect -> self
+      #    ssl.connect(timeout: nil) -> self
       #
       # Initiates an SSL/TLS handshake with a server.
-      def connect
-        while true
+      #
+      # If _timeout_ is specified, and if the handshake does not complete
+      # within _timeout_ seconds, IO::TimeoutError is raised.
+      def connect(timeout: nil)
+        with_timeout(timeout) do |remaining|
           case ret = ssl_connect
           when :wait_readable
-            wait_readable or
-              raise IO_TimeoutError, "Timed out while waiting to become readable!"
+            wait_readable(remaining)
           when :wait_writable
-            wait_writable or
-              raise IO_TimeoutError, "Timed out while waiting to become writable!"
+            wait_writable(remaining)
           else
             return ret
           end
@@ -424,18 +444,19 @@ module OpenSSL
       end
 
       # :call-seq:
-      #    ssl.accept -> self
+      #    ssl.accept(timeout: nil) -> self
       #
       # Waits for a SSL/TLS client to initiate a handshake.
-      def accept
-        while true
+      #
+      # If _timeout_ is specified, and if the handshake does not complete
+      # within _timeout_ seconds, IO::TimeoutError is raised.
+      def accept(timeout: nil)
+        with_timeout(timeout) do |remaining|
           case ret = ssl_accept
           when :wait_readable
-            wait_readable or
-              raise IO_TimeoutError, "Timed out while waiting to become readable!"
+            wait_readable(remaining)
           when :wait_writable
-            wait_writable or
-              raise IO_TimeoutError, "Timed out while waiting to become writable!"
+            wait_writable(remaining)
           else
             return ret
           end
