@@ -207,10 +207,6 @@ module OpenSSL
         to_io.fcntl(*args)
       end
 
-      def closed?
-        to_io.closed?
-      end
-
       def do_not_reverse_lookup=(flag)
         to_io.do_not_reverse_lookup = flag
       end
@@ -356,6 +352,7 @@ module OpenSSL
       # If sync_close is set to +true+, the underlying IO is also closed.
       def sysclose
         return if closed?
+        @closed_read = @closed_write = true
         stop
         io.close if sync_close
       end
@@ -374,6 +371,20 @@ module OpenSSL
           raise EOFError, "end of file reached"
         else
           ret
+        end
+      end
+
+      private def assert_readable
+        if @closed_read
+          raise IOError, "closed stream" if @closed_write
+          raise IOError, "not opened for reading"
+        end
+      end
+
+      private def assert_writable
+        if @closed_write
+          raise IOError, "closed stream" if @closed_read
+          raise IOError, "not opened for writing"
         end
       end
 
@@ -476,6 +487,7 @@ module OpenSSL
       # Reads _length_ bytes from the SSL connection.  If a pre-allocated
       # _buffer_ is provided the data will be written into it.
       def sysread(length, buffer = nil)
+        assert_readable
         while true
           case ret = ssl_read(length, buffer)
           when :wait_readable
@@ -505,6 +517,7 @@ module OpenSSL
       # Reads _length_ bytes from the SSL connection.  If a pre-allocated
       # _buffer_ is provided the data will be written into it.
       private def sysread_nonblock(length, buffer = nil, exception: true)
+        assert_readable
         ret = ssl_read(length, buffer)
         check_nonblock(ret) if exception
         ret
@@ -515,6 +528,7 @@ module OpenSSL
       #
       # Writes _string_ to the SSL connection.
       def syswrite(string)
+        assert_writable
         while true
           case ret = ssl_write(string)
           when :wait_readable
@@ -538,6 +552,7 @@ module OpenSSL
       # this method returns a symbol of :wait_readable or :wait_writable,
       # rather than raising an exception.
       private def syswrite_nonblock(string, exception: true)
+        assert_writable
         ret = ssl_write(string)
         check_nonblock(ret) if exception
         ret
@@ -577,16 +592,28 @@ module OpenSSL
         nil
       end
 
-      # Close the stream for reading.
-      # This method is ignored by OpenSSL as there is no reasonable way to
-      # implement it, but exists for compatibility with IO.
-      def close_read
-        # Unsupported and ignored.
-        # Just don't read any more.
+      # Returns +true+ if the SSL/TLS connection has been closed, +false+
+      # otherwise.
+      #
+      # Before version 4.1, this method returned whether the underlying socket
+      # has been closed.
+      def closed?
+        !!(@closed_read && @closed_write)
       end
 
-      # Closes the stream for writing. The behavior of this method depends on
-      # the version of OpenSSL and the TLS protocol in use.
+      # Closes the stream for reading. Any further attempts to read from this
+      # SSLSocket will raise IOError.
+      def close_read
+        return sysclose if @closed_write
+        @closed_read = true
+        nil
+      end
+
+      # Closes the stream for writing. Any further attempts to write to this
+      # SSLSocket will raise IOError.
+      #
+      # The behavior of this method depends on the version of OpenSSL and the
+      # TLS protocol in use.
       #
       # - Sends a 'close_notify' alert to the peer.
       # - Does not wait for the peer's 'close_notify' alert in response.
@@ -600,6 +627,8 @@ module OpenSSL
       # completely shut down. On TLS 1.3, the connection will remain open for
       # reading only.
       def close_write
+        return sysclose if @closed_read
+        @closed_write = true
         stop
       end
 
