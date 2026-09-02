@@ -211,7 +211,7 @@ module OpenSSL::TestPairM
     # rs spans multiple sysreads
     ssl_pair {|s1, s2|
       s1 << "a" * 8192 + "b" * 16384
-      s1.close
+      s1.close_write
       assert_equal("a" * 8192, s2.gets("b" * 10000, chomp: true))
       p :k
     }
