@@ -188,21 +188,32 @@ module OpenSSL::TestPairM
       s1.close
       ret = s2.gets
       assert_equal Encoding::BINARY, ret.encoding
+      p :a
       assert_equal "abc\n", ret
+      p :b
       assert_equal "\n$", s2.gets("$")
+      p :c
       assert_equal "def123", s2.gets("123")
+      p :d
       assert_equal "ghi", s2.gets(":", 3)
+      p :e
       assert_equal "j", s2.gets(1)
+      p :f
       assert_equal "k\n", s2.gets("\n", -1)
+      p :g
       assert_equal "lmno", s2.gets(-1)
+      p :h
       assert_equal nil, s2.gets
+      p :i
       assert_equal "", s2.gets(0)
+      p :j
     }
     # rs spans multiple sysreads
     ssl_pair {|s1, s2|
       s1 << "a" * 8192 + "b" * 16384
       s1.close
       assert_equal("a" * 8192, s2.gets("b" * 10000, chomp: true))
+      p :k
     }
   end
 

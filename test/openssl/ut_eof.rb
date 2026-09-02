@@ -7,7 +7,7 @@ module OpenSSL::TestEOF
   def open_file(content)
     ssl_pair { |s1, s2|
       begin
-        th = Thread.new { s2 << content; s2.close_write }
+        th = Thread.new { s2 << content; s2.close }
         yield s1
       ensure
         th&.join
