@@ -343,6 +343,13 @@ module OpenSSL
       # connection is shut down. This defaults to +false+.
       attr_accessor :sync_close
 
+      # :stopdoc:
+      def initialize(*args)
+        super
+        @closed_read = @closed_write = false
+      end if RUBY_VERSION < "3.0"
+      # :startdoc:
+
       # call-seq:
       #    ssl.sysclose => nil
       #
