@@ -182,6 +182,23 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_xmxm
+    IO.pipe do |r, w|
+      th = Thread.start { p pipe: r.gets("b" * 10000).size }
+      w << "a" * 8192
+      w << "b" * 16384
+      w.close_write
+      th.join
+    end
+    Socket.pair(:UNIX, :STREAM, 0) do |r, w|
+      th = Thread.start { p socketpair: r.gets("b" * 10000).size }
+      w << "a" * 8192
+      w << "b" * 16384
+      w.close_write
+      th.join
+    end
+  end
+
   def test_gets
     ssl_pair {|s1, s2|
       s1 << "abc\n\n$def123ghijk\nlmno"
