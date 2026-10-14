@@ -952,10 +952,15 @@ ossl_x509stctx_clear_flags(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   stctx.purpose = purpose
  *
- * Sets the purpose of the context. This overrides the default value set by
- * Store#purpose=.
+ * Sets the purpose of the context.
  *
- * See also the man page X509_VERIFY_PARAM_set_purpose(3).
+ * This method does not override a value set by Store#purpose= or a previous
+ * call to this method.
+ *
+ * Consider using VerifyParam#purpose= (<tt>stctx.verify_param.purpose=</tt>)
+ * instead, which always overrides with the specified purpose.
+ *
+ * See also the man page X509_STORE_CTX_set_purpose(3).
  */
 static VALUE
 ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
@@ -973,10 +978,15 @@ ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
  * call-seq:
  *   stctx.trust = trust
  *
- * Sets the trust settings of the context. This overrides the default value set
- * by Store#trust=.
+ * Sets the trust settings of the context.
  *
- * See also the man page X509_VERIFY_PARAM_set_trust(3).
+ * This method does not override a value set by Store#trust= or a previous
+ * call to this method.
+ *
+ * Consider using VerifyParam#trust= (<tt>stctx.verify_param.trust=</tt>)
+ * instead, which always overrides with the specified settings.
+ *
+ * See also the man page X509_STORE_CTX_set_trust(3).
  */
 static VALUE
 ossl_x509stctx_set_trust(VALUE self, VALUE trust)
@@ -1028,7 +1038,8 @@ ossl_x509vpm_wrap(X509_VERIFY_PARAM *vpm, VALUE owner)
 {
     VALUE obj =
         TypedData_Wrap_Struct(cX509VerifyParam, &ossl_x509vpm_type, vpm);
-    rb_ivar_set(obj, id_owner, owner); // owner must outlive obj
+    /* vpm is owned by owner */
+    rb_ivar_set(obj, id_owner, owner);
     return obj;
 }
 

@@ -199,6 +199,35 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     store.add_cert(ca1_cert)
     assert_equal(true, store.verify(ca1_cert))
     assert_equal(false, store.verify(ee1_cert))
+
+    # StoreContext#purpose= changes the trust settings too, if not set yet
+    Tempfile.create do |f|
+      # IMPLICIT 0 for reject
+      aux = OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::Sequence([OpenSSL::ASN1::ObjectId("serverAuth")],
+                                0, :IMPLICIT),
+      ])
+      f.write(<<~EOS)
+      -----BEGIN TRUSTED CERTIFICATE-----
+      #{[ca1_cert.to_der + aux.to_der].pack("m0").scan(/.{1,64}/).join("\n")}
+      -----END TRUSTED CERTIFICATE-----
+      EOS
+      f.close
+
+      store = OpenSSL::X509::Store.new
+      store.add_file(f.path)
+
+      ctx = OpenSSL::X509::StoreContext.new(store, ee1_cert)
+      assert_equal(true, ctx.verify)
+
+      ctx = OpenSSL::X509::StoreContext.new(store, ee1_cert)
+      ctx.verify_param.purpose = OpenSSL::X509::PURPOSE_SSL_SERVER
+      assert_equal(true, ctx.verify)
+
+      ctx = OpenSSL::X509::StoreContext.new(store, ee1_cert)
+      ctx.purpose = OpenSSL::X509::PURPOSE_SSL_SERVER
+      assert_equal(false, ctx.verify)
+    end
   end
 
   def test_verify_validity_period
