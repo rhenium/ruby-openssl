@@ -243,6 +243,67 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     end
   end
 
+  def test_identity
+    exts = [
+      ["subjectAltName", "DNS:a.example,DNS:*.b.example,IP:192.0.2.1"],
+    ]
+    subject = OpenSSL::X509::Name.parse_rfc2253("CN=EE 1")
+    key = Fixtures.pkey("rsa-1")
+    cert = issue_cert(subject, key, 1, exts, nil, nil)
+
+    store = OpenSSL::X509::Store.new
+    store.add_cert(cert)
+    assert_equal(true, store.verify(cert))
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_host("a.example")
+    assert_equal(true, ctx.verify)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_host("x.example")
+    assert_equal(false, ctx.verify)
+    assert_equal(OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH, ctx.error)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_host("a.example")
+    ctx.verify_param.add_host("x.example")
+    assert_equal(true, ctx.verify)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_host("foo.b.example")
+    assert_equal(true, ctx.verify)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.hostflags = OpenSSL::X509::CHECK_FLAG_NO_WILDCARDS
+    assert_equal(OpenSSL::X509::CHECK_FLAG_NO_WILDCARDS,
+                 ctx.verify_param.hostflags)
+    ctx.verify_param.add_host("foo.b.example")
+    assert_equal(false, ctx.verify)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_ip_asc("192.0.2.1")
+    assert_equal(true, ctx.verify)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_ip_asc("192.0.2.2")
+    assert_equal(false, ctx.verify)
+    assert_equal(OpenSSL::X509::V_ERR_IP_ADDRESS_MISMATCH, ctx.error)
+
+    ctx = OpenSSL::X509::StoreContext.new(store, cert)
+    ctx.verify_param.add_ip_asc("192.0.2.1")
+    assert_raise(OpenSSL::X509::StoreError) {
+      ctx.verify_param.add_ip_asc("x.example")
+    }
+    assert_equal(true, ctx.verify)
+
+    if openssl?(4, 0, 0) # X509_VERIFY_PARAM_add1_ip_asc()
+      ctx = OpenSSL::X509::StoreContext.new(store, cert)
+      ctx.verify_param.add_ip_asc("192.0.2.1")
+      ctx.verify_param.add_ip_asc("192.0.2.2")
+      assert_equal(true, ctx.verify)
+    end
+  end
+
   def test_verify_validity_period
     # Creating test certificates with validity periods:
     #

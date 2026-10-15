@@ -972,6 +972,117 @@ x509vpm_set_depth(VALUE self, VALUE depth)
 }
 
 /*
+ * call-seq:
+ *    vpm.hostflags -> Integer
+ *
+ * See #hostflags=.
+ */
+static VALUE
+x509vpm_get_hostflags(VALUE self)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    GetX509VerifyParam(self, vpm);
+    return UINT2NUM(X509_VERIFY_PARAM_get_hostflags(vpm));
+}
+
+/*
+ * call-seq:
+ *    vpm.hostflags = flags
+ *
+ * Sets the flags controlling how hostnames added by #add_host are matched.
+ *
+ * _flags_ consists of zero or more of the constants defined in OpenSSL::X509
+ * with name CHECK_FLAG_* or'ed together.
+ *
+ * See also the man page X509_VERIFY_PARAM_set_hostflags(3).
+ */
+static VALUE
+x509vpm_set_hostflags(VALUE self, VALUE flags)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    X509_VERIFY_PARAM_set_hostflags(vpm, NUM2UINT(flags));
+    return flags;
+}
+
+/*
+ * call-seq:
+ *    vpm.add_host(hostname)
+ *
+ * Adds _hostname_ to the list of acceptable DNS hostnames for matching against
+ * the certificate's dNSName SAN entries, or the commonName attribute of the
+ * subject distinguished name, if enabled by #hostflags=.
+ *
+ * If more than one hostname is added, the certificate is accepted if any of
+ * them matches.
+ *
+ * See also the man page X509_VERIFY_PARAM_add1_host(3).
+ */
+static VALUE
+x509vpm_add_host(VALUE self, VALUE str)
+{
+    X509_VERIFY_PARAM *vpm;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    StringValue(str);
+    if (!X509_VERIFY_PARAM_add1_host(vpm, RSTRING_PTR(str), RSTRING_LEN(str)))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_add1_host");
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    vpm.add_ip_asc(ipaddr)
+ *
+ * Adds _ipaddr_, given as a String in its textual form, to the list of
+ * acceptable IP addresses for matching against the certificate's iPAddress
+ * SAN entries.
+ *
+ * Note that specifying both #add_host and #add_ip_asc requires the certificate
+ * to have both a matching dNSName and iPAddress SAN entry, which is probably
+ * not what you want.
+ *
+ * Older versions of OpenSSL only support a single IP address, and will use
+ * the last one added.
+ *
+ * See also the man page X509_VERIFY_PARAM_add1_ip_asc(3).
+ */
+static VALUE
+x509vpm_add_ip_asc(VALUE self, VALUE str)
+{
+    X509_VERIFY_PARAM *vpm;
+    const char *cstr;
+
+    x509vpm_check_frozen(self);
+    GetX509VerifyParam(self, vpm);
+    cstr = StringValueCStr(str);
+#ifdef HAVE_X509_VERIFY_PARAM_ADD1_IP_ASC
+    if (!X509_VERIFY_PARAM_add1_ip_asc(vpm, cstr))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_add1_ip_asc");
+#else
+# if OSSL_IS_LIBRESSL
+    /*
+     * As of LibreSSL 4.3.2, X509_VERIFY_PARAM_set1_ip_asc() appears to
+     * corrupt the X509_VERIFY_PARAM if the string is not a valid IP address.
+     */
+    {
+        ASN1_OCTET_STRING *ip = a2i_IPADDRESS(cstr);
+        if (!ip)
+            ossl_raise(eX509StoreError, "a2i_IPADDRESS");
+        ASN1_OCTET_STRING_free(ip);
+    }
+# endif
+    if (!X509_VERIFY_PARAM_set1_ip_asc(vpm, cstr))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set1_ip_asc");
+#endif
+    return Qnil;
+}
+
+/*
  * INIT
  */
 void
@@ -1115,6 +1226,10 @@ Init_ossl_x509store(void)
     rb_define_method(cX509VerifyParam, "time=", x509vpm_set_time, 1);
     rb_define_method(cX509VerifyParam, "depth", x509vpm_get_depth, 0);
     rb_define_method(cX509VerifyParam, "depth=", x509vpm_set_depth, 1);
+    rb_define_method(cX509VerifyParam, "hostflags", x509vpm_get_hostflags, 0);
+    rb_define_method(cX509VerifyParam, "hostflags=", x509vpm_set_hostflags, 1);
+    rb_define_method(cX509VerifyParam, "add_host", x509vpm_add_host, 1);
+    rb_define_method(cX509VerifyParam, "add_ip_asc", x509vpm_add_ip_asc, 1);
 
     id_vpm = rb_intern_const("vpm");
     id_owner = rb_intern_const("owner");

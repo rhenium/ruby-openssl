@@ -228,6 +228,14 @@ Init_ossl_x509(void)
     DefX509Const(TRUST_OCSP_REQUEST);
     DefX509Const(TRUST_TSA);
 
+    /* Set by VerifyParam#hostflags=. */
+    DefX509Const(CHECK_FLAG_ALWAYS_CHECK_SUBJECT);
+    DefX509Const(CHECK_FLAG_NO_WILDCARDS);
+    DefX509Const(CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    DefX509Const(CHECK_FLAG_MULTI_LABEL_WILDCARDS);
+    DefX509Const(CHECK_FLAG_SINGLE_LABEL_SUBDOMAINS);
+    DefX509Const(CHECK_FLAG_NEVER_CHECK_SUBJECT);
+
     DefX509Default(CERT_AREA, cert_area);
     DefX509Default(CERT_DIR, cert_dir);
     DefX509Default(CERT_FILE, cert_file);
