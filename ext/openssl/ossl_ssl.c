@@ -190,52 +190,16 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 }
 #endif /* OPENSSL_NO_DH */
 
-static VALUE
-call_verify_certificate_identity(VALUE ctx_v)
-{
-    X509_STORE_CTX *ctx = (X509_STORE_CTX *)ctx_v;
-    SSL *ssl;
-    VALUE ssl_obj, hostname, cert_obj;
-
-    ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    hostname = rb_attr_get(ssl_obj, id_i_hostname);
-
-    if (!RTEST(hostname)) {
-        rb_warning("verify_hostname requires hostname to be set");
-        return Qtrue;
-    }
-
-    cert_obj = ossl_x509_new(X509_STORE_CTX_get_current_cert(ctx));
-    return rb_funcall(mSSL, rb_intern("verify_certificate_identity"), 2,
-                      cert_obj, hostname);
-}
-
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
-    VALUE cb, ssl_obj, sslctx_obj, verify_hostname, ret;
+    VALUE cb, ssl_obj, sslctx_obj;
     SSL *ssl;
-    int status;
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
     cb = rb_attr_get(sslctx_obj, id_i_verify_callback);
-    verify_hostname = rb_attr_get(sslctx_obj, id_i_verify_hostname);
-
-    if (preverify_ok && RTEST(verify_hostname) && !SSL_is_server(ssl) &&
-        !X509_STORE_CTX_get_error_depth(ctx)) {
-        ret = rb_protect(call_verify_certificate_identity, (VALUE)ctx, &status);
-        if (status) {
-            rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
-            return 0;
-        }
-        if (ret != Qtrue) {
-            preverify_ok = 0;
-            X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
-        }
-    }
 
     return ossl_verify_cb_call(cb, preverify_ok, ctx);
 }
@@ -1813,6 +1777,24 @@ ossl_ssl_setup(VALUE self)
     rb_io_check_writable(fptr);
     if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(io))))
         ossl_raise(eSSLError, "SSL_set_fd");
+
+    if (RTEST(rb_attr_get(rb_attr_get(self, id_i_context), id_i_verify_hostname))) {
+        VALUE hostname = rb_attr_get(self, id_i_hostname);
+        if (!NIL_P(hostname)) {
+            X509_VERIFY_PARAM *vpm = SSL_get0_param(ssl);
+            unsigned int hostflags = 0
+                | X509_VERIFY_PARAM_get_hostflags(vpm)
+                | X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS;
+            StringValue(hostname);
+            if (X509_VERIFY_PARAM_add1_host(vpm, RSTRING_PTR(hostname),
+                                            RSTRING_LEN(hostname)) != 1)
+                ossl_raise(eSSLError, "X509_VERIFY_PARAM_add1_host");
+            X509_VERIFY_PARAM_set_hostflags(vpm, hostflags);
+        }
+        else if (SSL_get_verify_mode(ssl) & SSL_VERIFY_PEER) {
+            rb_warning("verify_hostname requires hostname to be set");
+        }
+    }
 
     return Qtrue;
 }
