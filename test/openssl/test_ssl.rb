@@ -914,17 +914,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal(false, OpenSSL::SSL.verify_hostname("www.subdomain.example.com", "*.example.com"))
   end
 
-  def test_verify_wildcard
-    assert_equal(false, OpenSSL::SSL.verify_wildcard("foo", "x*"))
-    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "foo"))
-    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "f*"))
-    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "*"))
-    assert_equal(false, OpenSSL::SSL.verify_wildcard("abc*bcd", "abcd"))
-    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "x*"))
-    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "*--qdk4b9b"))
-    assert_equal(true,  OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "xn--qdk4b9b"))
-  end
-
   # Comments in this test is excerpted from https://www.rfc-editor.org/rfc/rfc6125#page-27
   def test_post_connection_check_wildcard_san
     # case-insensitive ASCII comparison
@@ -960,11 +949,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     #     baz*.example.net and *baz.example.net and b*z.example.net would
     #     be taken to match baz1.example.net and foobaz.example.net and
     #     buzz.example.net, respectively).  ...
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:b*z.example.com'), 'buzz.example.com'))
 
     # Section 6.4.3 of RFC6125 states that client should NOT match identifier
@@ -984,7 +973,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     #   attempt to match a presented identifier where the wildcard
     #   character is embedded within an A-label or U-label [IDNA-DEFS] of
     #   an internationalized domain name [IDNA-PROTO].
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:xn*.example.com'), 'xn1ca.example.com'))
     # part of A-label
     assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
@@ -1012,11 +1001,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       create_cert_with_name('*.example.com'), 'foo.example.com'))
     assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('*.example.com'), 'bar.foo.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('baz*.example.com'), 'baz1.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('*baz.example.com'), 'foobaz.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('b*z.example.com'), 'buzz.example.com'))
     # Section 6.4.3 of RFC6125 states that client should NOT match identifier
     # where wildcard is other than left-most label.
@@ -1031,7 +1020,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       create_cert_with_name('*b*.example.com'), 'ab.example.com'))
     assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('*b*.example.com'), 'bc.example.com'))
-    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('xn*.example.com'), 'xn1ca.example.com'))
     assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_name('xn--*.example.com'), 'xn--1ca.example.com'))
@@ -1237,7 +1226,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ["x.example.com", false],
         ["b.example.com", false],
         ["x.b.example.com", true],
-        ["cx.example.com", true],
+        ["cx.example.com", false],
         ["d.x.example.com", false],
       ].each do |name, expected_ok|
         begin

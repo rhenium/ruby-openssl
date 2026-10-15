@@ -313,41 +313,17 @@ module OpenSSL
       # Matching is case-insensitive.
       host_parts = hostname.downcase.split(".")
 
-      # RFC 6125, section 6.4.3, subitem 2.
-      # If the wildcard character is the only character of the left-most
-      # label in the presented identifier, the client SHOULD NOT compare
-      # against anything but the left-most label of the reference
-      # identifier (e.g., *.example.com would match foo.example.com but
-      # not bar.foo.example.com or example.com).
-      return false unless san_parts.size == host_parts.size
-
-      # RFC 6125, section 6.4.3, subitem 1.
-      # The client SHOULD NOT attempt to match a presented identifier in
-      # which the wildcard character comprises a label other than the
-      # left-most label (e.g., do not match bar.*.example.net).
-      return false unless verify_wildcard(host_parts.shift, san_parts.shift)
+      # RFC 6125, section 6.4.3
+      # Wildcard support is limited to the left-most label, and partial
+      # wildcards (subitem 3) are not supported.
+      if san_parts[0] == "*"
+        san_parts.shift
+        host_parts.shift
+      end
 
       san_parts.join(".") == host_parts.join(".")
     end
     module_function :verify_hostname
-
-    def verify_wildcard(domain_component, san_component) # :nodoc:
-      parts = san_component.split("*", -1)
-
-      return false if parts.size > 2
-      return san_component == domain_component if parts.size == 1
-
-      # RFC 6125, section 6.4.3, subitem 3.
-      # The client SHOULD NOT attempt to match a presented identifier
-      # where the wildcard character is embedded within an A-label or
-      # U-label of an internationalized domain name.
-      return false if domain_component.start_with?("xn--") && san_component != "*"
-
-      parts[0].length + parts[1].length < domain_component.length &&
-      domain_component.start_with?(parts[0]) &&
-      domain_component.end_with?(parts[1])
-    end
-    module_function :verify_wildcard
 
     class SSLSocket
       include Buffering
